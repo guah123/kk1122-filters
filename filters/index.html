@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#241b17">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>看看｜現場濾鏡展示</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<noscript><p style="padding:24px;color:#F3E6CF">需要開啟 JavaScript 才能看展示頁。</p></noscript>
+
+<!-- ============ 首頁 ============ -->
+<div id="view-home" class="view home">
+  <div id="inapp" class="inapp" hidden>
+    <span>建議用 Safari 或 Chrome 開啟，相機才穩定。</span>
+    <button type="button" id="inapp-x" aria-label="關閉提示">×</button>
+  </div>
+  <header class="hero">
+    <canvas id="title-canvas" class="title-canvas" aria-label="看看"></canvas>
+    <h1 class="sr">看看</h1>
+    <p class="sub"><span>2026.11.22・沐月書店｜現場濾鏡 第一版</span> <span>（給設計師討論用）</span></p>
+    <div class="toolbar">
+      <button type="button" class="btn" id="h-critter" aria-pressed="true">小動物：顯示</button>
+    </div>
+  </header>
+
+  <main id="home-main" class="sections"><p class="loading">載入中…</p></main>
+
+  <footer class="foot">
+    <p>小動物目前是占位剪影（袋熊），之後可以替換成設計師的版本。</p>
+    <p class="foot-links">
+      <a class="btn small" href="?selftest=1">自我檢測</a>
+      <a class="btn small" href="?selftest=1&amp;cam=1">自我檢測（含相機）</a>
+      <button type="button" class="btn small" id="h-diag">診斷資訊</button>
+    </p>
+    <p id="load-warn" class="warn" hidden></p>
+  </footer>
+</div>
+
+<!-- ============ 播放頁 ============ -->
+<div id="view-player" class="view player" hidden>
+  <header class="pbar ptop" id="ptop">
+    <a class="pbtn back" id="p-back" href="#/" aria-label="返回">←<span class="lbl">返回</span></a>
+    <div class="ptitle"><b id="p-no"></b><span id="p-title"></span><small id="p-song"></small></div>
+    <button type="button" class="pbtn sq" id="p-prev" aria-label="上一個">‹</button>
+    <button type="button" class="pbtn sq" id="p-next" aria-label="下一個">›</button>
+    <button type="button" class="pbtn sq" id="p-more" aria-label="設定" aria-expanded="false">⋯</button>
+  </header>
+
+  <div class="pmenu" id="p-menu" hidden role="dialog" aria-label="設定">
+    <div class="mrow"><span class="mlbl">背景</span>
+      <div class="seg" role="group" aria-label="背景">
+        <button type="button" data-bg="books">書牆</button>
+        <button type="button" data-bg="dark">深色</button>
+        <button type="button" data-bg="camera">相機</button>
+      </div>
+    </div>
+    <div class="mrow" id="p-flip-row" hidden><span class="mlbl">鏡頭</span>
+      <button type="button" class="pbtn wide" id="p-flip">鏡頭：後（點一下切換）</button>
+    </div>
+    <div class="mrow"><span class="mlbl">小動物</span>
+      <button type="button" class="tog" id="p-critter" aria-pressed="true">開</button>
+    </div>
+    <div class="mrow two">
+      <button type="button" class="pbtn wide" id="p-fs">全螢幕</button>
+      <button type="button" class="pbtn wide" id="p-hide">隱藏介面</button>
+    </div>
+    <div class="mrow" id="p-reset-row" hidden>
+      <button type="button" class="pbtn wide" id="p-reset">重新佈滿烏雲</button>
+    </div>
+  </div>
+
+  <div id="p-loop" class="loopbar" role="button" aria-label="loop 進度（點一下顯示 fps）">
+    <span id="p-looptxt">loop</span><i><b id="p-loopfill"></b></i>
+  </div>
+  <div id="p-hint" class="bubble"></div>
+  <div id="p-toast" class="toast" role="status"></div>
+  <div id="p-fps" class="fpsbox" hidden></div>
+  <div id="p-wip" class="wip" hidden>製作中</div>
+  <button type="button" id="p-dot" class="dot" hidden aria-label="顯示介面"><span></span></button>
+</div>
+
+<!-- ============ 自我檢測 ============ -->
+<div id="view-selftest" class="view selftest" hidden></div>
+
+<!-- ============ 診斷資訊視窗 ============ -->
+<div id="modal" class="modal" hidden>
+  <div class="modal-card">
+    <h2>診斷資訊</h2>
+    <textarea id="diag-text" readonly rows="14" spellcheck="false"></textarea>
+    <p id="diag-msg" class="diag-msg" role="status"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn big" id="diag-copy">複製診斷資訊</button>
+      <button type="button" class="btn" id="diag-close">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/kk-load.js"></script>
+<script src="assets/js/app-diag.js"></script>
+<script src="assets/js/selftest.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

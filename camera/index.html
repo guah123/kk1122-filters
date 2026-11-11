@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>濾鏡錄影測試</title>
+<style>
+:root{--bg:#0b0d12;--fg:#f2f4f8;--mut:#9aa4b5;--acc:#3d7bff;--red:#ff3b4a;--ok:#2ecc71;--warn:#ffb020;--card:#181c26;--line:#2a3040}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);overscroll-behavior:none;
+  font:16px/1.55 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif}
+h1{font-size:26px;margin:8px 0 6px}
+p{margin:8px 0}
+.mut{color:var(--mut);font-size:14px}
+button{font:inherit;color:var(--fg);border:0;border-radius:16px;min-height:60px;padding:0 18px;font-size:19px;font-weight:700;
+  background:var(--card);border:1px solid var(--line);touch-action:manipulation;cursor:pointer}
+button:disabled{opacity:.4}
+button:active{filter:brightness(1.25)}
+.main{background:var(--acc);border-color:var(--acc);color:#fff;width:100%;min-height:68px;font-size:22px}
+.ghost{background:transparent}
+.screen{display:none}
+.screen.on{display:block}
+#home,#result{padding:max(16px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:14px 0}
+.inapp{background:#5a1018;border:2px solid var(--red);border-radius:16px;padding:18px 16px;margin:14px 0;font-size:26px;font-weight:800;line-height:1.4;text-align:center}
+.inapp small{display:block;font-size:15px;font-weight:400;margin-top:8px}
+.err{border-color:var(--red);background:#2a1216}
+.err h3{margin:0 0 6px;color:#ff8a94}
+.err ol{margin:6px 0 6px 20px;padding:0}
+.err b{color:#fff}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.seg button{min-height:46px;font-size:15px;border-radius:12px}
+.seg button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+/* ---- 相機畫面：整頁固定，不可捲動 ---- */
+#cam{position:fixed;inset:0;display:none;flex-direction:column;background:#000;touch-action:none;overscroll-behavior:none;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#cam.on{display:flex}
+#top{display:flex;align-items:center;gap:8px;padding:max(8px,env(safe-area-inset-top)) 10px 8px;background:#0b0d12}
+#top button{min-height:44px;font-size:14px;padding:0 12px;border-radius:12px}
+#timer{flex:1;text-align:center;font-weight:800;font-variant-numeric:tabular-nums;font-size:18px}
+#timer.rec{color:var(--red)}
+#meterWrap{width:96px;text-align:right;font-size:11px;color:var(--mut);line-height:1.2}
+#meter{height:10px;background:#222a38;border-radius:5px;overflow:hidden;margin-top:3px}
+#meterBar{height:100%;width:0;background:linear-gradient(90deg,#2ecc71,#ffd23f 75%,#ff3b4a)}
+#stage{flex:1;min-height:0;position:relative;overflow:hidden;background:#000}
+#stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;touch-action:none}
+#hint,#modeNote{position:absolute;left:0;right:0;text-align:center;pointer-events:none;font-weight:700;text-shadow:0 1px 4px #000;padding:0 16px}
+#hint{top:42%;font-size:22px}
+#modeNote{top:10px;font-size:13px;color:#ffd23f}
+#fps{position:absolute;right:8px;bottom:6px;font-size:11px;color:#fff9;pointer-events:none}
+#panel{background:#0b0d12;padding:10px 10px max(12px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px}
+#filters{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+#filters button{min-height:52px;font-size:14px;padding:0 2px;border-radius:12px}
+#filters button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+#recBtn{min-height:72px;font-size:22px;background:var(--red);border-color:var(--red);color:#fff;width:100%}
+#recBtn.rec{background:#fff;color:#c00;border-color:#fff}
+#resetCloud{display:none;min-height:44px;font-size:14px}
+/* ---- 結果 ---- */
+#pv{width:100%;max-height:58vh;background:#000;border-radius:12px;display:block}
+#resInfo{font-size:14px;white-space:pre-wrap;word-break:break-all}
+.warn{color:var(--warn)}
+.ok{color:var(--ok)}
+/* ---- 測試資訊 ---- */
+#sheet{position:fixed;inset:0;z-index:50;background:#0b0d12;display:none;flex-direction:column;touch-action:pan-y}
+#sheet.on{display:flex}
+#sheetBar{display:flex;gap:10px;padding:max(10px,env(safe-area-inset-top)) 12px 10px;border-bottom:1px solid var(--line)}
+#sheetBar button{min-height:52px;font-size:17px}
+#diag{flex:1;overflow:auto;margin:0;padding:12px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all;-webkit-user-select:text;user-select:text}
+#toast{position:fixed;left:12px;right:12px;bottom:max(100px,env(safe-area-inset-bottom));z-index:60;background:#000d;border:1px solid var(--line);
+  border-radius:12px;padding:10px 14px;font-size:14px;display:none;text-align:center}
+#v{position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none}
+</style>
+</head>
+<body>
+<video id="v" playsinline muted autoplay></video>
+
+<!-- ===== 首頁 ===== -->
+<section id="home" class="screen on">
+  <h1>濾鏡錄影測試</h1>
+  <p class="mut">可行性測試（非正式版）：測網頁內「即時濾鏡 + 錄影 + 收音 + 存相簿」是否穩定。</p>
+  <div id="inapp" class="inapp" hidden></div>
+  <div id="compat" class="card err" hidden></div>
+  <div class="card">
+    <p style="margin:0;font-size:18px"><b>接下來會詢問相機和麥克風，請按「允許」。</b></p>
+    <p class="mut" style="margin-bottom:0">影像只在你的手機上處理，不會上傳到任何地方。</p>
+  </div>
+  <button id="start" class="main">開始</button>
+  <div id="errBox" class="card err" hidden></div>
+  <div style="height:12px"></div>
+  <button id="homeInfo" class="ghost" style="width:100%;min-height:52px;font-size:16px">測試資訊（點開，可一鍵複製）</button>
+  <p class="mut" style="text-align:center;margin-top:16px">版本 261112-proto</p>
+</section>
+
+<!-- ===== 相機 ===== -->
+<section id="cam">
+  <div id="top">
+    <button id="camInfo">測試資訊</button>
+    <div id="timer">待機</div>
+    <div id="meterWrap"><span id="meterTxt">🎤 拍手試試</span><div id="meter"><div id="meterBar"></div></div></div>
+  </div>
+  <div id="stage">
+    <canvas id="c2"></canvas>
+    <canvas id="cg" style="display:none"></canvas>
+    <div id="modeNote" hidden>WebGL 測試：只畫相機＋暗角，不套濾鏡</div>
+    <div id="hint" hidden>👆 用手指在畫面上抹開烏雲</div>
+    <div id="fps"></div>
+  </div>
+  <div id="panel">
+    <div id="filters">
+      <button data-f="none" class="on">無濾鏡</button>
+      <button data-f="nyc">紐約穿梭</button>
+      <button data-f="meteor">流星</button>
+      <button data-f="cloud">抹開烏雲</button>
+    </div>
+    <div class="row">
+      <div class="seg row" id="modeSeg" style="flex:2">
+        <button data-m="2d" class="on">渲染：2D</button>
+        <button data-m="gl">WebGL 測試</button>
+      </div>
+      <button id="flip" style="min-height:46px;font-size:15px">🔄 前/後鏡頭</button>
+    </div>
+    <button id="resetCloud">↺ 重置烏雲</button>
+    <button id="recBtn">● 開始錄影（最長 30 秒）</button>
+  </div>
+</section>
+
+<!-- ===== 結果 ===== -->
+<section id="result" class="screen">
+  <h1>錄影完成</h1>
+  <video id="pv" controls playsinline></video>
+  <div id="resInfo" class="card"></div>
+  <button id="saveBtn" class="main">存到相簿</button>
+  <p id="saveMsg" class="mut"></p>
+  <div class="row">
+    <button id="again" style="min-height:64px">再錄一次</button>
+    <button id="resInfoBtn" class="ghost" style="min-height:64px">測試資訊</button>
+  </div>
+</section>
+
+<!-- ===== 測試資訊面板 ===== -->
+<div id="sheet">
+  <div id="sheetBar"><button id="copy" class="main" style="flex:2;min-height:52px;font-size:17px">一鍵複製</button><button id="closeSheet">關閉</button></div>
+  <pre id="diag"></pre>
+</div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+(() => {
+const $ = id => document.getElementById(id);
+const MAX_SEC = 30;
+const t0 = performance.now();
+const v = $('v'), c2 = $('c2'), cg = $('cg'), stage = $('stage');
+const ctx = c2.getContext('2d', { alpha: false });
+
+/* ================= 診斷資料 ================= */
+const evs = [];            // 事件/錯誤紀錄
+const runs = [];           // 每次錄影一筆
+const D = { glLost: 0, glRestored: 0, recErrors: 0, cam: null, audioSettings: '', preDb: null, noMic: false };
+const ts = () => ((performance.now() - t0) / 1000).toFixed(1).padStart(6) + 's';
+function logEv(m) { evs.push(`[${ts()}] ${m}`); if (evs.length > 120) evs.shift(); }
+function errStr(e) { return e ? `${e.name || 'Error'}: ${e.message || e}` : String(e); }
+function logErr(m, e) { logEv(`✘ ${m}${e ? ' → ' + errStr(e) : ''}`); }
+window.addEventListener('error', e => logErr('JS 錯誤', { name: 'Error', message: `${e.message} @${(e.filename || '').split('/').pop()}:${e.lineno}` }));
+window.addEventListener('unhandledrejection', e => logErr('未處理的 Promise 錯誤', e.reason));
+
+const UA = navigator.userAgent;
+function uaSummary() {
+  let os = '未知系統', br = '未知瀏覽器', m;
+  if ((m = UA.match(/(iPhone|iPad|iPod).*?OS (\d+)[_.](\d+)/))) os = `iOS ${m[2]}.${m[3]}${m[1] === 'iPhone' ? '' : ' (' + m[1] + ')'}`;
+  else if (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1) os = 'iPadOS（桌面版 UA）';
+  else if ((m = UA.match(/Android (\d+(?:\.\d+)?)/))) { const md = UA.match(/;\s*([^;)]+?)\s+Build/); os = 'Android ' + m[1] + (md ? ` (${md[1]})` : ''); }
+  else if (/Windows/.test(UA)) os = 'Windows'; else if (/Macintosh/.test(UA)) os = 'macOS'; else if (/Linux/.test(UA)) os = 'Linux';
+  if ((m = UA.match(/CriOS\/(\d+)/))) br = 'Chrome(iOS) ' + m[1];
+  else if ((m = UA.match(/FxiOS\/(\d+)/))) br = 'Firefox(iOS) ' + m[1];
+  else if ((m = UA.match(/EdgiOS?\/(\d+)|Edg\/(\d+)/))) br = 'Edge ' + (m[1] || m[2]);
+  else if ((m = UA.match(/SamsungBrowser\/(\d+)/))) br = 'Samsung Internet ' + m[1];
+  else if ((m = UA.match(/(?:HeadlessChrome|Chrome)\/(\d+)/))) br = (/Headless/.test(UA) ? 'HeadlessChrome ' : 'Chrome ') + m[1];
+  else if ((m = UA.match(/Version\/(\d+(?:\.\d+)?).*Safari/))) br = 'Safari ' + m[1];
+  return `${os} · ${br}`;
+}
+function inAppName() {
+  if (/\bLine\//i.test(UA)) return 'LINE';
+  if (/Instagram/i.test(UA)) return 'Instagram';
+  if (/FBAN|FBAV|FB_IAB|FBIOS|FB4A/i.test(UA)) return 'Facebook';
+  if (/MicroMessenger/i.test(UA)) return '微信';
+  if (/musical_ly|TikTok|BytedanceWebview/i.test(UA)) return 'TikTok';
+  return '';
+}
+const MIMES = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+function mimeSupport() {
+  return MIMES.map(m => { let ok = false; try { ok = !!(window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)); } catch (e) {} return { m, ok }; });
+}
+function pickMime() { const s = mimeSupport().find(x => x.ok); return s ? s.m : ''; }
+function canShareFiles() {
+  try { return !!(navigator.canShare && navigator.canShare({ files: [new File([new Blob(['x'])], 't.mp4', { type: 'video/mp4' })] })); } catch (e) { return false; }
+}
+function hasWebGL() { try { const x = document.createElement('canvas'); return !!(x.getContext('webgl') || x.getContext('experimental-webgl')); } catch (e) { return false; } }
+
+const yn = b => (b ? '是' : '否');
+function diagText() {
+  const L = [];
+  L.push('=== 濾鏡錄影測試 261112-proto ===');
+  L.push('時間: ' + new Date().toString());
+  L.push('頁面: ' + location.origin + location.pathname);
+  L.push('UA 摘要: ' + uaSummary());
+  L.push('UA 全文: ' + UA);
+  L.push('內建瀏覽器(LINE/IG/FB…): ' + (inAppName() || '否'));
+  L.push(`HTTPS安全環境: ${yn(window.isSecureContext)} | mediaDevices: ${yn(navigator.mediaDevices)} | MediaRecorder: ${yn(window.MediaRecorder)} | canvas.captureStream: ${yn(c2.captureStream)} | AudioContext: ${yn(window.AudioContext || window.webkitAudioContext)} | 可分享檔案(canShare): ${yn(canShareFiles())} | WebGL: ${yn(hasWebGL())}`);
+  L.push('MIME 偵測: ' + mimeSupport().map(x => (x.ok ? '✔' : '✘') + ' ' + x.m).join('  /  '));
+  L.push('選用 mimeType(預設會選第一個支援的): ' + (pickMime() || '（無，將交給瀏覽器決定）'));
+  L.push('相機實際取得: ' + (D.cam ? D.cam : '（尚未啟動）'));
+  L.push('麥克風實際設定: ' + (D.audioSettings || '（尚未啟動）') + (D.noMic ? '  ⚠ 沒有麥克風，錄影將無聲音' : ''));
+  L.push('錄影前麥克風最大音量: ' + (D.preDb == null ? '（尚無）' : D.preDb.toFixed(0) + ' dB'));
+  L.push(`目前渲染模式: ${mode === 'gl' ? 'WebGL 測試' : '2D'} | webglcontextlost 次數: ${D.glLost} / restored: ${D.glRestored} | MediaRecorder error 次數: ${D.recErrors}`);
+  L.push('');
+  L.push(`--- 錄影紀錄（共 ${runs.length} 筆）---`);
+  runs.forEach(r => {
+    L.push(`#${r.n} [濾鏡:${r.filter} / 渲染:${r.render}] mime=${r.mime || '(瀏覽器預設:' + (r.realMime || '?') + ')'}`);
+    L.push(`    時長=${r.dur != null ? r.dur.toFixed(1) + 's' : '錄影中…'} 大小=${r.size != null ? fmtSize(r.size) + (r.dur ? ` (約 ${(r.size / 1024 / r.dur).toFixed(0)} KB/s)` : '') : '-'} 停止原因=${r.stop || '-'}`);
+    L.push(`    繪製幀數/秒: 平均=${r.avgFps != null ? r.avgFps.toFixed(1) : '-'} 最低=${r.minFps != null ? r.minFps.toFixed(0) : '(不足 1 秒)'}（畫到 canvas 的幀率，不等於編碼後幀率）`);
+    L.push(`    stream 音軌=${r.audioTracks || '-'} | 檔案內音軌=${r.audioFile || '檢查中…'} | 錄影中麥克風峰值=${r.peakDb != null && r.peakDb > -99 ? r.peakDb.toFixed(0) + ' dB' : '無/極低'}`);
+    L.push(`    預覽畫面亮度(播放時取樣，0-255，<3 疑似黑畫面)=${r.bright ? '最近 ' + r.bright.last.toFixed(0) + ' / 最高 ' + r.bright.max.toFixed(0) : '尚未取樣(沒按過播放)'} | 錄影器錯誤=${r.recErr || '無'}${r.warn ? ' | ⚠ ' + r.warn : ''}`);
+  });
+  L.push('');
+  L.push('--- 事件／錯誤紀錄（✘=錯誤）---');
+  L.push(evs.length ? evs.join('\n') : '（無）');
+  return L.join('\n');
+}
+const fmtSize = b => (b >= 1048576 ? (b / 1048576).toFixed(2) + ' MB' : (b / 1024).toFixed(0) + ' KB');
+
+/* ================= 畫面切換 / 小工具 ================= */
+let screen = 'home', toastT = 0;
+function showScreen(n) {
+  screen = n;
+  $('home').classList.toggle('on', n === 'home');
+  $('cam').classList.toggle('on', n === 'cam');
+  $('result').classList.toggle('on', n === 'result');
+  window.scrollTo(0, 0);
+}
+function toast(m, ms = 4000) { const t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', ms); }
+let sheetTimer = 0;
+function openSheet() { $('sheet').classList.add('on'); const f = () => { $('diag').textContent = diagText(); }; f(); sheetTimer = setInterval(f, 700); }
+function closeSheet() { $('sheet').classList.remove('on'); clearInterval(sheetTimer); }
+$('homeInfo').onclick = $('camInfo').onclick = $('resInfoBtn').onclick = openSheet;
+$('closeSheet').onclick = closeSheet;
+$('copy').onclick = async () => {
+  const txt = diagText(); let ok = false;
+  try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) {
+    try { const ta = document.createElement('textarea'); ta.value = txt; ta.style.cssText = 'position:fixed;top:0;opacity:0'; document.body.appendChild(ta); ta.focus(); ta.select(); ok = document.execCommand('copy'); ta.remove(); } catch (e2) {}
+  }
+  const b = $('copy'); b.textContent = ok ? '✔ 已複製，請貼回 LINE/訊息' : '複製失敗：請長按下方文字手動全選複製';
+  setTimeout(() => b.textContent = '一鍵複製', 3500);
+};
+
+/* ================= 首頁：環境檢查 ================= */
+const inapp = inAppName();
+if (inapp) {
+  const b = $('inapp'); b.hidden = false;
+  b.innerHTML = `請點右上角 ⋯<br>改用 Safari 或 Chrome 開啟<small>偵測到你正在 ${inapp} 內建瀏覽器，相機/麥克風/錄影常被限制，測試結果不準。（仍可按「開始」試試，但請在回報時註明）</small>`;
+  logEv('偵測到內建瀏覽器: ' + inapp);
+}
+(function compat() {
+  const p = [];
+  if (!window.isSecureContext) p.push('此頁面不是 HTTPS 安全環境，瀏覽器會禁止使用相機。請確認網址以 https:// 開頭。');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) p.push('這個瀏覽器不支援 getUserMedia（無法使用相機）。請改用較新版 Safari（iOS 14.3+）或 Chrome。');
+  if (!window.MediaRecorder) p.push('這個瀏覽器不支援 MediaRecorder（無法錄影）。iPhone 需 iOS 14.3 以上。');
+  if (!c2.captureStream) p.push('這個瀏覽器不支援 canvas.captureStream。');
+  if (p.length) { const b = $('compat'); b.hidden = false; b.innerHTML = '<h3>⚠ 相容性問題</h3><ul>' + p.map(x => `<li>${x}</li>`).join('') + '</ul>'; p.forEach(x => logEv('相容性: ' + x)); }
+})();
+
+/* ================= 相機 / 麥克風 ================= */
+let stream = null, facing = 'environment', actx = null, asrc = null, analyser = null, abuf = null;
+let W = 720, H = 1280, vwNow = 0, vhNow = 0;
+
+function ensureAudioCtx() { // 必須在使用者點擊的同一個事件內建立，iOS 才允許
+  const AC = window.AudioContext || window.webkitAudioContext;
+  try { if (AC && !actx) actx = new AC(); if (actx && actx.state !== 'running') actx.resume().catch(() => {}); } catch (e) { logErr('AudioContext 建立失敗', e); }
+}
+document.addEventListener('pointerdown', () => { if (actx && actx.state !== 'running') actx.resume().catch(() => {}); }, true);
+
+async function getMedia() {
+  const aud = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+  const vid = { facingMode: { ideal: facing }, width: { ideal: 720 }, height: { ideal: 1280 }, frameRate: { ideal: 30 } };
+  const tries = [
+    ['完整設定', { video: vid, audio: aud }],
+    ['簡化相機設定', { video: { facingMode: { ideal: facing } }, audio: aud }],
+    ['僅相機（無麥克風）', { video: { facingMode: { ideal: facing } }, audio: false }]
+  ];
+  let last;
+  for (const [label, c] of tries) {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia(c);
+      logEv('getUserMedia 成功：' + label);
+      D.noMic = !c.audio;
+      if (D.noMic) toast('⚠ 沒取得麥克風，之後的錄影不會有聲音', 6000);
+      return s;
+    } catch (e) {
+      last = e; logErr(`getUserMedia 失敗（${label}）`, e);
+      if (e.name === 'NotAllowedError' || e.name === 'SecurityError') throw e; // 被拒絕就不要再換參數重試
+    }
+  }
+  throw last;
+}
+function stopCamera() {
+  if (stream) stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+  stream = null; v.srcObject = null;
+  if (asrc) { try { asrc.disconnect(); } catch (e) {} asrc = null; } analyser = null;
+}
+async function startCamera() {
+  stopCamera();
+  stream = await getMedia();
+  v.srcObject = stream;
+  try { await v.play(); } catch (e) { logErr('video.play()', e); }
+  for (let i = 0; i < 50 && !v.videoWidth; i++) await new Promise(r => setTimeout(r, 100));
+  if (!v.videoWidth) throw Object.assign(new Error('相機有開啟但 5 秒內沒有畫面'), { name: 'NoVideoError' });
+  const vt = stream.getVideoTracks()[0], st = vt.getSettings ? vt.getSettings() : {};
+  D.cam = `${st.width || v.videoWidth}x${st.height || v.videoHeight} @${st.frameRate ? st.frameRate.toFixed(0) : '?'}fps，facingMode=${st.facingMode || '?'}（要求:${facing}，ideal 720x1280）`;
+  vt.addEventListener('ended', () => logEv('✘ 相機 track ended（被系統中斷？）'));
+  const at = stream.getAudioTracks()[0];
+  if (at) {
+    const s = at.getSettings ? at.getSettings() : {};
+    D.audioSettings = `echoCancellation=${s.echoCancellation} noiseSuppression=${s.noiseSuppression} autoGainControl=${s.autoGainControl} sampleRate=${s.sampleRate} channels=${s.channelCount}（要求全部關閉）`;
+    at.addEventListener('ended', () => logEv('✘ 麥克風 track ended'));
+    if (actx) { try { asrc = actx.createMediaStreamSource(new MediaStream([at])); analyser = actx.createAnalyser(); analyser.fftSize = 1024; abuf = new Uint8Array(analyser.fftSize); asrc.connect(analyser); /* 不接 destination，避免回授 */ } catch (e) { logErr('音量表建立失敗', e); } }
+  } else D.audioSettings = '（沒有音軌）';
+  setupCanvas(true);
+  logEv('相機就緒: ' + D.cam);
+}
+function setupCanvas(force) {
+  const vw = v.videoWidth, vh = v.videoHeight;
+  if (!vw || (!force && vw === vwNow && vh === vhNow)) return;
+  vwNow = vw; vhNow = vh;
+  const s = Math.min(1, 1280 / Math.max(vw, vh), 720 / Math.min(vw, vh));
+  W = Math.max(2, Math.round(vw * s / 2) * 2); H = Math.max(2, Math.round(vh * s / 2) * 2);
+  c2.width = cg.width = W; c2.height = cg.height = H;
+  initFilters();
+  logEv(`畫布 ${W}x${H}（相機畫面 ${vw}x${vh}）`);
+}
+
+/* ================= 濾鏡（2D） ================= */
+const FONT = '"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif';
+let filter = 'none', mode = '2d';
+const S = {};  // 濾鏡狀態
+
+function mk(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+function initFilters() {
+  // 流星
+  S.stars = Array.from({ length: 36 }, () => ({ x: Math.random(), y: Math.random() * .6, r: .6 + Math.random() * 1.4, p: Math.random() * 6.28 }));
+  S.meteors = Array.from({ length: 5 }, (_, i) => ({ live: false, wait: i * .5 }));
+  // 烏雲
+  S.cw = Math.round(W / 2); S.ch = Math.round(H / 2);
+  S.cloud = mk(S.cw, S.ch); S.mask = mk(S.cw, S.ch); S.sun = mk(S.cw, S.ch);
+  S.cg = S.cloud.getContext('2d'); S.mg = S.mask.getContext('2d'); S.sg = S.sun.getContext('2d');
+  resetCloud();
+}
+function resetCloud() {
+  const { cw, ch, cg: g, mg } = S;
+  g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, cw, ch);
+  g.fillStyle = 'rgba(112,118,130,.62)'; g.fillRect(0, 0, cw, ch);
+  for (let i = 0; i < 70; i++) {
+    const x = Math.random() * cw, y = Math.random() * ch, r = cw * (.12 + Math.random() * .2), l = 150 + Math.random() * 60 | 0;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, `rgba(${l},${l + 4},${l + 12},.55)`); gr.addColorStop(1, `rgba(${l},${l + 4},${l + 12},0)`);
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+  }
+  mg.globalCompositeOperation = 'source-over'; mg.clearRect(0, 0, cw, ch);
+  S.sunDirty = true; S.touched = false; updateHint();
+}
+function brush(g, op, x, y, r) {
+  g.globalCompositeOperation = op;
+  const gr = g.createRadialGradient(x, y, r * .25, x, y, r);
+  gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r);
+}
+function wipeSeg(a, b) { // a,b 為 canvas 座標
+  const k = S.cw / W, r = S.cw * .15, d = Math.hypot(b[0] - a[0], b[1] - a[1]) * k, n = Math.max(1, Math.ceil(d / (r * .3)));
+  for (let i = 0; i <= n; i++) {
+    const x = (a[0] + (b[0] - a[0]) * i / n) * k, y = (a[1] + (b[1] - a[1]) * i / n) * k;
+    brush(S.cg, 'destination-out', x, y, r); brush(S.mg, 'source-over', x, y, r);
+  }
+  S.sunDirty = true;
+}
+function rebuildSun() {
+  const { cw, ch, sg: g } = S;
+  g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, cw, ch);
+  const x = cw * .72, y = ch * .2, r = cw * .85, gr = g.createRadialGradient(x, y, 0, x, y, r);
+  gr.addColorStop(0, 'rgba(255,248,210,1)'); gr.addColorStop(.08, 'rgba(255,232,150,.95)'); gr.addColorStop(.25, 'rgba(255,200,100,.55)'); gr.addColorStop(.6, 'rgba(255,170,70,.18)'); gr.addColorStop(1, 'rgba(255,170,70,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, cw, ch);
+  g.globalCompositeOperation = 'destination-in'; g.drawImage(S.mask, 0, 0);
+  g.globalCompositeOperation = 'source-over'; S.sunDirty = false;
+}
+
+// 紐約穿梭：e=emoji, y=高度比例, dir=方向, spd=每秒走過畫面寬度比例, sz=字大小比例, flip=emoji 預設朝左
+const TRAFFIC = [
+  { e: '🚕', y: .945, dir: 1, spd: .2, sz: .105, off: 0, flip: 1 }, { e: '🚗', y: .945, dir: -1, spd: .15, sz: .1, off: .5, flip: 1 },
+  { e: '🚕', y: .945, dir: -1, spd: .24, sz: .09, off: .15, flip: 1 }, { e: '🚶', y: .885, dir: 1, spd: .05, sz: .085, off: .3, bob: 1 },
+  { e: '🚶', y: .885, dir: -1, spd: .04, sz: .08, off: .7, bob: 1 }, { e: '✈️', y: .065, dir: 1, spd: .1, sz: .095, off: .2 },
+  { e: '🐦', y: .125, dir: -1, spd: .17, sz: .065, off: .1, flip: 1, bob: 1 }, { e: '🐦', y: .155, dir: -1, spd: .21, sz: .05, off: .65, flip: 1, bob: 1 },
+  { e: '🚁', y: .1, dir: -1, spd: .07, sz: .08, off: .45, flip: 1 }
+];
+function fNyc(g, t) {
+  g.fillStyle = 'rgba(30,70,130,.16)'; g.fillRect(0, 0, W, H * .19);           // 上方天空帶
+  g.fillStyle = 'rgba(15,15,22,.5)'; g.fillRect(0, H * .86, W, H * .14);       // 下方路面帶
+  g.fillStyle = 'rgba(255,255,255,.35)'; const dw = W * .06; for (let x = -((t * W * .05) % (dw * 2)); x < W; x += dw * 2) g.fillRect(x, H * .915, dw, 3);
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const o of TRAFFIC) {
+    const sz = W * o.sz, per = 1 + 2 * o.sz;
+    let p = (t * o.spd * o.dir + o.off) % per; if (p < 0) p += per;
+    const x = (p - o.sz) * W, y = H * o.y + (o.bob ? Math.sin(t * 6 + o.off * 9) * sz * .12 : 0);
+    g.font = `${sz}px ${FONT}`;
+    g.save(); g.translate(x, y); if (o.flip && o.dir > 0) g.scale(-1, 1); g.fillText(o.e, 0, 0); g.restore();
+  }
+}
+function spawnMeteor(m) {
+  const sp = W * (.9 + Math.random() * .8);
+  m.x = W * (.35 + Math.random() * .85); m.y = -H * .05 + Math.random() * H * .35;
+  m.vx = -sp * .87; m.vy = sp * .5; m.len = W * (.18 + Math.random() * .14); m.w = W * (.003 + Math.random() * .003); m.live = true;
+}
+function fMeteor(g, t, dt) {
+  g.fillStyle = 'rgba(4,6,22,.62)'; g.fillRect(0, 0, W, H);
+  for (const s of S.stars) { g.fillStyle = `rgba(255,255,255,${.35 + .4 * Math.sin(t * 2 + s.p)})`; g.beginPath(); g.arc(s.x * W, s.y * H, s.r * W / 720, 0, 7); g.fill(); }
+  g.lineCap = 'round';
+  for (const m of S.meteors) {
+    if (!m.live) { m.wait -= dt; if (m.wait <= 0) spawnMeteor(m); continue; }
+    m.x += m.vx * dt; m.y += m.vy * dt;
+    const k = Math.hypot(m.vx, m.vy), tx = m.x - m.vx / k * m.len, ty = m.y - m.vy / k * m.len;
+    const fade = Math.max(0, Math.min(1, (H * .62 - m.y) / (H * .2)));
+    if (m.x < -m.len || fade <= 0) { m.live = false; m.wait = Math.random() * 1.4; continue; }
+    const gr = g.createLinearGradient(m.x, m.y, tx, ty);
+    gr.addColorStop(0, `rgba(255,255,255,${fade})`); gr.addColorStop(.3, `rgba(170,200,255,${.6 * fade})`); gr.addColorStop(1, 'rgba(120,160,255,0)');
+    g.strokeStyle = gr; g.lineWidth = m.w; g.beginPath(); g.moveTo(m.x, m.y); g.lineTo(tx, ty); g.stroke();
+    g.fillStyle = `rgba(255,255,255,${fade})`; g.beginPath(); g.arc(m.x, m.y, m.w * .9, 0, 7); g.fill();
+  }
+}
+function fCloud(g) {
+  if (S.sunDirty) rebuildSun();
+  g.globalCompositeOperation = 'screen'; g.drawImage(S.sun, 0, 0, W, H);
+  g.globalCompositeOperation = 'source-over'; g.drawImage(S.cloud, 0, 0, W, H);
+}
+const FILTERS = { none: null, nyc: fNyc, meteor: fMeteor, cloud: fCloud };
+const FNAME = { none: '無濾鏡', nyc: '紐約穿梭', meteor: '流星', cloud: '抹開烏雲' };
+
+function render2D(now, dt) {
+  const vw = v.videoWidth, vh = v.videoHeight;
+  if (vw) { const s = Math.max(W / vw, H / vh), sw = W / s, sh = H / s; ctx.drawImage(v, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, W, H); }
+  const f = FILTERS[filter]; if (f) f(ctx, now / 1000, dt);
+}
+
+/* ================= WebGL 測試模式 ================= */
+let gl = null, glProg = null, glU = {};
+const VS = 'attribute vec2 p;varying vec2 uv;void main(){uv=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}';
+const FS = 'precision mediump float;uniform sampler2D t;uniform vec2 s;uniform vec2 o;varying vec2 uv;' +
+  'void main(){vec4 c=texture2D(t,o+uv*s);float d=distance(uv,vec2(.5));float vg=smoothstep(.85,.25,d);gl_FragColor=vec4(c.rgb*mix(.25,1.,vg),1.);}';
+function initGL() {
+  gl = cg.getContext('webgl', { alpha: false, antialias: false }) || cg.getContext('experimental-webgl');
+  if (!gl) throw new Error('無法建立 WebGL context');
+  const sh = (ty, src) => { const o = gl.createShader(ty); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error('shader 編譯失敗: ' + gl.getShaderInfoLog(o)); return o; };
+  glProg = gl.createProgram(); gl.attachShader(glProg, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(glProg, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(glProg);
+  if (!gl.getProgramParameter(glProg, gl.LINK_STATUS)) throw new Error('shader link 失敗');
+  gl.useProgram(glProg);
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(glProg, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  glU = { s: gl.getUniformLocation(glProg, 's'), o: gl.getUniformLocation(glProg, 'o') };
+  logEv('WebGL 初始化成功: ' + (gl.getParameter(gl.VERSION) || ''));
+}
+cg.addEventListener('webglcontextlost', e => { e.preventDefault(); D.glLost++; logEv('✘ webglcontextlost（WebGL 畫布遺失）'); if (rec) markWarn('錄影中發生 webglcontextlost'); });
+cg.addEventListener('webglcontextrestored', () => { D.glRestored++; logEv('webglcontextrestored'); try { initGL(); } catch (e) { logErr('WebGL 還原後重建失敗', e); } });
+function renderGL() {
+  if (!gl || gl.isContextLost()) return;
+  const vw = v.videoWidth, vh = v.videoHeight; if (!vw) return;
+  gl.viewport(0, 0, W, H);
+  const ca = W / H, va = vw / vh; let sx = 1, sy = 1; if (va > ca) sx = ca / va; else sy = va / ca;
+  gl.uniform2f(glU.s, sx, sy); gl.uniform2f(glU.o, (1 - sx) / 2, (1 - sy) / 2);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+const activeCanvas = () => (mode === 'gl' ? cg : c2);
+
+/* ================= 主繪製迴圈 ================= */
+let raf = 0, looping = false, lastDraw = 0, errCnt = 0, fpsShowN = 0, fpsShowT = 0;
+let rec = null, recCtl = null; // recCtl: 錄影控制資訊
+function startLoop() { if (looping) return; looping = true; lastDraw = performance.now(); raf = requestAnimationFrame(loop); }
+function stopLoop() { looping = false; cancelAnimationFrame(raf); }
+function loop(now) {
+  if (!looping) return;
+  raf = requestAnimationFrame(loop);
+  if (now - lastDraw < 29) return;               // 限制約 30fps
+  const dt = Math.min(.1, (now - lastDraw) / 1000); lastDraw = now;
+  if (!rec) setupCanvas(false);                  // 錄影中不改畫布大小（避免編碼器出問題）
+  try { if (mode === 'gl') renderGL(); else render2D(now, dt); }
+  catch (e) { if (errCnt++ < 5) logErr('繪製錯誤', e); }
+  meter();
+  if (rec && recCtl) { recCtl.n++; recCtl.total++; if (now - recCtl.bt >= 1000) { recCtl.samples.push(recCtl.n * 1000 / (now - recCtl.bt)); recCtl.n = 0; recCtl.bt = now; } }
+  fpsShowN++; if (now - fpsShowT >= 1000) { $('fps').textContent = `繪製 ${(fpsShowN * 1000 / (now - fpsShowT)).toFixed(0)} fps · ${W}x${H} · ${mode === 'gl' ? 'WebGL' : '2D'}`; fpsShowN = 0; fpsShowT = now; }
+}
+function meter() {
+  if (!analyser) { $('meterTxt').textContent = D.noMic ? '🎤 無麥克風' : '🎤 —'; return; }
+  analyser.getByteTimeDomainData(abuf);
+  let s = 0; for (let i = 0; i < abuf.length; i++) { const x = (abuf[i] - 128) / 128; s += x * x; }
+  const rms = Math.sqrt(s / abuf.length), db = rms > 1e-5 ? 20 * Math.log10(rms) : -100;
+  $('meterBar').style.width = Math.max(0, Math.min(100, (db + 60) / 60 * 100)) + '%';
+  $('meterTxt').textContent = (actx && actx.state !== 'running') ? '🎤 未啟動(點畫面)' : '🎤 ' + (db > -99 ? db.toFixed(0) + ' dB' : '靜音');
+  if (rec && recCtl) recCtl.peak = Math.max(recCtl.peak, db); else D.preDb = Math.max(D.preDb == null ? -100 : D.preDb, db);
+}
+
+/* ================= 濾鏡 / 模式切換 / 手指抹開 ================= */
+function updateHint() { $('hint').hidden = !(filter === 'cloud' && mode === '2d' && !S.touched); $('resetCloud').style.display = filter === 'cloud' ? 'block' : 'none'; }
+$('filters').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  filter = b.dataset.f;
+  document.querySelectorAll('#filters button').forEach(x => x.classList.toggle('on', x === b));
+  logEv('切換濾鏡: ' + FNAME[filter] + (rec ? '（錄影中）' : '')); updateHint();
+});
+$('resetCloud').onclick = () => resetCloud();
+function setMode(m) {
+  if (m === 'gl' && !gl) { try { initGL(); } catch (e) { logErr('WebGL 不可用，維持 2D', e); toast('這支手機無法使用 WebGL：' + e.message, 5000); return; } }
+  mode = m;
+  c2.style.display = m === 'gl' ? 'none' : 'block'; cg.style.display = m === 'gl' ? 'block' : 'none';
+  $('modeNote').hidden = m !== 'gl';
+  document.querySelectorAll('#modeSeg button').forEach(x => x.classList.toggle('on', x.dataset.m === m));
+  logEv('渲染模式: ' + (m === 'gl' ? 'WebGL 測試' : '2D')); updateHint();
+}
+$('modeSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b && !rec) setMode(b.dataset.m); });
+
+const lastPt = new Map();
+function toCanvasXY(e) {
+  const r = activeCanvas().getBoundingClientRect(), sc = Math.min(r.width / W, r.height / H);
+  return [(e.clientX - r.left - (r.width - W * sc) / 2) / sc, (e.clientY - r.top - (r.height - H * sc) / 2) / sc];
+}
+stage.addEventListener('pointerdown', e => {
+  e.preventDefault(); if (filter !== 'cloud' || mode !== '2d') return;
+  try { stage.setPointerCapture(e.pointerId); } catch (x) {}
+  const p = toCanvasXY(e); lastPt.set(e.pointerId, p); S.touched = true; updateHint(); wipeSeg(p, p);
+});
+stage.addEventListener('pointermove', e => {
+  if (!lastPt.has(e.pointerId)) return; e.preventDefault();
+  const p = toCanvasXY(e); wipeSeg(lastPt.get(e.pointerId), p); lastPt.set(e.pointerId, p);
+});
+['pointerup', 'pointercancel'].forEach(n => stage.addEventListener(n, e => lastPt.delete(e.pointerId)));
+// 避免頁面被捲動 / 縮放 / 長按選單
+$('cam').addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+stage.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+['gesturestart', 'gesturechange', 'gestureend'].forEach(n => document.addEventListener(n, e => e.preventDefault()));
+$('cam').addEventListener('contextmenu', e => e.preventDefault());
+
+$('flip').onclick = async () => {
+  if (rec) return;
+  facing = facing === 'environment' ? 'user' : 'environment';
+  $('flip').disabled = true;
+  try { await startCamera(); toast('已切換：' + (facing === 'user' ? '前鏡頭' : '後鏡頭')); }
+  catch (e) { logErr('切換鏡頭失敗', e); facing = facing === 'environment' ? 'user' : 'environment'; toast('切換失敗：' + errStr(e)); try { await startCamera(); } catch (x) { logErr('還原鏡頭失敗', x); } }
+  $('flip').disabled = false;
+};
+
+/* ================= 錄影 ================= */
+let blob = null, blobUrl = '', curRun = null, tick = 0, runN = 0;
+function setLocked(b) { // 錄影中鎖住：切換鏡頭、渲染模式、（濾鏡仍可切換）
+  $('flip').disabled = b; document.querySelectorAll('#modeSeg button').forEach(x => x.disabled = b);
+  $('camInfo').disabled = b;
+  window.onbeforeunload = b ? (e => { e.preventDefault(); e.returnValue = ''; return ''; }) : null;
+}
+function markWarn(m) { if (curRun) curRun.warn = (curRun.warn ? curRun.warn + '；' : '') + m; }
+
+function startRec() {
+  if (rec || !stream) return;
+  if (!window.MediaRecorder) { toast('此瀏覽器不支援 MediaRecorder'); return; }
+  const run = curRun = { n: ++runN, filter: FNAME[filter], render: mode === 'gl' ? 'WebGL 測試' : '2D', mime: pickMime() };
+  runs.push(run);
+  let recStream;
+  try {
+    const cs = activeCanvas().captureStream(30);
+    recStream = new MediaStream([...cs.getVideoTracks(), ...stream.getAudioTracks()]);
+  } catch (e) { logErr('canvas.captureStream 失敗', e); run.stop = '失敗: captureStream'; run.recErr = errStr(e); toast('無法錄影：' + errStr(e), 7000); return; }
+  const base = run.mime ? { mimeType: run.mime } : {};
+  try { rec = new MediaRecorder(recStream, { ...base, videoBitsPerSecond: 2500000, audioBitsPerSecond: 128000 }); }
+  catch (e) {
+    logErr('MediaRecorder 建立失敗（帶位元率），改用基本參數重試', e);
+    try { rec = new MediaRecorder(recStream, base); } catch (e2) { logErr('MediaRecorder 建立失敗', e2); run.stop = '失敗: 無法建立 MediaRecorder'; run.recErr = errStr(e2); toast('無法建立錄影器：' + errStr(e2), 7000); return; }
+  }
+  run.realMime = rec.mimeType;
+  const chunks = [];
+  recCtl = { chunks, n: 0, total: 0, samples: [], bt: performance.now(), t0: performance.now(), peak: -100, reason: '', stream: recStream, stopped: false };
+  rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  rec.onerror = e => { D.recErrors++; run.recErr = errStr(e.error || e); logErr('MediaRecorder error', e.error || e); };
+  const myRec = rec, myCtl = recCtl;
+  rec.onstop = () => finishRec(myRec, myCtl, run);
+  try { rec.start(1000); } catch (e) { logErr('rec.start 失敗', e); run.stop = '失敗: start'; run.recErr = errStr(e); rec = null; recCtl = null; toast('開始錄影失敗：' + errStr(e), 7000); return; }
+  logEv(`開始錄影 #${run.n} mime=${run.mime || rec.mimeType} 濾鏡=${run.filter} 渲染=${run.render}`);
+  setLocked(true);
+  $('recBtn').classList.add('rec'); $('timer').classList.add('rec');
+  tick = setInterval(() => {
+    const el = (performance.now() - myCtl.t0) / 1000;
+    $('timer').textContent = '● ' + fmtT(el) + ' / 0:' + MAX_SEC;
+    $('recBtn').textContent = '■ 停止錄影';
+    if (el >= MAX_SEC) stopRec('30 秒上限自動停止');
+  }, 200);
+  $('timer').textContent = '● 0:00 / 0:' + MAX_SEC; $('recBtn').textContent = '■ 停止錄影';
+}
+const fmtT = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+function stopRec(reason) {
+  if (!rec || !recCtl || recCtl.stopped) return;
+  recCtl.stopped = true; recCtl.reason = reason; clearInterval(tick);
+  // 在 stop 之前先記下音軌狀態
+  recCtl.audioTracks = recCtl.stream.getAudioTracks().map(t => `${t.readyState}${t.muted ? '/muted' : ''}${t.enabled ? '' : '/disabled'}`).join(',') || '無音軌';
+  recCtl.dur = (performance.now() - recCtl.t0) / 1000;
+  logEv(`停止錄影（${reason}）`);
+  try { if (rec.state !== 'inactive') rec.stop(); else finishRec(rec, recCtl, curRun); } catch (e) { logErr('rec.stop 失敗', e); finishRec(rec, recCtl, curRun); }
+}
+let finished = new WeakSet();
+function finishRec(r, ctl, run) {
+  if (finished.has(ctl)) return; finished.add(ctl);
+  rec = null; recCtl = null; setLocked(false); clearInterval(tick);
+  $('recBtn').classList.remove('rec'); $('timer').classList.remove('rec'); $('timer').textContent = '待機'; $('recBtn').textContent = '● 開始錄影（最長 30 秒）';
+  const type = r.mimeType || run.mime || 'video/webm';
+  blob = new Blob(ctl.chunks, { type });
+  run.dur = ctl.dur; run.size = blob.size; run.stop = ctl.reason || '未知'; run.audioTracks = ctl.audioTracks;
+  run.avgFps = ctl.dur > 0 ? ctl.total / ctl.dur : null;
+  run.minFps = ctl.samples.length ? Math.min(...ctl.samples) : null;
+  run.peakDb = ctl.peak; run.realMime = type;
+  if (blob.size === 0) { run.warn = '檔案是空的（0 bytes）'; logEv('✘ 錄出空檔案'); }
+  else if (blob.size / 1024 / Math.max(.5, ctl.dur) < 5) markWarn('檔案偏小（<5 KB/s），畫面可能靜止或編碼異常');
+  if (run.avgFps != null && run.avgFps < 20) markWarn('平均繪製幀率偏低（<20）');
+  if (/切換|visibility/.test(ctl.reason)) markWarn('錄影因離開頁面被中斷，僅保留已錄部分');
+  logEv(`錄影完成 #${run.n}: ${fmtSize(blob.size)} / ${ctl.dur.toFixed(1)}s / 平均 ${run.avgFps ? run.avgFps.toFixed(1) : '-'}fps`);
+  stopLoop(); showScreen('result'); showResult(run);
+  checkAudioInFile(blob, run);
+}
+
+/* ================= 結果頁 ================= */
+function showResult(run) {
+  if (blobUrl) URL.revokeObjectURL(blobUrl);
+  blobUrl = URL.createObjectURL(blob);
+  const pv = $('pv'); pv.onloadeddata = pv.onseeked = null; pv.ontimeupdate = sampleBright; pv.src = blobUrl; pv.load();
+  $('saveMsg').textContent = ''; $('saveBtn').disabled = blob.size === 0;
+  const ri = $('resInfo'); const tick2 = () => { ri.innerHTML = resHtml(run); };
+  tick2(); clearInterval(showResult.t); showResult.t = setInterval(() => { if (screen !== 'result') clearInterval(showResult.t); else tick2(); }, 800);
+}
+function resHtml(r) {
+  const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const l = [`濾鏡：${r.filter}（${r.render}）`, `格式：${esc(r.realMime || r.mime || '?')}`, `時長：${r.dur.toFixed(1)} 秒　大小：${fmtSize(r.size)}`,
+    `繪製幀率：平均 ${r.avgFps != null ? r.avgFps.toFixed(1) : '-'}，最低 ${r.minFps != null ? r.minFps.toFixed(0) : '-'}`,
+    `停止原因：${esc(r.stop)}`, `麥克風音軌：${esc(r.audioTracks)}　檔內音軌：${esc(r.audioFile || '檢查中…')}`];
+  let h = l.join('\n');
+  if (r.warn) h += `\n<span class="warn">⚠ ${esc(r.warn)}</span>`;
+  h += `\n<span class="mut">請按播放確認：畫面不是黑的、有聲音、拍手時聲音和畫面對得上。</span>`;
+  return h;
+}
+let bctx = null;
+function sampleBright() {
+  const pv = $('pv'), run = curRun; if (!run || pv.readyState < 2 || !pv.videoWidth) return;
+  try {
+    bctx = bctx || mk(24, 24).getContext('2d', { willReadFrequently: true }); bctx.drawImage(pv, 0, 0, 24, 24);
+    const d = bctx.getImageData(0, 0, 24, 24).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += .299 * d[i] + .587 * d[i + 1] + .114 * d[i + 2];
+    const b = s / (d.length / 4); run.bright = { last: b, max: Math.max(b, run.bright ? run.bright.max : 0) };
+  } catch (e) { if (!run.brightErr) { run.brightErr = 1; logErr('預覽亮度取樣失敗', e); } }
+}
+async function checkAudioInFile(bl, run) {
+  const AC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  if (!AC) { run.audioFile = '無法檢查（瀏覽器不支援 OfflineAudioContext），請試播確認'; return; }
+  if (!bl.size) { run.audioFile = '檔案為空'; return; }
+  try {
+    const buf = await bl.arrayBuffer(), oc = new AC(1, 1, 44100);
+    const ab = await Promise.race([new Promise((res, rej) => { const p = oc.decodeAudioData(buf, res, rej); if (p && p.catch) p.catch(rej); }), new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('逾時'), { name: 'Timeout' })), 20000))]);
+    let pk = 0; for (let c = 0; c < ab.numberOfChannels; c++) { const d = ab.getChannelData(c); for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > pk) pk = a; } }
+    const db = pk > 0 ? 20 * Math.log10(pk) : -100;
+    run.audioFile = `有（${ab.numberOfChannels}ch，${ab.duration.toFixed(1)}s，峰值 ${db > -99 ? db.toFixed(0) + ' dB' : '0'}）${db < -60 ? ' ⚠ 幾乎靜音' : ''}`;
+    if (db < -60) markWarn('檔內音軌幾乎靜音');
+  } catch (e) { run.audioFile = `解碼失敗(${e.name})：可能沒有音軌，或此瀏覽器無法解碼這種檔案；請以試播有無聲音為準`; markWarn('無法在檔內確認音軌'); logErr('檔內音軌檢查', e); }
+}
+
+$('saveBtn').onclick = async () => {
+  if (!blob || !blob.size) return;
+  const base = (blob.type || 'video/webm').split(';')[0], ext = base.includes('mp4') ? 'mp4' : 'webm';
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const name = `filter-test-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.${ext}`;
+  const msg = $('saveMsg'); let file = null;
+  try { file = new File([blob], name, { type: base }); } catch (e) { logErr('建立 File 失敗', e); }
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: '濾鏡錄影測試' }); msg.textContent = '已開啟分享選單。iPhone 請選「儲存影片」；Android 請選相簿/相片。'; logEv('navigator.share 完成'); return; }
+    catch (e) { if (e.name === 'AbortError') { msg.textContent = '你取消了分享。'; logEv('使用者取消分享'); return; } logErr('分享失敗，改用下載', e); }
+  } else logEv('此瀏覽器不能分享檔案，改用下載');
+  try { const a = document.createElement('a'); a.href = blobUrl; a.download = name; document.body.appendChild(a); a.click(); a.remove(); msg.textContent = `已觸發下載（${name}）。iPhone 會存到「檔案」App、不是相簿；Android 請看「下載」。這代表「直接存相簿」在此瀏覽器不可用，請回報。`; logEv('用 <a download> 下載: ' + name); }
+  catch (e) { logErr('下載失敗', e); msg.textContent = '下載失敗：' + errStr(e); }
+};
+$('again').onclick = async () => {
+  clearInterval(showResult.t); $('pv').pause(); $('pv').removeAttribute('src'); $('pv').load();
+  if (blobUrl) { URL.revokeObjectURL(blobUrl); blobUrl = ''; } blob = null;
+  showScreen('cam'); await resumeCamera();
+};
+
+/* ================= 權限 / 錯誤說明 ================= */
+const HELP_PERM = `<ol><li><b>iPhone（Safari）</b>：點網址列左邊的「<b>AA</b>」→「網站設定」→ 相機、麥克風都改成「<b>允許</b>」→ 重新整理頁面。若找不到：到「設定」→「Safari」→「相機」「麥克風」改成「詢問」或「允許」。</li>
+<li><b>Android（Chrome）</b>：點網址列左邊的「<b>鎖頭／調整圖示</b>」→「權限」→ 相機、麥克風都改成「<b>允許</b>」→ 重新整理頁面。或：Chrome 右上 ⋮ →「設定」→「網站設定」→ 相機／麥克風。</li>
+<li>如果是在 LINE／IG／FB 裡開的，請先改用 Safari 或 Chrome 開啟。</li></ol>`;
+function explain(e) {
+  const n = e && e.name;
+  const M = {
+    NotAllowedError: ['相機或麥克風被拒絕', '你（或系統）拒絕了權限，所以拿不到影像。請依下面步驟重新允許：' + HELP_PERM],
+    SecurityError: ['安全性限制', '瀏覽器因安全性限制不給用相機（可能不是 HTTPS，或被內建瀏覽器擋下）。' + HELP_PERM],
+    NotFoundError: ['找不到相機或麥克風', '裝置上偵測不到相機／麥克風，或權限設定讓它看不見。請確認手機有相機、沒有被其他 App 佔用。' + HELP_PERM],
+    NotReadableError: ['相機無法讀取（可能被其他 App 佔用）', '請關閉正在使用相機的 App（視訊會議、其他相機 App、其他分頁），再按一次「開始」。若仍失敗請重啟瀏覽器或手機。'],
+    OverconstrainedError: ['相機不支援要求的設定', '這支手機的相機無法符合要求的條件。請回報「測試資訊」。'],
+    AbortError: ['相機啟動被中斷', '請再按一次「開始」。'],
+    NoVideoError: ['相機沒有畫面', '相機有開啟但一直沒有影像。請關掉其他使用相機的 App 後再試。'],
+    NotSupportedError: ['此瀏覽器/環境不支援這個相機功能', '多半是權限被系統層級封鎖，或瀏覽器不支援。請依下面步驟檢查權限，並改用 Safari／Chrome。' + HELP_PERM],
+    TypeError: ['相機參數錯誤', '請回報「測試資訊」。']
+  };
+  return M[n] || ['無法啟動相機', '未知錯誤，請回報「測試資訊」。'];
+}
+function showErr(e) {
+  const [t, h] = explain(e), b = $('errBox'); b.hidden = false;
+  b.innerHTML = `<h3>⚠ ${t}</h3><p style="margin:0 0 6px"><span class="mut">錯誤代碼：${(e && e.name) || '?'} — ${String((e && e.message) || '').replace(/</g, '&lt;')}</span></p>${h}<p class="mut" style="margin:6px 0 0">處理好後，請按上方「開始」再試一次。回報時請附上「測試資訊」。</p>`;
+  b.scrollIntoView({ block: 'center' }); logErr('相機啟動失敗', e);
+}
+
+/* ================= 啟動 / 前後景 ================= */
+$('start').onclick = async () => {
+  ensureAudioCtx();
+  $('errBox').hidden = true;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showErr({ name: 'SecurityError', message: '瀏覽器沒有 mediaDevices（多半是非 HTTPS 或瀏覽器太舊）' }); return; }
+  const b = $('start'); b.disabled = true; b.textContent = '啟動中…';
+  try { await startCamera(); showScreen('cam'); fpsShowT = performance.now(); startLoop(); }
+  catch (e) { showErr(e); stopCamera(); }
+  finally { b.disabled = false; b.textContent = '開始'; }
+};
+async function resumeCamera() {
+  if (actx && actx.state !== 'running') actx.resume().catch(() => {});
+  const dead = !stream || stream.getTracks().some(t => t.readyState !== 'live');
+  if (dead) {
+    logEv('相機 track 已失效，重新啟動');
+    try { await startCamera(); } catch (e) { logErr('重新啟動相機失敗', e); toast('相機被系統中斷，請回首頁重新按「開始」：' + errStr(e), 7000); showScreen('home'); showErr(e); return; }
+  } else { try { await v.play(); } catch (e) {} }
+  setupCanvas(false); startLoop();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    logEv('頁面進入背景（visibilitychange: hidden）');
+    if (rec) stopRec('離開頁面/切換 App/鎖螢幕（visibilitychange）');
+    stopLoop();
+  } else {
+    logEv('頁面回到前景');
+    if (screen === 'cam') resumeCamera();
+  }
+});
+window.addEventListener('pagehide', () => { if (rec) stopRec('pagehide'); });
+$('recBtn').onclick = () => { if (rec) stopRec('手動停止'); else startRec(); };
+
+logEv('頁面載入完成 · ' + uaSummary());
+})();
+</script>
+</body>
+</html>

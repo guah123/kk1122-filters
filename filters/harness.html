@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>濾鏡單幀測試</title>
+<style>html,body{margin:0;background:#111;}canvas{display:block}</style>
+</head><body>
+<canvas id="c"></canvas>
+<script src="assets/js/kk-load.js"></script>
+<script>
+/* 開發用：harness.html?f=delilah&w=540&h=960&bg=books&t=3&critter=1
+ * 給 Playwright 截圖／逐幀輸出 MP4 用；window.KKH.render(t) 畫指定時間。 */
+window.KKH = { ready: false, errors: [] };
+window.addEventListener('error', function (e) { KKH.errors.push(String(e.message)); });
+KKReady(function () {
+  var q = new URLSearchParams(location.search);
+  var w = +q.get('w') || 540, h = +q.get('h') || 960;
+  var c = document.getElementById('c');
+  c.style.width = w + 'px'; c.style.height = h + 'px';
+  var st = new KK.Stage(c, { size: [w, h], bg: q.get('bg') || 'books' });
+  st.S.critter = q.get('critter') !== '0';
+  KK.Critter.visible = st.S.critter;
+  st.S.autoDemo = q.get('autodemo') === '1'; // 〈明日〉等互動濾鏡：自動示範手指操作（決定性）
+  var fid = q.get('f') || 'delilah';
+  if (fid === '_bg') { st.S.D = +q.get('d') || 8; st.fit(); } // 只畫背景（做假鏡頭影片用）
+  else st.setFilter(fid);
+  KKH.stage = st;
+  KKH.duration = st.S.D;
+  KKH.render = function (t, now) { st.renderAt(t, now == null ? t : now); return true; };
+  KKH.pointer = function (type, x, y, now) { st.S.now = now || st.S.now; st.inst && st.inst.pointer && st.inst.pointer(st.S, { type: type, x: x, y: y, id: 1 }); };
+  KKH.errors = KKH.errors.concat(KK_LOAD_ERRORS.map(function (s) { return 'load:' + s; }));
+  KKH.render(+q.get('t') || 0);
+  KKH.ready = true;
+});
+</script>
+</body></html>
