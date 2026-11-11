@@ -22,7 +22,7 @@
     mood: '謝幕・回味・會心一笑',
     duration: 16,
     hint: '點一下畫面，讓隊伍裡的大家跳一下',
-    critterHint: '隊伍最後面',
+    critterHint: '隊伍最後面，比其他圖示小一點的小跑剪影',
     create() {
       const st = { tapAt: -1e9, lookBake: null, key: '' };
 
@@ -264,7 +264,7 @@
                 ITEMS[i].fn(g, s, t);
               } else if (S.critter) {
                 const hop = Math.abs(Math.sin(t * TAU * 2.2)) * s * 0.03;
-                KK.Critter.draw(g, 0, -hop, s * 1.3, { pose: 'walk', facing: -1, color: KK.mix(P.page, P.apricot, 0.3), eyeColor: P.umber, t });
+                KK.Critter.draw(g, 0, -hop, s * 0.9, { pose: 'walk', facing: -1, color: KK.mix(P.page, P.apricot, 0.3), alpha: 0.8, eyeColor: P.umber, t });
               } else {
                 g.scale(-1, 1);
                 drawPlane(g, s, t);

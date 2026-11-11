@@ -20,8 +20,62 @@
     this.frames = [];
     this.maxPixels = opts.maxPixels || MAX_PIXELS;
     this.fixedSize = opts.size || null; // [w,h] 固定像素（渲染用）
+    this.locked = false;                // 錄影中鎖住尺寸（同 261112-proto：錄影中不改畫布大小，避免編碼器出問題）
+    this.maxFps = opts.maxFps || 0;     // 0 = 跟螢幕刷新；錄影時建議 30（同 proto 的 29ms 節流）
+    this._last = 0;
+    this.portrait = false;
+    this.rotateVideo = 0;
+    try { this.rotateVideo = +(new URLSearchParams(location.search).get('rotate') || 0) || 0; } catch (e) { /* ignore */ }
     if (opts.pointer !== false) this._bindPointer();
   }
+
+  /* ---------- 與 grok/261112-proto 合併用的接口（本版不錄影，先備好） ----------
+   * 合併方式：stage.lockForRecording(true) → const ms = stage.recordStream(30) →
+   *   new MediaRecorder(ms, { mimeType: proto 的 pickMime() }) … 停止後 lockForRecording(false)。
+   * 濾鏡本身不需要任何修改。 */
+  /* ★ 直式輸出（Kai 要求：相機模式與錄影一律 9:16 直向）
+   * 開啟後畫布固定為 720×1280（不論手機方向、桌機或手機），相機畫面「置中裁切填滿」，沒有黑邊。
+   * 呼叫端（app／camera 頁）負責把 canvas 元素用 CSS 排成 9:16（例如 height:100dvh; aspect-ratio:9/16）。 */
+  Stage.PORTRAIT = [720, 1280];
+  Stage.prototype.setPortraitOutput = function (on, size) {
+    this.portrait = !!on;
+    this.fixedSize = on ? (size || Stage.PORTRAIT) : null;
+    const was = this.locked; this.locked = false; this.fit(); this.locked = was;
+  };
+  /* 回報錄影/畫布方向（給診斷資訊） */
+  Stage.prototype.outputInfo = function () {
+    const w = this.canvas.width, h = this.canvas.height, v = this.video;
+    return {
+      canvas: w + '×' + h, orientation: h > w ? '直向' : (h === w ? '正方' : '橫向'),
+      source: v && v.videoWidth ? v.videoWidth + '×' + v.videoHeight + (v.videoHeight >= v.videoWidth ? '（直）' : '（橫，已置中裁切）') : '—',
+      rotate: this.rotateVideo || 0,
+    };
+  };
+
+  /* 讓畫布解析度＝相機解析度（上限 1280×720、偶數），與 proto 的 setupCanvas 相同規則
+   * ※ 已被直式輸出取代；保留給橫式實驗用。 */
+  Stage.prototype.useVideoResolution = function (on) {
+    const v = this.video;
+    if (on && v && v.videoWidth) {
+      const vw = v.videoWidth, vh = v.videoHeight;
+      const s = Math.min(1, 1280 / Math.max(vw, vh), 720 / Math.min(vw, vh));
+      this.fixedSize = [Math.max(2, Math.round(vw * s / 2) * 2), Math.max(2, Math.round(vh * s / 2) * 2)];
+    } else {
+      this.fixedSize = null;
+    }
+    this.fit();
+  };
+  Stage.prototype.lockForRecording = function (on) {
+    this.locked = !!on;
+    this.maxFps = on ? 30 : 0;
+  };
+  /* 合成畫面的影像軌＋相機串流裡的麥克風音軌（若有） */
+  Stage.prototype.recordStream = function (fps) {
+    if (!this.canvas.captureStream) throw Object.assign(new Error('此瀏覽器不支援 canvas.captureStream'), { name: 'NotSupported' });
+    const cs = this.canvas.captureStream(fps || 30);
+    const audio = KK.Camera.stream ? KK.Camera.stream.getAudioTracks() : [];
+    return new MediaStream([...cs.getVideoTracks(), ...audio]);
+  };
 
   Stage.prototype.setFilter = function (id) {
     this.def = KK.byId[id];
@@ -34,6 +88,7 @@
 
   /* 依顯示尺寸決定內部解析度（限制總像素數，避免手機過熱掉幀） */
   Stage.prototype.fit = function () {
+    if (this.locked) return;
     let W, H;
     if (this.fixedSize) {
       W = this.fixedSize[0]; H = this.fixedSize[1];
@@ -59,12 +114,22 @@
     const g = this.ctx, S = this.S;
     const v = this.video;
     if (this.bgMode === 'camera' && v && v.readyState >= 2 && v.videoWidth) {
-      // cover-fit：填滿畫面、置中裁切
-      const k = Math.max(S.w / v.videoWidth, S.h / v.videoHeight);
-      const dw = v.videoWidth * k, dh = v.videoHeight * k;
+      // cover-fit：填滿畫面、置中裁切（橫向來源放進直式畫布 → 裁掉左右，不留黑邊）
+      // rotateVideo = 90 / -90：僅供「影格真的側躺」的裝置使用（網址 ?rotate=90）。
+      // 一般手機瀏覽器給的影格已依手機方向轉正，旋轉反而會讓畫面歪掉，所以預設 0。
+      const rot = this.rotateVideo || 0;
+      const vw = rot ? v.videoHeight : v.videoWidth, vh = rot ? v.videoWidth : v.videoHeight;
+      const k = Math.max(S.w / vw, S.h / vh);
+      const dw = vw * k, dh = vh * k;
       g.save();
       if (this.mirror) { g.translate(S.w, 0); g.scale(-1, 1); }
-      g.drawImage(v, (S.w - dw) / 2, (S.h - dh) / 2, dw, dh);
+      if (rot) {
+        g.translate(S.w / 2, S.h / 2);
+        g.rotate((rot * Math.PI) / 180);
+        g.drawImage(v, -dh / 2, -dw / 2, dh, dw);
+      } else {
+        g.drawImage(v, (S.w - dw) / 2, (S.h - dh) / 2, dw, dh);
+      }
       g.restore();
     } else if (this.bgMode === 'none') {
       g.fillStyle = '#000';
@@ -100,6 +165,8 @@
     this.t0 = performance.now() - (this.S.now || 0) * 1000;
     const loop = (ts) => {
       if (!this.running) return;
+      if (this.maxFps && ts - this._last < 1000 / this.maxFps - 4) { this.raf = requestAnimationFrame(loop); return; }
+      this._last = ts;
       const now = (ts - this.t0) / 1000;
       this.renderAt(now, now);
       // fps：最近 1 秒的幀數
@@ -152,8 +219,9 @@
       return {
         video: {
           facingMode: { ideal: facing || 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 720 },   // 直式，與 261112-proto 一致
+          height: { ideal: 1280 },
+          aspectRatio: { ideal: 9 / 16 }, // 不支援或給回橫向時，由 drawBg 置中裁切成 9:16
           frameRate: { ideal: 30 },
         },
         audio: KK.Camera.wantAudio()
@@ -171,7 +239,22 @@
         throw err;
       }
       KK.Camera.stop();
-      const stream = await navigator.mediaDevices.getUserMedia(KK.Camera.constraints(facing));
+      // 與 261112-proto 相同的三段備援：完整設定 → 簡化相機設定 → 僅相機；被拒絕就不再重試
+      const full = KK.Camera.constraints(facing);
+      const tries = [
+        full,
+        { video: { facingMode: { ideal: facing || 'environment' } }, audio: full.audio },
+        { video: { facingMode: { ideal: facing || 'environment' } }, audio: false },
+      ];
+      let stream = null, last = null;
+      for (const c of tries) {
+        try { stream = await navigator.mediaDevices.getUserMedia(c); break; }
+        catch (e) {
+          last = e;
+          if (e.name === 'NotAllowedError' || e.name === 'SecurityError') throw e;
+        }
+      }
+      if (!stream) throw last;
       const v = document.createElement('video');
       v.setAttribute('playsinline', '');
       v.setAttribute('muted', '');

@@ -1,13 +1,17 @@
-/* 3〈大人中〉流星：上半部疊一層淡淡夜空，星星眨眼，一場右上→左下的流星雨；
+/* 3〈大人中〉流星：上半部疊一層淡淡夜空，星星眨眼，一段「零星 → 期待 → 流星雨 → 餘韻」的流星節奏（右上→左下）；
  * 下緣是台灣老公寓頂樓剪影（女兒牆、水塔、晾衣架、天線），小動物坐在頂樓邊緣抬頭許願。
- * 手指一劃放一顆流星，消失處閃一下小星光。
+ * 手指一劃放一顆流星，消失處閃一下小星光（手指流星不受中央限制）。
  *
  * 分鏡（loop 12 秒，流星只由 S.t 決定 → 無縫）：
- *   0.6–1.6s   第一顆小流星從右上滑過
- *   2.3–3.5s   「大流星」，尾端灑下小火花，慢慢落下熄滅（到約 5.3s）
- *   5.6–6.5s   第三顆，細而快
- *   8.6–9.6s   第四顆
- *   其餘時間   星星各自以整數圈眨眼、小動物眨眼等待下一顆
+ *   0.7 / 2.4 / 4.2s   零星：三顆一般流星（期待）
+ *   5.6–7.2s           流星雨高潮：6.0 / 6.25 / 6.5s 三顆大流星幾乎同時、略錯開（頭大、尾長尾亮），約 1–1.5s 內劃過
+ *   9.4 / 10.7s        餘韻：兩顆小流星
+ *
+ * 避開中央規則（排程流星一律適用）：
+ *   禁區 = 畫面中央 50% 寬 × 中間 45% 高 的矩形（x 25%–75%、y 27.5%–72.5%），外擴 0.03×S.u 緩衝。
+ *   每幀用「射線—矩形」求流星路徑進入禁區的距離，行程自動截斷在入口前（流星在進入中央前就熄滅）；
+ *   橫式另有 land 欄位換起點，讓流星走左上/右上角落或上緣，不致被截太短。
+ *   大流星火花若落入禁區就不畫。
  */
 (function () {
   'use strict';
@@ -16,13 +20,46 @@
   // 流星共同方向：往左下（斜率約 0.48）
   const DIR_X = -0.9, DIR_Y = 0.436;
 
-  // 排程流星：t0 起點時間、dur 秒數、(fx,fy) 起點佔畫面寬高比例、len 行程（以短邊為單位）、tail 尾長、wid 尾粗
+  // 排程流星：t0 起點時間、dur 秒數、(fx,fy) 起點佔畫面寬高比例、len 行程（以短邊為單位）、tail 尾長、wid 尾粗、hs 頭部光點倍率
+  // land：橫式時覆寫 fx/fy/len（橫式中央禁區較寬，改從角落走）；big：流星雨主角
   const SHOWERS = [
-    { t0: 0.6, dur: 1.0, fx: 0.96, fy: 0.07, len: 0.62, tail: 0.24, wid: 0.0065, hs: 1.0 },
-    { t0: 2.3, dur: 1.2, fx: 0.9, fy: 0.055, len: 0.92, tail: 0.44, wid: 0.011, hs: 1.6, big: true },
-    { t0: 5.6, dur: 0.9, fx: 0.78, fy: 0.03, len: 0.58, tail: 0.22, wid: 0.0055, hs: 0.9 },
-    { t0: 8.6, dur: 1.0, fx: 0.66, fy: 0.19, len: 0.6, tail: 0.26, wid: 0.0065, hs: 1.05 },
+    // 零星
+    { t0: 0.7, dur: 1.0, fx: 0.96, fy: 0.07, len: 0.6, tail: 0.28, wid: 0.0075, hs: 1.2, land: { fx: 0.94, fy: 0.05, len: 0.5 } },
+    { t0: 2.4, dur: 1.1, fx: 0.5, fy: 0.04, len: 0.62, tail: 0.3, wid: 0.0078, hs: 1.25, land: { fx: 0.3, fy: 0.1, len: 0.5 } },
+    { t0: 4.2, dur: 0.95, fx: 0.9, fy: 0.15, len: 0.55, tail: 0.28, wid: 0.007, hs: 1.15, land: { fx: 0.97, fy: 0.12, len: 0.5 } },
+    // 流星雨（高潮）：三顆平行錯開
+    { t0: 6.0, dur: 1.2, fx: 0.98, fy: 0.03, len: 0.95, tail: 0.8, wid: 0.019, hs: 2.7, big: true, land: { fx: 0.97, fy: 0.04, len: 0.8 } },
+    { t0: 6.25, dur: 1.15, fx: 0.62, fy: 0.012, len: 0.85, tail: 0.66, wid: 0.016, hs: 2.3, land: { fx: 0.22, fy: 0.07, len: 0.6 } },
+    { t0: 6.5, dur: 1.05, fx: 0.8, fy: 0.1, len: 0.75, tail: 0.55, wid: 0.0135, hs: 2.0, land: { fx: 0.97, fy: 0.2, len: 0.7 } },
+    // 餘韻
+    { t0: 9.4, dur: 1.0, fx: 0.7, fy: 0.03, len: 0.55, tail: 0.26, wid: 0.007, hs: 1.15, land: { fx: 0.09, fy: 0.02, len: 0.4 } },
+    { t0: 10.7, dur: 0.95, fx: 0.4, fy: 0.07, len: 0.5, tail: 0.22, wid: 0.0065, hs: 1.05, land: { fx: 0.18, fy: 0.15, len: 0.4 } },
   ];
+
+  // 中央禁區（矩形 50% × 45%，外擴 0.03u）；回傳 {x0,y0,L}，L 已截斷在進入禁區之前
+  function showerGeom(m, S) {
+    const w = S.w, h = S.h, u = S.u;
+    const p = h >= w || !m.land ? m : m.land;
+    const x0 = p.fx * w, y0 = p.fy * h;
+    let L = p.len * u;
+    const pad = u * 0.03;
+    const ax = w * 0.25 - pad, bx = w * 0.75 + pad, ay = h * 0.275 - pad, by = h * 0.725 + pad;
+    // slab 法：射線 (x0,y0)+d*(DIR) 與矩形的進入距離
+    let tn = -1e9, tf = 1e9;
+    const sl = (o, dv, lo, hi) => {
+      if (Math.abs(dv) < 1e-9) { if (o < lo || o > hi) tf = -1e9; return; }
+      let t1 = (lo - o) / dv, t2 = (hi - o) / dv;
+      if (t1 > t2) { const q = t1; t1 = t2; t2 = q; }
+      tn = Math.max(tn, t1); tf = Math.min(tf, t2);
+    };
+    sl(x0, DIR_X, ax, bx); sl(y0, DIR_Y, ay, by);
+    if (tn < tf && tf > 0) L = Math.min(L, Math.max(tn, 0));
+    return { x0, y0, L };
+  }
+  function inCenter(x, y, S) {
+    const pad = S.u * 0.03;
+    return x > S.w * 0.25 - pad && x < S.w * 0.75 + pad && y > S.h * 0.275 - pad && y < S.h * 0.725 + pad;
+  }
   const TAIL_N = 14;
   const TAIL_COL = [];
   for (let i = 0; i < TAIL_N; i++) TAIL_COL.push(KK.mix(P.cream, P.apricot, (i / TAIL_N) * 0.7));
@@ -35,7 +72,7 @@
     mood: '長大・許願・夜裡的勇氣',
     duration: 12,
     hint: '用手指在畫面上一劃，放一顆流星',
-    critterHint: '頂樓邊緣，抬頭看天',
+    critterHint: '頂樓女兒牆後（畫面中偏右），只露上半身抬頭看天，與剪影同色',
     create() {
       const st = { sky: null, roof: [], rh: 0, par: 0, stars: [], w: 0, h: 0, u: 0, meteors: [], downs: {} };
 
@@ -366,8 +403,9 @@
           for (let i = 0; i < SHOWERS.length; i++) {
             const m = SHOWERS[i];
             const k = (t - m.t0) / m.dur;
+            const gm = showerGeom(m, S);
             if (k > 0 && k < 1) {
-              drawMeteor(g, u, m.fx * w, m.fy * h, DIR_X, DIR_Y, m.len * u, m.tail * u, k, m.wid * u, m.hs, 1);
+              drawMeteor(g, u, gm.x0, gm.y0, DIR_X, DIR_Y, gm.L, m.tail * u, k, m.wid * u, m.hs, 1);
             }
             // 大流星尾端灑下的小火花
             if (m.big) {
@@ -378,8 +416,8 @@
                 const life = 1.4 + KK.hash(j, 5) * 0.8;
                 if (age <= 0 || age >= life) continue;
                 const kk = (te - m.t0) / m.dur;
-                const px = m.fx * w + DIR_X * m.len * u * kk;
-                const py = m.fy * h + DIR_Y * m.len * u * kk;
+                const px = gm.x0 + DIR_X * gm.L * kk;
+                const py = gm.y0 + DIR_Y * gm.L * kk;
                 const sp = u * (0.03 + KK.hash(j, 9) * 0.05);
                 const side = (KK.hash(j, 2) - 0.5) * 2;
                 const vx = DIR_X * sp * 0.4 + -DIR_Y * side * sp * 0.6;
@@ -387,6 +425,7 @@
                 const dr = (1 - Math.exp(-2.2 * age)) / 2.2;
                 const x = px + vx * dr * 3;
                 const y = py + vy * dr * 3 + 0.5 * u * 0.09 * age * age;
+                if (inCenter(x, y, S)) continue;   // 火花不落入中央禁區
                 const f = age / life;
                 const flick = 0.65 + 0.35 * Math.sin(age * 17 + j * 2);
                 const a = (1 - KK.smooth(0.45, 1, f)) * flick * KK.smooth(0, 0.06, age);
@@ -425,13 +464,14 @@
             st.meteors = keep;
           }
 
-          // 5) 頂樓剪影＋抬頭看天的小動物
-          g.drawImage(st.roof[bi], 0, h - st.rh);
+          // 5) 抬頭看天的小動物：先畫、再蓋上頂樓剪影，下半身被女兒牆擋住，顏色同剪影
           if (S.critter) {
-            KK.Critter.draw(g, st.critX, h - st.par + 1, u * 0.038, {
-              pose: 'lookup', facing: 1, color: KK.rgba(KK.mix(P.night, P.umber, 0.35), 0.95), t, eyeColor: P.page,
+            const cs = u * 0.03;
+            KK.Critter.draw(g, st.critX, h - st.par + cs * 0.28, cs, {
+              pose: 'lookup', facing: 1, color: KK.rgba(KK.mix(P.night, P.umber, 0.35), 0.94), t, eyeColor: KK.mix(P.night, P.page, 0.45),
             });
           }
+          g.drawImage(st.roof[bi], 0, h - st.rh);
 
           KK.paper(g, S, { grain: 0.4, vignette: 0.5 });
         },

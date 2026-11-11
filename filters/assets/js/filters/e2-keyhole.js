@@ -22,7 +22,7 @@
     mood: '好奇・私密・我看見你了',
     duration: 12,
     hint: '用手指移動那個小窗，看看裡面',
-    critterHint: '只有透過小窗才看得到',
+    critterHint: '左下角一小疊書旁，只有小窗經過那裡才看得到（暗層下幾乎隱形）',
     create() {
       const st = {
         layer: null, lg: null, hole: null, ring: [], draws: [], books: null,
@@ -186,7 +186,7 @@
           st.draws = lay.filter((d) => d.id);
           st.draws.forEach((d) => bakeDraw(d, u));
           const cr = lay.find((d) => d.crit).crit;
-          st.crit = { x: cr[0] * S.w, y: cr[1] * S.h, size: u * 0.045 };
+          st.crit = { x: cr[0] * S.w, y: cr[1] * S.h, size: u * 0.03 };
           st.books = bakeBooks(u);
           st.pos = autoPos({ phase: 0, w: S.w, h: S.h });
           st.hand = { x: st.pos.x, y: st.pos.y };
@@ -230,17 +230,17 @@
           const c = st.crit;
           g.save();
           g.globalCompositeOperation = 'screen';
-          KK.drawSprite(g, KK.glow(P.apricot, 96), c.x, c.y - c.size * 0.5, u * 0.3, 0.5);
+          KK.drawSprite(g, KK.glow(P.apricot, 96), c.x, c.y - c.size * 0.5, u * 0.22, 0.3);
           g.restore();
           const bk = st.books;
-          g.globalAlpha = 0.8;
+          g.globalAlpha = 0.5;
           g.drawImage(bk.c, c.x - bk.c.width / 2, c.y - bk.top);
           g.globalAlpha = 1;
           if (S.critter) {
             const near = Math.hypot(cx - c.x, cy - c.y) < u * 0.5;
             KK.Critter.draw(g, c.x, c.y, c.size, {
               pose: near ? 'lookup' : 'sit', facing: cx < c.x - u * 0.02 ? -1 : 1,
-              color: KK.mix(P.umber, P.brick, 0.25), t, eyeColor: P.cream,
+              color: KK.mix(P.umber, P.night, 0.35), t, eyeColor: KK.mix(P.umber, P.cream, 0.6),
             });
           }
 

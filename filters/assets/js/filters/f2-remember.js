@@ -19,7 +19,7 @@
     mood: '懷念・奔跑・被等待',
     duration: 14,
     hint: '點一下或滑過畫面，放出螢火蟲',
-    critterHint: '左下角草叢',
+    critterHint: '左下角前景草叢後，只露出頭頂和兩隻眼睛',
     create() {
       const st = { back: null, front: null, flies: [], lastSpawn: 0 };
 
@@ -328,8 +328,8 @@
 
           // 小動物：左下角草叢探頭，望著跑走的姊弟
           if (S.critter) {
-            const cx = w * 0.11, cs = u * 0.036;
-            KK.Critter.draw(g, cx, fgY(cx) + cs * 0.2, cs, { pose: 'peek', facing: 1, color: KK.rgba(KK.mix(P.umber, P.moss, 0.3), 0.95), t, eyeColor: P.page });
+            const cx = w * 0.11, cs = u * 0.03;
+            KK.Critter.draw(g, cx, fgY(cx) + cs * 0.12, cs, { pose: 'peek', facing: 1, color: KK.rgba(KK.mix(P.umber, P.moss, 0.3), 0.95), t, eyeColor: KK.mix(P.moss, P.page, 0.3) });
           }
 
           // 姊弟追逐

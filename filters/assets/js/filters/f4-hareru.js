@@ -16,7 +16,7 @@
   const KK = window.KK, P = KK.PAL, TAU = KK.TAU;
 
   const RAYS = 12;            // 太陽光芒數
-  const CLOUD_ALPHA = 0.86;   // 雲層合成透明度（雲層本身再帶 0.35–0.9 的疏密，最終覆蓋約 0.45–0.78）
+  const CLOUD_ALPHA = 0.95;   // 雲層合成透明度（亮灰白暖雲；底層＋雲紋疊後整體約 85% 不透明，隱約透出後方）
   const M_DIV = 6;            // 遮罩解析度＝畫面 1/6
   const C_DIV = 2;            // 雲層解析度＝畫面 1/2
   const BRUSH = 0.14;         // 真實手指筆刷粗細（以 S.u 為單位）
@@ -39,7 +39,7 @@
     mood: '雨過天晴・自己決定・希望',
     duration: 14,
     hint: '用手指把烏雲抹開，抹多少由你決定',
-    critterHint: '左下角烏雲底下，坐在陽光裡仰望太陽',
+    critterHint: '左下角烏雲抹開處，只有抹到那裡才淡淡浮現，仰望太陽（低對比、無光暈）',
     create() {
       const st = {
         C: null, cg: null, M: null, mg: null, sky: null, rain: null, beams: null,
@@ -104,9 +104,10 @@
         const t = KK.canvas(Tw, Th), g = t.getContext('2d');
         if (o.base) {
           const gr = g.createLinearGradient(0, 0, 0, Th);
-          gr.addColorStop(0, KK.rgba(KK.mix(P.night, P.slate, 0.15), 0.68));
-          gr.addColorStop(0.5, KK.rgba(KK.mix(P.night, P.slate, 0.5), 0.6));
-          gr.addColorStop(1, KK.rgba(KK.mix(P.night, P.slate, 0.75), 0.6));
+          const wl = KK.mix(P.cream, P.mist, 0.25), wd = KK.mix(P.page, P.slate, 0.35);
+          gr.addColorStop(0, KK.rgba(KK.mix(wl, wd, 0.25), 0.66));
+          gr.addColorStop(0.5, KK.rgba(KK.mix(wl, wd, 0.15), 0.62));
+          gr.addColorStop(1, KK.rgba(KK.mix(wl, wd, 0.05), 0.6));
           g.fillStyle = gr; g.fillRect(0, 0, Tw, Th);
         }
         const tmp = KK.canvas(Tw, Th); tmp.getContext('2d').putImageData(img, 0, 0);
@@ -118,8 +119,8 @@
       function buildRain(Tw, Th, U, seed, n, a) {
         const t = KK.canvas(Tw, Th), g = t.getContext('2d');
         const rnd = KK.rng(seed);
-        g.strokeStyle = KK.rgba(P.cream, a);
-        g.lineWidth = Math.max(1, U * 0.004); g.lineCap = 'round';
+        g.strokeStyle = KK.rgba(KK.mix(P.mist, P.slate, 0.3), a);
+        g.lineWidth = Math.max(1, U * 0.003); g.lineCap = 'round';
         const slope = 0.26;
         g.beginPath();
         for (let i = 0; i < n; i++) {
@@ -226,10 +227,10 @@
         const land = S.w > S.h;
         st.sun = { x: S.w * (land ? 0.82 : 0.77), y: S.h * (land ? 0.21 : 0.15), r: S.u * 0.075 };
 
-        const dk = KK.mix(P.night, P.slate, 0.2), md = KK.mix(P.slate, P.night, 0.15), lt = KK.mix(P.mist, P.slate, 0.15);
-        const far = buildLayer(Cw, Ch, 411, { cells: 3, aspect: 2.2, topBias: 0.3, lo: 0.38, hi: 0.62, alpha: 0.9, relief: 3.2, dark: dk, mid: md, lite: lt, base: true });       // 遠層：暗、碎
-        const near = buildLayer(Cw, Ch, 977, { cells: 2, aspect: 2.0, topBias: 0.25, lo: 0.45, hi: 0.7, alpha: 0.8, relief: 3.6, dark: KK.mix(P.night, P.slate, 0.4), mid: KK.mix(P.slate, P.mist, 0.3), lite: KK.mix(P.mist, P.cream, 0.15), base: false }); // 近層：大朵、較亮
-        st.rain = buildRain(Cw, Ch, U, 21, 34, 0.16);
+        const lt = KK.mix(P.cream, P.mist, 0.25), dk = KK.mix(P.page, P.slate, 0.35), md = KK.mix(lt, dk, 0.45);   // 亮灰白帶暖：亮部燈下米＋霧藍、暗部舊書頁＋雨雲灰
+        const far = buildLayer(Cw, Ch, 411, { cells: 3, aspect: 2.2, topBias: 0.3, lo: 0.38, hi: 0.62, alpha: 0.9, relief: 4.2, dark: dk, mid: md, lite: lt, base: true });       // 遠層：暗、碎
+        const near = buildLayer(Cw, Ch, 977, { cells: 2, aspect: 2.0, topBias: 0.25, lo: 0.45, hi: 0.7, alpha: 0.8, relief: 4.6, dark: KK.mix(dk, lt, 0.35), mid: KK.mix(lt, P.cream, 0.3), lite: KK.mix(P.cream, P.apricot, 0.1), base: false }); // 近層：大朵、較亮
+        st.rain = buildRain(Cw, Ch, U, 21, 11, 0.09);   // 毛毛雨：約 1/3 數量、更淡
         // 遠、近兩層預先合成一張，雙倍寬（每幀只用來源視窗平移）
         st.sky = KK.canvas(Cw * 2, Ch);
         { const sg = st.sky.getContext('2d'); for (let i = 0; i < 2; i++) { sg.drawImage(far, i * Cw, 0); sg.drawImage(near, i * Cw, 0); } }
@@ -298,7 +299,7 @@
         // 未抹開時：只透出一團淡淡的暖光暈（暗示那裡有太陽）
         if (sa <= 0.01) return;
         g.globalCompositeOperation = 'lighter';
-        KK.drawSprite(g, KK.glow(P.apricot, 256), x, y, u * 1.3, 0.75 * sa);
+        KK.drawSprite(g, KK.glow(P.apricot, 256), x, y, u * 1.5, 0.95 * sa);
         KK.drawSprite(g, KK.glow(P.cream, 256, 0.2), x, y, u * 0.5, 0.6 * sa);
         g.globalCompositeOperation = 'source-over';
         g.globalAlpha = sa;
@@ -431,13 +432,13 @@
 
           // 2. 陽光層（雲下方）：暖色 screen 光＋放射光束，只在抹開處看得到
           g.save();
-          const warm = 0.1 + 0.2 * KK.smooth(0.0, 0.12, st.vis);   // 暖光罩（source-over 比 screen 便宜很多）
+          const warm = 0.1 + 0.26 * KK.smooth(0.0, 0.12, st.vis);   // 暖光罩（source-over 比 screen 便宜很多）
           g.fillStyle = KK.rgba(KK.mix(P.cream, P.apricot, 0.5), warm);
           g.fillRect(0, 0, S.w, S.h);
           g.globalCompositeOperation = 'lighter';
           if (st.vis > 0.005) {
             const bs = u * 1.5, sway = 1 + Math.sin(S.phase * TAU) * 0.05;
-            g.globalAlpha = (0.2 + 0.1 * Math.sin(S.phase * TAU * 2)) * KK.smooth(0, 0.1, st.vis);
+            g.globalAlpha = (0.32 + 0.1 * Math.sin(S.phase * TAU * 2)) * KK.smooth(0, 0.1, st.vis);
             g.drawImage(st.beams, st.sun.x - bs * sway / 2, st.sun.y - bs * sway / 2, bs * sway, bs * sway);
             g.globalAlpha = 1;
           }
@@ -446,16 +447,13 @@
           drawSun(g, S, vis, sa);
           drawBirds(g, S, KK.smooth(0.5, 0.62, st.vis));
 
-          // 3. 小動物：藏在左下烏雲底下，坐在陽光裡看太陽
+          // 3. 小動物：藏在左下烏雲底下，低對比、無光暈
           const ca = KK.smooth(0.25, 0.7, st.critV); // 可見度＝牠所在處被抹開的程度，未抹開完全看不到
           if (S.critter && ca > 0.01) {
             const land = S.w > S.h;
             const cx = S.w * (land ? 0.13 : 0.19), cy = S.h * (land ? 0.93 : 0.945);
-            g.globalCompositeOperation = 'lighter';
-            KK.drawSprite(g, KK.glow(P.apricot, 128), cx, cy - u * 0.02, u * 0.4, 0.3 * ca);
-            g.globalCompositeOperation = 'source-over';
-            g.globalAlpha = ca;
-            KK.Critter.draw(g, cx, cy, u * 0.042, { pose: 'lookup', facing: 1, color: KK.rgba(P.umber, 0.9), t, eyeColor: P.cream });
+            g.globalAlpha = ca * 0.55;
+            KK.Critter.draw(g, cx, cy, u * 0.03, { pose: 'lookup', facing: 1, color: KK.mix(P.umber, P.brick, 0.3), t, eyeColor: KK.mix(P.umber, P.apricot, 0.5) });
           }
           g.restore();
 
@@ -470,7 +468,7 @@
           // 穿過雲層透出來的一團暖光（暗示太陽在那裡）
           g.save();
           g.globalCompositeOperation = 'lighter';
-          KK.drawSprite(g, KK.glow(P.apricot, 256), st.sun.x, st.sun.y, u * 1.0, 0.22 * (1 - sa * 0.6));
+          KK.drawSprite(g, KK.glow(P.apricot, 256), st.sun.x, st.sun.y, u * 1.0, 0.3 * (1 - sa * 0.6));
           g.restore();
 
           KK.paper(g, S, { grain: 0.4, vignette: 0.4 });

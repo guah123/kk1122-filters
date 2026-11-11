@@ -19,7 +19,7 @@
     mood: '溫柔・時間流逝・專注',
     duration: 15,
     hint: '用手指拖曳，改變光流動的方向',
-    critterHint: '下半部一顆大散景光圈裡的淡淡倒影',
+    critterHint: '下半部大散景光圈裡一抹極淡的倒影（光圈飄過時才找得到）',
     create() {
       const BASE = 0.39; // 預設流向約 22°（往右下）
       const st = {
@@ -280,8 +280,8 @@
             g.beginPath();
             g.arc(c[0], c[1], c[2] * 0.4, 0, TAU);
             g.clip();
-            KK.Critter.draw(g, c[0], c[1] + c[2] * 0.14, S.u * 0.035, {
-              pose: 'sit', facing: dx >= 0 ? 1 : -1, color: P.cream, alpha: 0.15 * c[3], t: S.t, eye: false,
+            KK.Critter.draw(g, c[0], c[1] + c[2] * 0.14, S.u * 0.028, {
+              pose: 'sit', facing: dx >= 0 ? 1 : -1, color: P.cream, alpha: 0.075 * c[3], t: S.t, eye: false,
             });
             g.restore();
           });

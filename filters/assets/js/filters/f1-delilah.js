@@ -13,7 +13,7 @@
     mood: '可愛・熱鬧・寄給遠方',
     duration: 16,
     hint: '點一下畫面，放飛一群鴿子',
-    critterHint: '左側屋頂邊緣、水塔旁',
+    critterHint: '左側屋頂邊緣、水塔旁，半身沉在屋頂後只露頭和耳朵，與樓房同色',
     create() {
       const st = { sky: null, key: '', birds: [] };
 
@@ -357,13 +357,13 @@
           });
           g.globalAlpha = 1;
 
-          // 小動物：坐在水塔旁的屋頂邊緣，背後一圈暖光讓輪廓分得出來，輪流看左右（偷偷的）
+          // 小動物：沉在左側屋頂邊緣、水塔旁，顏色同樓房剪影，不加光；只露出頭和耳朵，輪流看左右（偷偷的）
           if (S.critter && st.home) {
             const hm = st.home;
-            const cx = hm.x + hm.w * 0.2, cy = skyY + st.top - hm.h + b * 0.002;
+            const cs = rb * 0.032;
+            const cx = hm.x + hm.w * 0.2, cy = skyY + st.top - hm.h + cs * (KK.Critter.kind === 'cat' ? 0.62 : 0.42);
             const look = KK.mod(t, 16) > 8 ? -1 : 1;
-            KK.drawSprite(g, KK.glow(P.apricot, 64), cx, cy - rb * 0.03, rb * 0.15, 0.3);
-            KK.Critter.draw(g, cx, cy, rb * 0.052, { pose: 'sit', facing: look, color: KK.rgba(KK.mix(P.umber, P.night, 0.4), 1), t, eyeColor: P.cream });
+            KK.Critter.draw(g, cx, cy, cs, { pose: 'sit', facing: look, color: KK.rgba(KK.mix(P.night, P.umber, 0.25), 0.92), t, eyeColor: KK.mix(P.night, P.page, 0.4), t });
           }
 
           // 馬路
