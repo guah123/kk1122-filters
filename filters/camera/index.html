@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1b1512">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>看看｜手機相機＋錄影測試</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../assets/css/app.css">
+<link rel="stylesheet" href="camera.css">
+</head>
+<body class="camera-page">
+<noscript><p style="padding:24px;color:#F3E6CF">需要開啟 JavaScript 才能測試相機。</p></noscript>
+
+<!-- ============ 相機畫面（直式 9:16） ============ -->
+<div id="cam-root" class="cam-root">
+  <div id="stagebox" class="stagebox">
+    <div id="frame" class="frame">
+      <canvas id="stage" aria-label="相機預覽（直式 9:16）"></canvas>
+      <div class="meter" id="meter" title="麥克風音量"><i><b id="meterBar"></b></i><span id="meterTxt">🎤 —</span></div>
+      <div id="timer" class="rectimer" hidden role="status">● 0:00 / 0:30</div>
+      <button type="button" id="c-reset" class="pbtn small" hidden>重新佈滿烏雲</button>
+      <div id="c-toast" class="toast" role="status"></div>
+      <div id="infobar" class="infobar" role="status">預覽 9:16</div>
+    </div>
+    <div id="rotate" class="rothint" hidden>請直拿手機<small>錄出來的影片一律是直式 9:16</small></div>
+  </div>
+  <div id="chips" class="chips" role="group" aria-label="濾鏡"></div>
+  <div id="ctrl" class="ctrl">
+    <button type="button" id="c-flip" class="rbtn" aria-label="切換前後鏡頭"><span>⟲</span><small>後鏡頭</small></button>
+    <button type="button" id="c-rec" class="recbtn" aria-label="開始錄影" disabled><i></i></button>
+    <button type="button" id="c-info" class="rbtn" aria-label="測試資訊"><span>ⓘ</span><small>測試資訊</small></button>
+  </div>
+</div>
+
+<!-- ============ 開始畫面 ============ -->
+<div id="start" class="startscreen">
+  <div id="inapp" class="inapp" hidden>
+    <span>偵測到內建瀏覽器（LINE／IG／FB…）。請點右上角 ⋯ 改用 Safari 或 Chrome 開啟，相機、麥克風與錄影才穩定。</span>
+  </div>
+  <div class="start-card">
+    <h1>看看</h1>
+    <p class="st-sub">手機相機＋錄影測試</p>
+    <ul class="st-list">
+      <li>按「開始」→ 相機與麥克風都選<b>允許</b></li>
+      <li>畫面與錄影<b>固定直式 9:16</b>（720×1280），不論手機怎麼拿</li>
+      <li>選濾鏡、按下方紅色圓鈕錄影（最長 30 秒）</li>
+      <li>錄完可播放、存到相簿，並複製「測試資訊」貼給我們</li>
+    </ul>
+    <div id="compat" class="compat" hidden></div>
+    <button type="button" id="c-start" class="btn big startbtn" disabled>載入中…</button>
+    <div id="errbox" class="errbox" hidden></div>
+    <p class="st-foot"><a href="../" class="btn small">回展示頁</a> <button type="button" class="btn small" id="c-info0">測試資訊</button></p>
+  </div>
+</div>
+
+<!-- ============ 錄影結果 ============ -->
+<div id="result" class="resultpanel" hidden role="dialog" aria-label="錄影結果">
+  <div class="rp-card">
+    <video id="rv" class="rp-video" controls playsinline loop></video>
+    <pre id="rinfo" class="rp-info"></pre>
+    <p id="rmsg" class="diag-msg" role="status"></p>
+    <div class="rp-actions">
+      <button type="button" class="btn big" id="rsave">存到相簿</button>
+      <button type="button" class="btn big alt" id="ragain">再錄一次</button>
+      <button type="button" class="btn small" id="rcopy">複製測試資訊</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 測試資訊視窗（app-diag.js 使用） ============ -->
+<div id="modal" class="modal" hidden>
+  <div class="modal-card">
+    <h2>測試資訊</h2>
+    <textarea id="diag-text" readonly rows="14" spellcheck="false"></textarea>
+    <p id="diag-msg" class="diag-msg" role="status"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn big" id="diag-copy">一鍵複製測試資訊</button>
+      <button type="button" class="btn" id="diag-close">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/kk-load.js"></script>
+<script src="../assets/js/app-diag.js"></script>
+<script src="camera.js"></script>
+</body>
+</html>

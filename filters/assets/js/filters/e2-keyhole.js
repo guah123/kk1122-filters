@@ -186,7 +186,7 @@
           st.draws = lay.filter((d) => d.id);
           st.draws.forEach((d) => bakeDraw(d, u));
           const cr = lay.find((d) => d.crit).crit;
-          st.crit = { x: cr[0] * S.w, y: cr[1] * S.h, size: u * 0.03 };
+          st.crit = { x: cr[0] * S.w, y: cr[1] * S.h, size: u * 0.05 };
           st.books = bakeBooks(u);
           st.pos = autoPos({ phase: 0, w: S.w, h: S.h });
           st.hand = { x: st.pos.x, y: st.pos.y };
@@ -237,10 +237,14 @@
           g.drawImage(bk.c, c.x - bk.c.width / 2, c.y - bk.top);
           g.globalAlpha = 1;
           if (S.critter) {
-            const near = Math.hypot(cx - c.x, cy - c.y) < u * 0.5;
-            KK.Critter.draw(g, c.x, c.y, c.size, {
-              pose: near ? 'lookup' : 'sit', facing: cx < c.x - u * 0.02 ? -1 : 1,
-              color: KK.mix(P.umber, P.night, 0.35), t, eyeColor: KK.mix(P.umber, P.cream, 0.6),
+            const dist = Math.hypot(cx - c.x, cy - c.y), near = dist < u * 0.5;
+            const nk = 1 - KK.smooth(0.3 * u, 0.55 * u, dist);   // 小窗越近越靠近 1（停下來看）
+            // Kai 牽著小袋熊，在書堆旁來回踱步；小窗靠近時停下來抬頭（整數圈 loop）
+            const pace = Math.sin(ph * TAU) * c.size * 0.9 * (1 - nk);
+            const idle = nk > 0.5;
+            KK.Critter.draw(g, c.x + pace, c.y, c.size, {
+              pose: idle ? 'lookup' : 'walk', facing: idle ? (cx < c.x - u * 0.02 ? -1 : 1) : (Math.cos(ph * TAU) > 0 ? 1 : -1),
+              alpha: 0.9, tone: 0.1, t,
             });
           }
 

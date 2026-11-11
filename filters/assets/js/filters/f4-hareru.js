@@ -39,7 +39,7 @@
     mood: '雨過天晴・自己決定・希望',
     duration: 14,
     hint: '用手指把烏雲抹開，抹多少由你決定',
-    critterHint: '左下角烏雲抹開處，只有抹到那裡才淡淡浮現，仰望太陽（低對比、無光暈）',
+    critterHint: '左下角烏雲抹開處，只有抹到那裡才淡淡浮現：Kai 牽著小袋熊沿下緣來回走（低對比、無光暈）',
     create() {
       const st = {
         C: null, cg: null, M: null, mg: null, sky: null, rain: null, beams: null,
@@ -447,13 +447,15 @@
           drawSun(g, S, vis, sa);
           drawBirds(g, S, KK.smooth(0.5, 0.62, st.vis));
 
-          // 3. 小動物：藏在左下烏雲底下，低對比、無光暈
+          // 3. 小動物（Kai 牽著小袋熊）：藏在左下烏雲底下的下緣來回走，低對比、無光暈
           const ca = KK.smooth(0.25, 0.7, st.critV); // 可見度＝牠所在處被抹開的程度，未抹開完全看不到
           if (S.critter && ca > 0.01) {
             const land = S.w > S.h;
-            const cx = S.w * (land ? 0.13 : 0.19), cy = S.h * (land ? 0.93 : 0.945);
-            g.globalAlpha = ca * 0.55;
-            KK.Critter.draw(g, cx, cy, u * 0.03, { pose: 'lookup', facing: 1, color: KK.mix(P.umber, P.brick, 0.3), t, eyeColor: KK.mix(P.umber, P.apricot, 0.5) });
+            const cs = u * 0.05;
+            // 在左下烏雲底下的下緣，小範圍來回走（整數圈）；只在那一帶被抹開時才看得到
+            const sw = Math.sin(S.phase * TAU);
+            const cx = S.w * (land ? 0.13 : 0.19) + sw * S.w * 0.05, cy = S.h * (land ? 0.95 : 0.955);
+            KK.Critter.draw(g, cx, cy, cs, { pose: 'walk', facing: Math.cos(S.phase * TAU) > 0 ? 1 : -1, alpha: ca * 0.7, tone: 0.3, t });
           }
           g.restore();
 

@@ -3,7 +3,7 @@
  * window.KK_SELFTEST_RESULT 給 Playwright 讀。 */
 (function () {
   'use strict';
-  var EXPECTED = ['delilah', 'remember', 'otona', 'hareru', 'onlyyou', 'curtaincall', 'keyhole', 'reveal', 'colophon'];
+  var EXPECTED = ['delilah', 'remember', 'otona', 'hareru', 'onlyyou', 'together', 'curtaincall', 'keyhole', 'reveal', 'colophon'];
   var NAMES = {
     delilah: 'Hey There Delilah', remember: '我記得', otona: '大人中', hareru: '明日晴れるかな', onlyyou: '我只在乎你',
     curtaincall: '彩蛋 E1', keyhole: '彩蛋 E2', reveal: '彩蛋 E3', colophon: '版權頁',
@@ -285,6 +285,47 @@
     return finalize(row);
   }
 
+  /* ---------- 錄影（直式 9:16）：用 KK.Recorder 錄 2 秒，驗證錄出的影片是直向、比例約 9:16 ---------- */
+  async function testRecorder() {
+    var row = newRow('recorder', '錄影（KK.Recorder，直式 9:16）');
+    var cv = el('canvas');
+    cv.style.cssText = 'position:fixed;left:-9999px;top:0;width:180px;height:320px;';
+    document.body.appendChild(cv);
+    var stage = null;
+    try {
+      if (!KK.Recorder || !KK.Recorder.supported()) throw new Error('此瀏覽器不支援 MediaRecorder／captureStream');
+      stage = newStage(cv, { pointer: false, bg: 'camera' });
+      stage.setPortraitOutput(true);
+      stage.setFilter('delilah');
+      stage.S.critter = true;
+      var v = await KK.Camera.start('environment');
+      await sleep(600);
+      stage.video = v; stage.bgMode = 'camera';
+      stage.start();
+      await sleep(400);
+      var h = KK.Recorder.start(stage, { maxSec: 30 });
+      await sleep(2000);
+      var r = await h.stop('selftest 2 秒');
+      var vf = r.verified || {};
+      var ratio = vf.videoWidth ? vf.videoWidth / vf.videoHeight : 0;
+      row.notes.push('畫布 ' + r.width + '×' + r.height + '；錄出影片 ' + (vf.videoWidth ? vf.videoWidth + '×' + vf.videoHeight : '讀不到') + '；' + r.mime);
+      row.notes.push('時長 ' + r1(r.durationSec) + ' 秒、大小 ' + Math.round(r.size / 1024) + ' KB、平均 ' + r1(r.fpsAvg) + ' fps');
+      if (vf.error) row.errors.push('讀不到錄出影片的尺寸：' + vf.error);
+      else if (!(vf.videoHeight > vf.videoWidth)) row.errors.push('錄出的影片不是直向：' + vf.videoWidth + '×' + vf.videoHeight);
+      else if (Math.abs(ratio / (9 / 16) - 1) > 0.02) row.errors.push('錄出的影片比例不是 9:16（±2%）：' + vf.videoWidth + '×' + vf.videoHeight + '（' + r3(ratio) + '）');
+      if (!r.size) row.errors.push('錄出的檔案是空的');
+      if (r.warn) row.warns.push(r.warn);
+      row.recInfo = KK.Recorder.summary(r);
+    } catch (e) {
+      row.errors.push('錄影失敗：' + ((e && e.name) || '') + ' ' + msg(e));
+      row.recInfo = { error: msg(e) };
+    }
+    try { if (KK.Recorder.active) await KK.Recorder.active.stop('selftest 清理'); } catch (e) { /* ignore */ }
+    try { if (stage) stage.stop(); KK.Camera.stop(); } catch (e) { /* ignore */ }
+    cv.remove();
+    return finalize(row);
+  }
+
   /* ---------- 主流程 ---------- */
   T.run = async function (root, opts) {
     opts = opts || {};
@@ -318,7 +359,7 @@
       push(finalize(lr));
     }
 
-    var total = EXPECTED.length + (opts.cam ? 1 : 0), done = 0;
+    var total = EXPECTED.length + (opts.cam ? 2 : 0), done = 0;
     function progress(label) {
       fill.style.width = Math.round(done / total * 100) + '%';
       sub.textContent = label;
@@ -338,12 +379,17 @@
       done++;
     }
 
-    var camera = null;
+    var camera = null, recorder = null;
     if (opts.cam) {
       progress('正在測：相機');
       var cr = await testCamera();
       camera = cr.camInfo;
       push(cr);
+      done++;
+      progress('正在測：錄影（直式 9:16）');
+      var rr = await testRecorder();
+      recorder = rr.recInfo;
+      push(rr);
       done++;
     } else {
       var skip = newRow('camera', '相機（KK.Camera）');
@@ -352,6 +398,12 @@
       se.classList.add('skip');
       rowsBox.appendChild(se);
       camera = { skipped: true };
+      var skip2 = newRow('recorder', '錄影（KK.Recorder，直式 9:16）');
+      skip2.notes.push('略過（加 &cam=1 測錄影）');
+      var se2 = rowEl(skip2);
+      se2.classList.add('skip');
+      rowsBox.appendChild(se2);
+      recorder = { skipped: true };
     }
 
     perfCanvas.remove();
@@ -387,6 +439,7 @@
         return { id: r.id, name: r.name, status: r.status, fps: r.fps, ms: r.ms, errors: r.errors, warns: r.warns, notes: r.notes };
       }),
       camera: camera,
+      recorder: recorder,
     };
     document.title = pass ? 'SELFTEST PASS' : 'SELFTEST FAIL';
 

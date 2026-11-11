@@ -280,9 +280,8 @@
             g.beginPath();
             g.arc(c[0], c[1], c[2] * 0.4, 0, TAU);
             g.clip();
-            KK.Critter.draw(g, c[0], c[1] + c[2] * 0.14, S.u * 0.028, {
-              pose: 'sit', facing: dx >= 0 ? 1 : -1, color: P.cream, alpha: 0.075 * c[3], t: S.t, eye: false,
-            });
+            // Kai 牽著小袋熊，在光圈裡隨光流一起慢慢走，很淡像倒影（lighter 疊亮：黑線幾乎不出現，只有白肚微微透光）
+            KK.Critter.draw(g, c[0], c[1] + c[2] * 0.17, S.u * 0.05, { pose: 'walk', facing: dx >= 0 ? 1 : -1, alpha: 0.3 * c[3], tone: 0, t: S.t });
             g.restore();
           });
 

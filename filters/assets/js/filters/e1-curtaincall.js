@@ -263,8 +263,8 @@
                 if (ITEMS[i].flip) g.scale(-1, 1);
                 ITEMS[i].fn(g, s, t);
               } else if (S.critter) {
-                const hop = Math.abs(Math.sin(t * TAU * 2.2)) * s * 0.03;
-                KK.Critter.draw(g, 0, -hop, s * 0.9, { pose: 'walk', facing: -1, color: KK.mix(P.page, P.apricot, 0.3), alpha: 0.8, eyeColor: P.umber, t });
+                // 隊伍最後：Kai 牽著小袋熊（圖片版自帶走路小彈跳）
+                KK.Critter.draw(g, 0, s * 0.02, s * 1.0, { pose: 'walk', facing: -1, alpha: 0.85, tone: 0.2, t });
               } else {
                 g.scale(-1, 1);
                 drawPlane(g, s, t);

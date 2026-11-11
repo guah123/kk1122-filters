@@ -235,7 +235,7 @@
               g.globalAlpha = sk;
               g.drawImage(st.seal, -sz / 2 - st.sealPad, -sz / 2 - st.sealPad);
               if (S.critter) {
-                KK.Critter.draw(g, 0, sz * 0.29, sz * 0.44, { pose: 'sit', facing: 1, color: KK.rgba(P.cream, 0.95), eyeColor: P.brick, t: 0 });
+                KK.Critter.draw(g, 0, sz * 0.25, sz * 0.5, { pose: 'sit', facing: 1, alpha: 0.95, tone: 0, t: 0 }); // 印章裡：Kai 牽著小袋熊
               } else {
                 g.fillStyle = KK.rgba(P.cream, 0.92);
                 g.beginPath();

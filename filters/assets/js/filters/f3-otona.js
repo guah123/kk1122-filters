@@ -1,5 +1,5 @@
 /* 3〈大人中〉流星：上半部疊一層淡淡夜空，星星眨眼，一段「零星 → 期待 → 流星雨 → 餘韻」的流星節奏（右上→左下）；
- * 下緣是台灣老公寓頂樓剪影（女兒牆、水塔、晾衣架、天線），小動物坐在頂樓邊緣抬頭許願。
+ * 下緣是台灣老公寓頂樓剪影（女兒牆、水塔、晾衣架、天線），小動物（Kai 牽著小袋熊）站在頂樓邊緣抬頭許願。
  * 手指一劃放一顆流星，消失處閃一下小星光（手指流星不受中央限制）。
  *
  * 分鏡（loop 12 秒，流星只由 S.t 決定 → 無縫）：
@@ -72,7 +72,7 @@
     mood: '長大・許願・夜裡的勇氣',
     duration: 12,
     hint: '用手指在畫面上一劃，放一顆流星',
-    critterHint: '頂樓女兒牆後（畫面中偏右），只露上半身抬頭看天，與剪影同色',
+    critterHint: '頂樓女兒牆後（畫面中偏右），Kai 牽著小袋熊抬頭看天，流星雨時揮手',
     create() {
       const st = { sky: null, roof: [], rh: 0, par: 0, stars: [], w: 0, h: 0, u: 0, meteors: [], downs: {} };
 
@@ -464,12 +464,12 @@
             st.meteors = keep;
           }
 
-          // 5) 抬頭看天的小動物：先畫、再蓋上頂樓剪影，下半身被女兒牆擋住，顏色同剪影
+          // 5) 抬頭看天的小動物（Kai 牽著小袋熊）：站在頂樓女兒牆後，先畫、再蓋上頂樓剪影（下半身被牆擋住）；流星雨時（5.8–7.4s）開心揮手、小跳
           if (S.critter) {
-            const cs = u * 0.03;
-            KK.Critter.draw(g, st.critX, h - st.par + cs * 0.28, cs, {
-              pose: 'lookup', facing: 1, color: KK.rgba(KK.mix(P.night, P.umber, 0.35), 0.94), t, eyeColor: KK.mix(P.night, P.page, 0.45),
-            });
+            const cs = u * 0.05;
+            const cheer = KK.smooth(5.7, 6.0, t) * (1 - KK.smooth(7.1, 7.5, t));
+            const hop = cheer * Math.abs(Math.sin(t * TAU * 1.5)) * cs * 0.08;
+            KK.Critter.draw(g, st.critX, h - st.par + cs * 0.3 - hop, cs, { pose: cheer > 0.5 ? 'wave' : 'lookup', facing: 1, alpha: 0.85, tone: 0.5, t });
           }
           g.drawImage(st.roof[bi], 0, h - st.rh);
 

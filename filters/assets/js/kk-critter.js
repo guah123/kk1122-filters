@@ -1,6 +1,10 @@
 /* 藏在每個濾鏡裡的小動物（占位）。
+ * ★ 預設 kind='duo'：Kai 牽著小袋熊（Kai 自己的插圖，KK.Art.duoSmall，已去旗子；黑線＋白肚，不改線條）。
+ *   'kai' = 只有小袋熊（KK.Art.wombat）；'wombat'/'cat' = 舊的向量占位；可用 ?critter=cat 切換。
+ *   圖片版的 color/eyeColor 無效；改用 opts.alpha（預設 0.75）與 opts.tone（0..1，把白肚往暗色壓，預設 0.35）。
+ *   facing 1 = 原圖方向（往右走）；'peek' 只畫上半身（y = 遮蔽物邊緣）。
  * ★ 要換動物，只改這個檔案：
- *   1. 改 KK.Critter.kind = 'wombat' | 'cat' | 'svg'
+ *   1. 改 KK.Critter.kind = 'duo' | 'kai' | 'wombat' | 'cat' | 'svg'
  *      （或網址加 ?critter=cat 試看看）
  *   2. 若設計師畫好了，存成 assets/critter.svg（單色剪影、站在底線上、面向右），
  *      kind 設成 'svg' 即可，所有濾鏡會自動換掉。
@@ -11,11 +15,11 @@
 (function () {
   'use strict';
   const KK = window.KK;
-  const C = (KK.Critter = { kind: 'wombat', visible: true });
+  const C = (KK.Critter = { kind: 'duo', visible: true });
 
   try {
     const q = new URLSearchParams(location.search).get('critter');
-    if (q) C.kind = q;
+    if (q && ['duo', 'kai', 'wombat', 'cat', 'svg'].indexOf(q) >= 0) C.kind = q; // ?critter=1/0 是開關，不是種類
   } catch (e) { /* ignore */ }
 
   function ell(ctx, x, y, rx, ry, rot) {
@@ -171,11 +175,82 @@
 
   C.kinds = { wombat, cat, svg };
 
+  /* ---------- 圖片版（Kai 的插圖） ---------- */
+  const IMG = { duo: 'duoSmall', kai: 'wombat', duomain: 'duo' };
+  const cache = {};
+  let cacheN = 0;
+  /* 預先縮成目標高度（逐步對半縮，避免 drawImage 大幅縮小時鋸齒）；tone>0 時用 source-atop 壓暗，結果快取，不在每幀處理像素 */
+  function sprite(kind, hpx, tone) {
+    const src = KK.Art && KK.Art[IMG[kind]];
+    if (!src || !src.naturalWidth) return null;
+    const h = Math.max(4, Math.round(hpx / 2) * 2);
+    const tq = Math.round(tone * 10);
+    const key = kind + '|' + h + '|' + tq;
+    if (cache[key]) return cache[key];
+    if (cacheN > 60) { for (const k in cache) delete cache[k]; cacheN = 0; }
+    const ar = src.naturalWidth / src.naturalHeight;
+    let cur = src, cw = src.naturalWidth, ch = src.naturalHeight;
+    const tw = Math.max(2, Math.round(h * ar));
+    while (ch / 2 > h) {
+      const nw = Math.round(cw / 2), nh = Math.round(ch / 2);
+      const c = KK.canvas(nw, nh); const g = c.getContext('2d');
+      g.imageSmoothingQuality = 'high'; g.drawImage(cur, 0, 0, nw, nh);
+      cur = c; cw = nw; ch = nh;
+    }
+    const out = KK.canvas(tw, h); const og = out.getContext('2d');
+    og.imageSmoothingQuality = 'high';
+    og.drawImage(cur, 0, 0, tw, h);
+    if (tq > 0) {
+      og.globalCompositeOperation = 'source-atop';
+      og.fillStyle = KK.rgba('#2A211C', Math.min(0.92, tq / 10 * 0.9));
+      og.fillRect(0, 0, tw, h);
+    }
+    cache[key] = out; cacheN++;
+    return out;
+  }
+
+  function drawImg(ctx, x, y, size, o, t) {
+    const kind = C.kind;
+    const dpr = o.dpr || 1;
+    const tone = o.tone == null ? 0.35 : o.tone;
+    const spr = sprite(kind, size * dpr, tone);
+    if (!spr) return;
+    const pose = o.pose || 'sit';
+    const ar = spr.width / spr.height;
+    const w = size * ar;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalAlpha = o.alpha == null ? 0.75 : o.alpha;
+    if ((o.facing || 1) < 0) ctx.scale(-1, 1);
+    let dy = 0, rot = 0, sc = 1;
+    if (pose === 'walk') {
+      const ph = Math.sin(t * KK.TAU * 2.2);
+      dy = -Math.abs(ph) * size * 0.045;
+      rot = ph * 0.025;
+    } else {
+      sc = 1 + Math.sin(t * KK.TAU * 0.4) * 0.008; // 極輕微的呼吸
+      if (pose === 'wave') rot = Math.sin(t * KK.TAU * 1.6) * 0.012;
+      if (pose === 'lookup') rot = -0.03;
+    }
+    ctx.translate(0, dy);
+    if (rot) ctx.rotate(rot);
+    if (sc !== 1) ctx.scale(1, sc);
+    if (pose === 'peek') {
+      // 只露出上半身：整張往下沉 45%，以 y 為界裁掉下半
+      ctx.beginPath(); ctx.rect(-w, -size * 2, w * 2, size * 2 + 0); ctx.clip();
+      ctx.drawImage(spr, -w / 2, size * 0.45 - size, w, size);
+    } else {
+      ctx.drawImage(spr, -w / 2, -size, w, size);
+    }
+    ctx.restore();
+  }
+
   C.draw = function (ctx, x, y, size, o) {
     o = o || {};
     if (!C.visible || o.alpha === 0) return;
-    const fn = C.kinds[C.kind] || wombat;
     const t = o.t || 0;
+    if (IMG[C.kind]) { drawImg(ctx, x, y, size, o, t); return; }
+    const fn = C.kinds[C.kind] || wombat;
     ctx.save();
     ctx.translate(x, y);
     ctx.scale((o.facing || 1) * size, size);

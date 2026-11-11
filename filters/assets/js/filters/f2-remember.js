@@ -19,7 +19,7 @@
     mood: '懷念・奔跑・被等待',
     duration: 14,
     hint: '點一下或滑過畫面，放出螢火蟲',
-    critterHint: '左下角前景草叢後，只露出頭頂和兩隻眼睛',
+    critterHint: '遠坡坡頂：Kai 牽著小袋熊慢慢走向小屋，走到屋前淡出',
     create() {
       const st = { back: null, front: null, flies: [], lastSpawn: 0 };
 
@@ -326,10 +326,13 @@
             drawDragonfly(g, x, y, Math.atan2(vy, vx), u * 0.048, t);
           });
 
-          // 小動物：左下角草叢探頭，望著跑走的姊弟
+          // 小動物（Kai 牽著小袋熊）：沿遠坡坡頂慢慢走向小屋，走到屋前淡出（偷偷的；跟姊弟追逐是兩條不同的路）
           if (S.critter) {
-            const cx = w * 0.11, cs = u * 0.03;
-            KK.Critter.draw(g, cx, fgY(cx) + cs * 0.12, cs, { pose: 'peek', facing: 1, color: KK.rgba(KK.mix(P.umber, P.moss, 0.3), 0.95), t, eyeColor: KK.mix(P.moss, P.page, 0.3) });
+            const cs = u * 0.05, cw = cs * 1.3;
+            const xEnd = G.hx - G.bw / 2 - cw * 0.5;
+            const x = KK.lerp(-cw, xEnd, ph);
+            const al = 0.8 * KK.smooth(0.02, 0.1, ph) * (1 - KK.smooth(0.86, 0.98, ph));
+            if (al > 0.01) KK.Critter.draw(g, x, farY(x) + cs * 0.06, cs, { pose: 'walk', facing: 1, alpha: al, tone: 0.45, t });
           }
 
           // 姊弟追逐

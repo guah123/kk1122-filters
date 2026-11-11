@@ -1,6 +1,6 @@
 /* 1〈Hey There Delilah〉忙碌的紐約：下緣天際線＋街道（計程車、公車、行人左右穿梭），
  * 上緣飛機、鴿子、一架紙飛機（寄給遠方的信）。點一下畫面放飛鴿子。
- * 路邊有熱狗推車與消防栓；小動物坐在左側屋頂邊緣、水塔旁。 */
+ * 路邊有熱狗推車與消防栓；小動物（Kai 牽著小袋熊）在左側水塔大樓的屋頂上來回散步。 */
 (function () {
   'use strict';
   const KK = window.KK, P = KK.PAL;
@@ -13,7 +13,7 @@
     mood: '可愛・熱鬧・寄給遠方',
     duration: 16,
     hint: '點一下畫面，放飛一群鴿子',
-    critterHint: '左側屋頂邊緣、水塔旁，半身沉在屋頂後只露頭和耳朵，與樓房同色',
+    critterHint: '左側水塔大樓的屋頂上，Kai 牽著小袋熊慢慢來回散步一趟',
     create() {
       const st = { sky: null, key: '', birds: [] };
 
@@ -357,13 +357,16 @@
           });
           g.globalAlpha = 1;
 
-          // 小動物：沉在左側屋頂邊緣、水塔旁，顏色同樓房剪影，不加光；只露出頭和耳朵，輪流看左右（偷偷的）
+          // 小動物（Kai 牽著小袋熊）：在左側水塔大樓的屋頂上慢慢來回散步一趟（整數圈 loop），貼著樓房剪影、低調
           if (S.critter && st.home) {
             const hm = st.home;
-            const cs = rb * 0.032;
-            const cx = hm.x + hm.w * 0.2, cy = skyY + st.top - hm.h + cs * (KK.Critter.kind === 'cat' ? 0.62 : 0.42);
-            const look = KK.mod(t, 16) > 8 ? -1 : 1;
-            KK.Critter.draw(g, cx, cy, cs, { pose: 'sit', facing: look, color: KK.rgba(KK.mix(P.night, P.umber, 0.25), 0.92), t, eyeColor: KK.mix(P.night, P.page, 0.4), t });
+            const cs = S.u * 0.05;
+            const k = 0.5 - 0.5 * Math.cos(ph * KK.TAU);           // 0→1→0：去程一趟、回程一趟
+            const cw = cs * 1.3;                                      // 圖寬
+            const x0 = hm.x + cw * 0.6, x1 = hm.x + Math.max(hm.w - cw * 0.6, cw * 0.7 + 4);
+            const cx = KK.lerp(x0, x1, k);
+            const cy = skyY + st.top - hm.h + cs * 0.04;
+            KK.Critter.draw(g, cx, cy, cs, { pose: 'walk', facing: ph < 0.5 ? 1 : -1, alpha: 0.78, tone: 0.4, t });
           }
 
           // 馬路

@@ -17,6 +17,7 @@
     { id: 'otona', no: 3, song: '大人中', sec: 1 },
     { id: 'hareru', no: 4, song: '明日晴れるかな', sec: 1 },
     { id: 'onlyyou', no: 5, song: '我只在乎你', sec: 1 },
+    { id: 'together', no: 'E0', song: '', sec: 2 },
     { id: 'curtaincall', no: 'E1', song: '', sec: 2 },
     { id: 'keyhole', no: 'E2', song: '', sec: 2 },
     { id: 'reveal', no: 'E3', song: '', sec: 2 },
@@ -259,7 +260,7 @@
     P = {
       view: view, canvas: canvas, stage: stage, id: '', bg: 'books', lastBg: 'books',
       facing: 'environment', camSeq: 0, wasCam: false, hintT: 0,
-      showFps: qs.get('fps') === '1', lastSec: -1, lastFps: 0,
+      showFps: qs.get('fps') === '1', lastSec: -1, lastFps: 0, lastInfo: 0,
     };
     // 濾鏡畫到一半丟例外：不讓 rAF 迴圈整個死掉
     var orig = stage.renderAt.bind(stage);
@@ -274,6 +275,8 @@
       }
     };
     stage.onFrame = onFrame;
+    P.rec = null; P.lastResult = null; P.resultUrl = '';
+    window.KK_ACTIVE_STAGE = stage;
     applyCritter();
     updateCritterButtons();
     $('p-fps').hidden = !P.showFps;
@@ -287,6 +290,14 @@
     if (s !== P.lastSec) {
       P.lastSec = s;
       $('p-looptxt').textContent = 'loop ' + s + ' / ' + D + ' 秒';
+    }
+    if (P.bg === 'camera') {
+      var nn = performance.now();
+      if (nn - P.lastInfo > 500) {
+        P.lastInfo = nn;
+        var o = P.stage.outputInfo();
+        $('p-info').textContent = '預覽 9:16 · 錄影 ' + o.canvas + ' · 相機 ' + o.source.replace('（橫，已置中裁切）', '(橫,已裁切)').replace('（直）', '(直)') + ' · ' + S.fps + 'fps' + (o.rotate ? ' · rotate=' + o.rotate : '');
+      }
     }
     if (P.showFps) {
       var n = performance.now();
@@ -360,6 +371,9 @@
 
   function leavePlayer() {
     if (!P) return;
+    if (P.rec) { var rh = P.rec; P.rec = null; rh.stop('離開播放頁'); }
+    closeResult();
+    setRecUi(false);
     P.stage.stop();
     P.camSeq++;
     try { KK.Camera.stop(); } catch (e) { /* ignore */ }
@@ -368,6 +382,7 @@
     clearTimeout(P.dimT);
     if (fsElement()) { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) { /* ignore */ } }
     P.canvas.remove();
+    window.KK_ACTIVE_STAGE = null;
     P = null;
     hideToast();
     document.documentElement.classList.remove('in-player');
@@ -401,6 +416,69 @@
     for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('on', btns[i].getAttribute('data-bg') === P.bg);
     $('p-flip-row').hidden = P.bg !== 'camera';
     $('p-flip').textContent = '鏡頭：' + (P.facing === 'user' ? '前' : '後') + '（點一下切換）';
+    $('p-rec').hidden = P.bg !== 'camera';
+    $('p-info').hidden = P.bg !== 'camera';
+    P.view.classList.toggle('cam', P.bg === 'camera');
+    updateOrient();
+  }
+
+  /* ---------- 相機模式：直式輸出＋錄影 ---------- */
+  function isTouch() {
+    try { return (navigator.maxTouchPoints || 0) > 0 || 'ontouchstart' in window || (window.matchMedia && matchMedia('(pointer: coarse)').matches); } catch (e) { return false; }
+  }
+  /* 橫放觸控裝置：提示「請直拿手機」（不影響錄影輸出，畫布固定 720×1280） */
+  function updateOrient() {
+    var el = $('p-rotate');
+    if (!el) return;
+    el.hidden = !(P && P.bg === 'camera' && isTouch() && window.innerWidth > window.innerHeight);
+  }
+  function fmtT(s) { return Math.floor(s / 60) + ':' + ('0' + Math.floor(s % 60)).slice(-2); }
+  function setRecUi(on) {
+    var b = $('p-rec'), t = $('p-timer');
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-label', on ? '停止錄影' : '開始錄影');
+    t.hidden = !on;
+    if (P) P.view.classList.toggle('recording', on);
+    if (!on) t.textContent = '● 0:00 / 0:30';
+  }
+  function onRecTick(el, max) { $('p-timer').textContent = '● ' + fmtT(el) + ' / ' + fmtT(max); }
+  function startRec() {
+    if (!P || P.rec || P.bg !== 'camera' || !P.stage.video) return;
+    closeResult();
+    var h;
+    try { h = KK.Recorder.start(P.stage, { maxSec: 30, onTick: onRecTick }); }
+    catch (e) { toast('無法錄影：' + ((e && e.message) || e), 0, '錯誤：' + ((e && e.name) || '') + '（點一下關閉）'); return; }
+    P.rec = h;
+    setRecUi(true);
+    h.done.then(function (r) {
+      if (!P || P.rec !== h) return;
+      P.rec = null;
+      setRecUi(false);
+      showResult(r);
+    });
+  }
+  function stopRec() { if (P && P.rec) P.rec.stop('手動停止'); }
+  function showResult(r) {
+    P.lastResult = r;
+    closeResult();
+    var v = $('p-rv');
+    try { P.resultUrl = URL.createObjectURL(r.blob); v.src = P.resultUrl; v.load(); } catch (e) { /* ignore */ }
+    $('p-rinfo').textContent = KK.Recorder.describe(r).join('\n');
+    $('p-rmsg').textContent = '';
+    $('p-rsave').disabled = !r.size;
+    $('p-result').hidden = false;
+    P.view.classList.add('result');
+  }
+  function closeResult() {
+    var el = $('p-result');
+    if (!el || el.hidden && !(P && P.resultUrl)) return;
+    el.hidden = true;
+    var v = $('p-rv');
+    try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) { /* ignore */ }
+    if (P) {
+      if (P.resultUrl) { try { URL.revokeObjectURL(P.resultUrl); } catch (e) { /* ignore */ } P.resultUrl = ''; }
+      P.view.classList.remove('result');
+    }
   }
 
   function startCamera() {
@@ -410,11 +488,13 @@
     stage.bgMode = 'camera';
     stage.video = null;
     stage.mirror = P.facing === 'user';
+    $('p-rec').disabled = true;
     toast('相機啟動中…', 2500);
     KK.Camera.start(P.facing).then(function (v) {
       if (!P || seq !== P.camSeq || P.bg !== 'camera') { KK.Camera.stop(); return; }
       stage.video = v;
       stage.mirror = P.facing === 'user';
+      $('p-rec').disabled = false;
       hideToast();
     }, function (e) {
       if (!P || seq !== P.camSeq) return;
@@ -426,9 +506,12 @@
   }
 
   function setBg(mode) {
-    if (!P) return;
+    if (!P || P.rec) return;
     P.bg = mode;
     P.wasCam = false;
+    // 相機模式一律直式 9:16 輸出（畫布 720×1280，置中裁切）；其他模式依視窗大小
+    P.view.classList.toggle('cam', mode === 'camera');
+    P.stage.setPortraitOutput(mode === 'camera');
     if (mode === 'camera') {
       refreshBgUi();
       startCamera();
@@ -501,7 +584,7 @@
     // 點面板外面收起；碰頂列／面板／進度線＝操作介面（濾鏡上的手指不算）
     document.addEventListener('pointerdown', function (e) {
       if (!P) return;
-      var inUi = e.target.closest && e.target.closest('#ptop, #p-menu, #p-loop, #p-dot');
+      var inUi = e.target.closest && e.target.closest('#ptop, #p-menu, #p-loop, #p-dot, #p-rec');
       if (inUi) wake();
       if (!$('p-menu').hidden && !(e.target.closest && e.target.closest('#p-menu, #p-more'))) setMenu(false);
     }, true);
@@ -512,12 +595,25 @@
       segs[i].addEventListener('click', function (e) { setBg(e.currentTarget.getAttribute('data-bg')); });
     }
     $('p-flip').addEventListener('click', function () {
-      if (!P) return;
+      if (!P || P.rec) return;
       P.facing = P.facing === 'user' ? 'environment' : 'user';
       refreshBgUi();
       startCamera();
     });
     $('p-critter').addEventListener('click', function () { setCritter(!critterOn); });
+    $('p-rec').addEventListener('click', function () { if (P && P.rec) stopRec(); else startRec(); });
+    $('p-rsave').addEventListener('click', function () {
+      if (!P || !P.lastResult) return;
+      var b = $('p-rsave'); b.disabled = true;
+      KK.Recorder.save(P.lastResult).then(function (o) { $('p-rmsg').textContent = o.msg; b.disabled = false; },
+        function (e) { $('p-rmsg').textContent = '儲存失敗：' + ((e && e.message) || e); b.disabled = false; });
+    });
+    $('p-ragain').addEventListener('click', closeResult);
+    $('p-rcopy').addEventListener('click', function () {
+      var t = KK_Diag.collect().text;
+      KK_Diag.copy(t, null).then(function (ok) { $('p-rmsg').textContent = ok ? '已複製測試資訊。' : '複製失敗，請到首頁「診斷資訊」複製。'; });
+    });
+    $('p-back').addEventListener('click', function (e) { if (P && P.rec) { e.preventDefault(); toast('錄影中，請先停止錄影', 1800); } });
     $('p-fs').addEventListener('click', toggleFs);
     $('p-hide').addEventListener('click', function () { setUiHidden(true); });
     $('p-dot').addEventListener('click', function () { setUiHidden(false); });
@@ -528,8 +624,8 @@
       $('p-fps').hidden = !P.showFps;
     });
 
-    window.addEventListener('resize', scheduleFit);
-    window.addEventListener('orientationchange', scheduleFit);
+    window.addEventListener('resize', function () { scheduleFit(); updateOrient(); });
+    window.addEventListener('orientationchange', function () { scheduleFit(); updateOrient(); });
     document.addEventListener('fullscreenchange', onFsChange);
     document.addEventListener('webkitfullscreenchange', onFsChange);
     if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleFit);

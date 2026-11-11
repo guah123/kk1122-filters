@@ -262,6 +262,41 @@
       v.playsInline = true;
       v.srcObject = stream;
       await v.play();
+      // ★ 直式自動修正：手機直拿（視窗高>寬）但相機給回橫向影格 → 用「寬高對調」的約束重試一次
+      //   （部分 iOS 版本對 width/height 的解讀與方向相反）；仍是橫向就交給 drawBg 置中裁切成 9:16。
+      KK.Camera.log = KK.Camera.log || [];
+      for (let k = 0; k < 50 && !v.videoWidth; k++) await new Promise((r) => setTimeout(r, 60));
+      KK.Camera.log.push('第一次：' + v.videoWidth + '×' + v.videoHeight);
+      const portraitDevice = window.innerHeight > window.innerWidth;
+      if (portraitDevice && v.videoWidth > v.videoHeight && !KK.Camera._swapTried) {
+        KK.Camera._swapTried = true;
+        // iOS 同時只能有一條相機串流：先停舊的，再用對調約束重開；新串流不論直橫都採用（橫的會被裁切）
+        stream.getTracks().forEach((tr) => tr.stop());
+        const open = async (c) => {
+          const s2 = await navigator.mediaDevices.getUserMedia(c);
+          const v2 = document.createElement('video');
+          v2.setAttribute('playsinline', ''); v2.setAttribute('muted', '');
+          v2.muted = true; v2.playsInline = true; v2.srcObject = s2;
+          await v2.play();
+          for (let k = 0; k < 50 && !v2.videoWidth; k++) await new Promise((r) => setTimeout(r, 60));
+          return [s2, v2];
+        };
+        let pair = null;
+        try {
+          const alt = KK.Camera.constraints(facing);
+          alt.video.width = { ideal: 1280 };
+          alt.video.height = { ideal: 720 };
+          delete alt.video.aspectRatio;
+          pair = await open(alt);
+          KK.Camera.log.push('對調約束重試：' + pair[1].videoWidth + '×' + pair[1].videoHeight);
+        } catch (e) {
+          KK.Camera.log.push('對調重試失敗：' + (e && e.name) + '，改回原約束');
+          pair = await open(tries.find(Boolean));
+        }
+        KK.Camera._swapTried = false;
+        KK.Camera.stream = pair[0]; KK.Camera.video = pair[1]; KK.Camera.facing = facing || 'environment';
+        return pair[1];
+      }
       KK.Camera.stream = stream;
       KK.Camera.video = v;
       KK.Camera.facing = facing || 'environment';

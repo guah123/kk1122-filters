@@ -170,8 +170,8 @@
             // 一圈淡淡的暖色邊光（往上偏移一點點的米色剪影），讓深色剪影在書牆前讀得出來
             const wasVis = KK.Critter.visible;
             KK.Critter.visible = true; // 主角不受開關影響
-            KK.Critter.draw(g, 0, -c * 0.03, c, { pose, facing: -1, color: KK.rgba(P.cream, 0.4), eye: false, t });
-            KK.Critter.draw(g, 0, 0, c, opt);
+            // （圖片版自帶白肚，不再疊一層米色剪影邊光）
+            KK.Critter.draw(g, 0, 0, c, { pose, facing: -1, t, tone: 0, alpha: 1 });
             KK.Critter.visible = wasVis;
             g.restore();
 

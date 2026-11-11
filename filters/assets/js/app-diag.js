@@ -39,12 +39,20 @@
       loadErrors: (window.KK_LOAD_ERRORS || []).slice(),
       filtersDefined: (window.KK && KK.filters ? KK.filters.map(function (f) { return f.id; }) : []),
     };
-    var types = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm'];
+    var types = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
     types.forEach(function (m) {
       var ok = null;
       try { ok = d.MediaRecorder && MediaRecorder.isTypeSupported ? !!MediaRecorder.isTypeSupported(m) : false; } catch (e) { ok = 'error:' + e.message; }
       d.mimeSupport[m] = ok;
     });
+    // 錄影解析度與方向：最近一次錄影；沒有就用目前舞台的輸出資訊
+    var runs = (window.KK && KK.Recorder && KK.Recorder.runs) ? KK.Recorder.runs.slice() : [];
+    d.recordings = runs;
+    var stg = window.KK_ACTIVE_STAGE || null;
+    try { d.output = stg && stg.outputInfo ? stg.outputInfo() : null; } catch (e) { d.output = null; }
+    d.camera = null;
+    d.cameraLog = (window.KK && KK.Camera && KK.Camera.log) ? KK.Camera.log.slice() : [];
+    try { d.camera = window.KK && KK.Camera && KK.Camera.info ? KK.Camera.info() : null; } catch (e) { /* ignore */ }
     var st = window.KK_SELFTEST_RESULT || null;
     if (st) {
       d.selftest = {
@@ -72,6 +80,25 @@
     L.push('navigator.share：' + yn(d.share) + '　navigator.canShare：' + yn(d.canShare));
     L.push('navigator.clipboard.writeText：' + yn(d.clipboard));
     L.push('已定義的濾鏡：' + (d.filtersDefined.join(', ') || '（無）'));
+    var lastRun = runs.length ? runs[runs.length - 1] : null;
+    if (lastRun) {
+      L.push('錄影解析度與方向（最近一次 #' + lastRun.n + '）：畫布 ' + lastRun.canvas + '，影片檔 ' + lastRun.file + '，' + lastRun.orientation);
+    } else if (d.output) {
+      L.push('錄影解析度與方向（尚未錄影，舞台輸出）：畫布 ' + d.output.canvas + '，' + d.output.orientation + '；相機來源 ' + d.output.source + '；rotate=' + d.output.rotate);
+    } else {
+      L.push('錄影解析度與方向：尚無資料（進相機模式或到 camera/ 頁錄一段）');
+    }
+    if (d.camera) L.push('相機軌道設定：' + JSON.stringify(d.camera));
+    if (d.cameraLog.length) L.push('KK.Camera.log：' + d.cameraLog.join(' → '));
+    if (runs.length) {
+      L.push('【錄影紀錄】共 ' + runs.length + ' 次');
+      runs.forEach(function (r) {
+        L.push('  #' + r.n + ' 濾鏡=' + r.filter + (r.facing ? ' 鏡頭=' + r.facing : '') + ' MIME=' + r.mime);
+        L.push('     畫布=' + r.canvas + ' 影片檔=' + r.file + ' 方向=' + r.orientation + ' 時長=' + r.durationSec + 's 大小=' + (r.sizeBytes != null ? Math.round(r.sizeBytes / 1024) + 'KB' : '-'));
+        L.push('     fps 平均=' + r.fpsAvg + ' 最低=' + r.fpsMin + ' 音軌=' + (r.hasAudioTrack ? '有(' + r.audioTracks + ')' : '無') + ' 停止原因=' + r.stopReason +
+          (r.warn ? ' 警告=' + r.warn : '') + (r.recErr ? ' 錄影器錯誤=' + r.recErr : ''));
+      });
+    }
     if (d.loadErrors.length) L.push('載入失敗的檔案：' + d.loadErrors.join(', '));
     if (st) {
       L.push('');
