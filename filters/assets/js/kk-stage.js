@@ -20,8 +20,39 @@
     this.frames = [];
     this.maxPixels = opts.maxPixels || MAX_PIXELS;
     this.fixedSize = opts.size || null; // [w,h] 固定像素（渲染用）
+    this.locked = false;                // 錄影中鎖住尺寸（同 261112-proto：錄影中不改畫布大小，避免編碼器出問題）
+    this.maxFps = opts.maxFps || 0;     // 0 = 跟螢幕刷新；錄影時建議 30（同 proto 的 29ms 節流）
+    this._last = 0;
     if (opts.pointer !== false) this._bindPointer();
   }
+
+  /* ---------- 與 grok/261112-proto 合併用的接口（本版不錄影，先備好） ----------
+   * 合併方式：stage.lockForRecording(true) → const ms = stage.recordStream(30) →
+   *   new MediaRecorder(ms, { mimeType: proto 的 pickMime() }) … 停止後 lockForRecording(false)。
+   * 濾鏡本身不需要任何修改。 */
+  /* 讓畫布解析度＝相機解析度（上限 1280×720、偶數），與 proto 的 setupCanvas 相同規則 */
+  Stage.prototype.useVideoResolution = function (on) {
+    const v = this.video;
+    if (on && v && v.videoWidth) {
+      const vw = v.videoWidth, vh = v.videoHeight;
+      const s = Math.min(1, 1280 / Math.max(vw, vh), 720 / Math.min(vw, vh));
+      this.fixedSize = [Math.max(2, Math.round(vw * s / 2) * 2), Math.max(2, Math.round(vh * s / 2) * 2)];
+    } else {
+      this.fixedSize = null;
+    }
+    this.fit();
+  };
+  Stage.prototype.lockForRecording = function (on) {
+    this.locked = !!on;
+    this.maxFps = on ? 30 : 0;
+  };
+  /* 合成畫面的影像軌＋相機串流裡的麥克風音軌（若有） */
+  Stage.prototype.recordStream = function (fps) {
+    if (!this.canvas.captureStream) throw Object.assign(new Error('此瀏覽器不支援 canvas.captureStream'), { name: 'NotSupported' });
+    const cs = this.canvas.captureStream(fps || 30);
+    const audio = KK.Camera.stream ? KK.Camera.stream.getAudioTracks() : [];
+    return new MediaStream([...cs.getVideoTracks(), ...audio]);
+  };
 
   Stage.prototype.setFilter = function (id) {
     this.def = KK.byId[id];
@@ -34,6 +65,7 @@
 
   /* 依顯示尺寸決定內部解析度（限制總像素數，避免手機過熱掉幀） */
   Stage.prototype.fit = function () {
+    if (this.locked) return;
     let W, H;
     if (this.fixedSize) {
       W = this.fixedSize[0]; H = this.fixedSize[1];
@@ -100,6 +132,8 @@
     this.t0 = performance.now() - (this.S.now || 0) * 1000;
     const loop = (ts) => {
       if (!this.running) return;
+      if (this.maxFps && ts - this._last < 1000 / this.maxFps - 4) { this.raf = requestAnimationFrame(loop); return; }
+      this._last = ts;
       const now = (ts - this.t0) / 1000;
       this.renderAt(now, now);
       // fps：最近 1 秒的幀數
@@ -152,8 +186,8 @@
       return {
         video: {
           facingMode: { ideal: facing || 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 720 },   // 直式，與 261112-proto 一致
+          height: { ideal: 1280 },
           frameRate: { ideal: 30 },
         },
         audio: KK.Camera.wantAudio()
@@ -171,7 +205,22 @@
         throw err;
       }
       KK.Camera.stop();
-      const stream = await navigator.mediaDevices.getUserMedia(KK.Camera.constraints(facing));
+      // 與 261112-proto 相同的三段備援：完整設定 → 簡化相機設定 → 僅相機；被拒絕就不再重試
+      const full = KK.Camera.constraints(facing);
+      const tries = [
+        full,
+        { video: { facingMode: { ideal: facing || 'environment' } }, audio: full.audio },
+        { video: { facingMode: { ideal: facing || 'environment' } }, audio: false },
+      ];
+      let stream = null, last = null;
+      for (const c of tries) {
+        try { stream = await navigator.mediaDevices.getUserMedia(c); break; }
+        catch (e) {
+          last = e;
+          if (e.name === 'NotAllowedError' || e.name === 'SecurityError') throw e;
+        }
+      }
+      if (!stream) throw last;
       const v = document.createElement('video');
       v.setAttribute('playsinline', '');
       v.setAttribute('muted', '');
