@@ -346,17 +346,11 @@ textarea, pre { -webkit-user-select: text; user-select: text; }
 }
 .player.recording .seg, .player.recording #p-flip-row, .player.recording .back { opacity: 0.4; pointer-events: none; }
 
-/* 錄影結果面板 */
-.resultpanel { position: absolute; inset: 0; z-index: 20; background: rgba(20, 14, 11, 0.985); display: grid; place-items: center; padding: calc(10px + var(--sat)) 12px calc(10px + var(--sab)); overflow: auto; }
-.rp-card { width: min(100%, 460px); display: grid; gap: 8px; }
-.rp-video { width: auto; max-width: 100%; height: min(52vh, 52dvh); aspect-ratio: 9 / 16; margin: 0 auto; background: #000; border-radius: 10px; display: block; }
-.rp-info { margin: 0; padding: 8px 10px; border-radius: 10px; background: rgba(243, 230, 207, 0.08); font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; color: #e8dcc6; white-space: pre-wrap; word-break: break-all; }
-.rp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.rp-actions .big { flex: 1; min-width: 0; white-space: nowrap; font-size: 17px; padding: 0 12px; }
-.rp-actions .small { flex-basis: 100%; }
+/* 備援：「儲存剛剛這段」小按鈕（不跳頁、不蓋全螢幕；下載被擋或在背景停止時才出現） */
+.savebtn { position: absolute; z-index: 5; left: 50%; top: calc(100px + var(--sat)); transform: translateX(-50%); min-height: 40px; padding: 0 16px; border-radius: 20px; border: 0; font-size: 15px; font-weight: 700; background: var(--apricot); color: var(--umber); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); }
+.savebtn[hidden] { display: none; }
 .btn.big.alt { background: rgba(243, 230, 207, 0.14); color: var(--cream); border: 1px solid rgba(243, 230, 207, 0.4); }
 .btn:disabled { opacity: 0.45; }
-.player.result .recbtn { display: none; }
 
 /* 播放頁相機模式資訊列（預覽右下角） */
 .player .infobar {

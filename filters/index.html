@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>看看｜現場濾鏡展示</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="assets/css/app.css">
+<link rel="stylesheet" href="assets/css/app.css?v=14">
 </head>
 <body>
 <noscript><p style="padding:24px;color:#F3E6CF">需要開啟 JavaScript 才能看展示頁。</p></noscript>
@@ -88,21 +88,10 @@
 
   <!-- 相機模式：錄影（畫面固定直式 9:16 720×1280） -->
   <div id="p-info" class="infobar" hidden role="status"></div>
-  <div id="p-timer" class="rectimer" hidden role="status">● 0:00 / 0:30</div>
+  <div id="p-timer" class="rectimer" hidden role="status">● 00:00</div>
   <div id="p-rotate" class="rothint" hidden>請直拿手機<small>錄出來的影片一律是直式 9:16</small></div>
   <button type="button" id="p-rec" class="recbtn" hidden aria-label="開始錄影"><i></i></button>
-  <div id="p-result" class="resultpanel" hidden role="dialog" aria-label="錄影結果">
-    <div class="rp-card">
-      <video id="p-rv" class="rp-video" controls playsinline loop></video>
-      <pre id="p-rinfo" class="rp-info"></pre>
-      <p id="p-rmsg" class="diag-msg" role="status"></p>
-      <div class="rp-actions">
-        <button type="button" class="btn big" id="p-rsave">存到相簿</button>
-        <button type="button" class="btn big alt" id="p-ragain">再錄一次</button>
-        <button type="button" class="btn small" id="p-rcopy">複製測試資訊</button>
-      </div>
-    </div>
-  </div>
+  <button type="button" id="p-save" class="savebtn" hidden>儲存剛剛這段</button>
   <button type="button" id="p-dot" class="dot" hidden aria-label="顯示介面"><span></span></button>
 </div>
 
@@ -122,9 +111,9 @@
   </div>
 </div>
 
-<script src="assets/js/kk-load.js"></script>
-<script src="assets/js/app-diag.js"></script>
-<script src="assets/js/selftest.js"></script>
-<script src="assets/js/app.js"></script>
+<script src="assets/js/kk-load.js?v=14"></script>
+<script src="assets/js/app-diag.js?v=14"></script>
+<script src="assets/js/selftest.js?v=14"></script>
+<script src="assets/js/app.js?v=14"></script>
 </body>
 </html>

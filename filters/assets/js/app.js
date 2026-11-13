@@ -275,7 +275,7 @@
       }
     };
     stage.onFrame = onFrame;
-    P.rec = null; P.lastResult = null; P.resultUrl = '';
+    P.rec = null; P.lastResult = null;
     window.KK_ACTIVE_STAGE = stage;
     applyCritter();
     updateCritterButtons();
@@ -371,8 +371,8 @@
 
   function leavePlayer() {
     if (!P) return;
-    if (P.rec) { var rh = P.rec; P.rec = null; rh.stop('離開播放頁'); }
-    closeResult();
+    if (P.rec) { var rh = P.rec; P.rec = null; rh.stop('離開播放頁（使用者）', 'user'); }
+    hideSave();
     setRecUi(false);
     P.stage.stop();
     P.camSeq++;
@@ -432,53 +432,38 @@
     if (!el) return;
     el.hidden = !(P && P.bg === 'camera' && isTouch() && window.innerWidth > window.innerHeight);
   }
-  function fmtT(s) { return Math.floor(s / 60) + ':' + ('0' + Math.floor(s % 60)).slice(-2); }
+  function fmtT(s) { return ('0' + Math.floor(s / 60)).slice(-2) + ':' + ('0' + Math.floor(s % 60)).slice(-2); }
   function setRecUi(on) {
     var b = $('p-rec'), t = $('p-timer');
     b.classList.toggle('on', on);
     b.setAttribute('aria-label', on ? '停止錄影' : '開始錄影');
     t.hidden = !on;
     if (P) P.view.classList.toggle('recording', on);
-    if (!on) t.textContent = '● 0:00 / 0:30';
+    if (!on) t.textContent = '● 00:00';
   }
-  function onRecTick(el, max) { $('p-timer').textContent = '● ' + fmtT(el) + ' / ' + fmtT(max); }
+  function onRecTick(el) { $('p-timer').textContent = '● ' + fmtT(el); }
+  function hideSave() { var b = $('p-save'); if (b) b.hidden = true; }
   function startRec() {
     if (!P || P.rec || P.bg !== 'camera' || !P.stage.video) return;
-    closeResult();
+    hideSave();
     var h;
-    try { h = KK.Recorder.start(P.stage, { maxSec: 30, onTick: onRecTick }); }
+    try { h = KK.Recorder.start(P.stage, { onTick: onRecTick, onSaved: function (r) { onSaved(h, r); } }); }
     catch (e) { toast('無法錄影：' + ((e && e.message) || e), 0, '錯誤：' + ((e && e.name) || '') + '（點一下關閉）'); return; }
     P.rec = h;
     setRecUi(true);
-    h.done.then(function (r) {
-      if (!P || P.rec !== h) return;
-      P.rec = null;
-      setRecUi(false);
-      showResult(r);
-    });
   }
-  function stopRec() { if (P && P.rec) P.rec.stop('手動停止'); }
-  function showResult(r) {
+  function stopRec() { if (P && P.rec) P.rec.stop('使用者按停止', 'user'); }
+  /* KK.Recorder 在 onstop 當下就已觸發 <a download>；這裡只管畫面提示（不跳結果頁、不分享） */
+  function onSaved(h, r) {
+    if (P && P.rec === h) P.rec = null;
+    setRecUi(false);
+    if (!P) return;
     P.lastResult = r;
-    closeResult();
-    var v = $('p-rv');
-    try { P.resultUrl = URL.createObjectURL(r.blob); v.src = P.resultUrl; v.load(); } catch (e) { /* ignore */ }
-    $('p-rinfo').textContent = KK.Recorder.describe(r).join('\n');
-    $('p-rmsg').textContent = '';
-    $('p-rsave').disabled = !r.size;
-    $('p-result').hidden = false;
-    P.view.classList.add('result');
-  }
-  function closeResult() {
-    var el = $('p-result');
-    if (!el || el.hidden && !(P && P.resultUrl)) return;
-    el.hidden = true;
-    var v = $('p-rv');
-    try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) { /* ignore */ }
-    if (P) {
-      if (P.resultUrl) { try { URL.revokeObjectURL(P.resultUrl); } catch (e) { /* ignore */ } P.resultUrl = ''; }
-      P.view.classList.remove('result');
-    }
+    var s = r.save || {};
+    var msg = s.msg || '';
+    if (r.stopKind === 'limit') msg = '已達 10 分鐘，已自動停止並存檔。' + (s.triggered ? msg : '');
+    var b = $('p-save'); if (b) b.hidden = !s.fallback;
+    toast(msg, r.stopKind === 'limit' ? 4500 : 3000);
   }
 
   function startCamera() {
@@ -602,16 +587,10 @@
     });
     $('p-critter').addEventListener('click', function () { setCritter(!critterOn); });
     $('p-rec').addEventListener('click', function () { if (P && P.rec) stopRec(); else startRec(); });
-    $('p-rsave').addEventListener('click', function () {
-      if (!P || !P.lastResult) return;
-      var b = $('p-rsave'); b.disabled = true;
-      KK.Recorder.save(P.lastResult).then(function (o) { $('p-rmsg').textContent = o.msg; b.disabled = false; },
-        function (e) { $('p-rmsg').textContent = '儲存失敗：' + ((e && e.message) || e); b.disabled = false; });
-    });
-    $('p-ragain').addEventListener('click', closeResult);
-    $('p-rcopy').addEventListener('click', function () {
-      var t = KK_Diag.collect().text;
-      KK_Diag.copy(t, null).then(function (ok) { $('p-rmsg').textContent = ok ? '已複製測試資訊。' : '複製失敗，請到首頁「診斷資訊」複製。'; });
+    $('p-save').addEventListener('click', function () {
+      var o = P && P.lastResult ? KK.Recorder.saveAgain(P.lastResult) : { ok: false, msg: '沒有可儲存的影片' };
+      toast(o.msg, 3000);
+      if (o.ok) hideSave();
     });
     $('p-back').addEventListener('click', function (e) { if (P && P.rec) { e.preventDefault(); toast('錄影中，請先停止錄影', 1800); } });
     $('p-fs').addEventListener('click', toggleFs);

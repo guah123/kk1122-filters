@@ -89,7 +89,8 @@ body.camera-page { background: #1b1512; position: fixed; inset: 0; width: 100%; 
 .errbox .btn { margin-top: 8px; }
 .errbox small { display: block; opacity: 0.85; word-break: break-all; }
 
-.camera-page .resultpanel { position: fixed; }
+/* 備援：「儲存剛剛這段」小按鈕（在預覽上緣，不跳頁、不蓋全螢幕） */
+.frame .savebtn { top: 92px; }
 .camera-page .rothint { z-index: 6; }
 
 /* 資訊列：預覽右下角 */

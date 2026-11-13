@@ -19,14 +19,14 @@
     { id: 'colophon', label: '版權頁' },
   ];
   var C = {
-    stage: null, facing: 'environment', seq: 0, rec: null, lastResult: null, resultUrl: '', filter: 'none',
+    stage: null, facing: 'environment', seq: 0, rec: null, lastResult: null, filter: 'none',
     noMic: false, actx: null, analyser: null, abuf: null, asrc: null, meterT: 0, running: false, wasCam: false, moreOpen: false,
   };
   window.KK_CAMPAGE = C;
 
   function h(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
-  function fmtT(s) { return Math.floor(s / 60) + ':' + ('0' + Math.floor(s % 60)).slice(-2); }
+  function fmtT(s) { return ('0' + Math.floor(s / 60)).slice(-2) + ':' + ('0' + Math.floor(s % 60)).slice(-2); }
   function isTouch() {
     try { return (navigator.maxTouchPoints || 0) > 0 || 'ontouchstart' in window || (window.matchMedia && matchMedia('(pointer: coarse)').matches); } catch (e) { return false; }
   }
@@ -195,46 +195,36 @@
     b.disabled = false; b.textContent = '開始';
   }
 
-  /* ---------- 錄影 ---------- */
+  /* ---------- 錄影：手動開始／手動停止，停止後自動存到手機（不跳結果頁） ---------- */
   function setRecUi(on) {
     $('c-rec').classList.toggle('on', on);
     $('c-rec').setAttribute('aria-label', on ? '停止錄影' : '開始錄影');
     $('cam-root').classList.toggle('recording', on);
     $('timer').hidden = !on;
+    if (!on) $('timer').textContent = '● 00:00';
     var bs = document.querySelectorAll('.chip');
-    if (!on) $('timer').textContent = '● 0:00 / 0:30';
     for (var i = 0; i < bs.length; i++) bs[i].disabled = false; // 錄影中可以切濾鏡
   }
+  function hideSave() { $('c-save').hidden = true; }
   function startRec() {
     if (C.rec || !C.stage || !C.stage.video) return;
-    closeResult();
+    hideSave();
     var hd;
-    try { hd = KK.Recorder.start(C.stage, { maxSec: 30, onTick: function (el, max) { $('timer').textContent = '● ' + fmtT(el) + ' / ' + fmtT(max); } }); }
+    try { hd = KK.Recorder.start(C.stage, { onTick: function (el) { $('timer').textContent = '● ' + fmtT(el); }, onSaved: function (r) { onSaved(hd, r); } }); }
     catch (e) { toast('無法錄影：' + ((e && e.message) || e) + '（' + ((e && e.name) || '') + '）', 6000); return; }
     C.rec = hd;
     setRecUi(true);
-    hd.done.then(function (r) {
-      if (C.rec !== hd) return;
-      C.rec = null;
-      setRecUi(false);
-      showResult(r);
-    });
   }
-  function showResult(r) {
+  /* KK.Recorder 在 onstop 當下（尚未驗證尺寸前）就已觸發 <a download>；這裡只管畫面提示 */
+  function onSaved(hd, r) {
+    if (C.rec === hd) C.rec = null;
     C.lastResult = r;
-    closeResult();
-    var v = $('rv');
-    try { C.resultUrl = URL.createObjectURL(r.blob); v.src = C.resultUrl; v.load(); } catch (e) { /* ignore */ }
-    $('rinfo').textContent = KK.Recorder.describe(r).join('\n');
-    $('rmsg').textContent = '';
-    $('rsave').disabled = !r.size;
-    $('result').hidden = false;
-  }
-  function closeResult() {
-    $('result').hidden = true;
-    var v = $('rv');
-    try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) { /* ignore */ }
-    if (C.resultUrl) { try { URL.revokeObjectURL(C.resultUrl); } catch (e) { /* ignore */ } C.resultUrl = ''; }
+    setRecUi(false);
+    var s = r.save || {};
+    var msg = s.msg || '';
+    if (r.stopKind === 'limit') msg = '已達 10 分鐘，已自動停止並存檔。' + (s.triggered ? msg : '');
+    $('c-save').hidden = !s.fallback;
+    toast(msg, r.stopKind === 'limit' ? 4500 : 3000);
     // 錄影被「離開頁面」中斷時，相機可能已被停掉：回來後補開
     if (C.running && !document.hidden && (!KK.Camera.stream || KK.Camera.stream.getTracks().some(function (t) { return t.readyState !== 'live'; }))) resumeCam();
   }
@@ -279,16 +269,11 @@
       }
       $('c-flip').disabled = false;
     });
-    $('c-rec').addEventListener('click', function () { if (C.rec) C.rec.stop('手動停止'); else startRec(); });
-    $('rsave').addEventListener('click', function () {
-      if (!C.lastResult) return;
-      var b = $('rsave'); b.disabled = true;
-      KK.Recorder.save(C.lastResult).then(function (o) { $('rmsg').textContent = o.msg; b.disabled = false; },
-        function (e) { $('rmsg').textContent = '儲存失敗：' + ((e && e.message) || e); b.disabled = false; });
-    });
-    $('ragain').addEventListener('click', closeResult);
-    $('rcopy').addEventListener('click', function () {
-      KK_Diag.copy(KK_Diag.collect().text, null).then(function (ok) { $('rmsg').textContent = ok ? '已複製測試資訊，請貼回 LINE／訊息。' : '複製失敗，請按右下「測試資訊」手動複製。'; });
+    $('c-rec').addEventListener('click', function () { if (C.rec) C.rec.stop('使用者按停止', 'user'); else startRec(); });
+    $('c-save').addEventListener('click', function () {
+      var o = C.lastResult ? KK.Recorder.saveAgain(C.lastResult) : { ok: false, msg: '沒有可儲存的影片' };
+      toast(o.msg, 3000);
+      if (o.ok) hideSave();
     });
 
     window.addEventListener('resize', scheduleLayout);
@@ -296,7 +281,7 @@
     if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleLayout);
     ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (n) { document.addEventListener(n, function (e) { e.preventDefault(); }); });
     $('frame').addEventListener('contextmenu', function (e) { e.preventDefault(); });
-    document.addEventListener('touchmove', function (e) { if (e.target.closest && !e.target.closest('.chips, .startscreen, .resultpanel, .modal-card')) e.preventDefault(); }, { passive: false });
+    document.addEventListener('touchmove', function (e) { if (e.target.closest && !e.target.closest('.chips, .startscreen, .modal-card')) e.preventDefault(); }, { passive: false });
 
     // 切到背景：停畫面與相機（錄影由 KK.Recorder 自己停止並保留）；回來自動重開
     document.addEventListener('visibilitychange', function () {
@@ -308,7 +293,8 @@
         if (C.stage) C.stage.video = null;
       } else if (C.wasCam) {
         C.wasCam = false;
-        if ($('result').hidden) resumeCam();
+        resumeCam();
+        if (!$('c-save').hidden) toast('剛剛的錄影還沒存到手機，請按「儲存剛剛這段」', 4000);
       }
     });
     window.addEventListener('pagehide', function () { try { KK.Camera.stop(); } catch (e) { /* ignore */ } });

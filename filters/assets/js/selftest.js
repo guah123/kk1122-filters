@@ -303,7 +303,7 @@
       stage.video = v; stage.bgMode = 'camera';
       stage.start();
       await sleep(400);
-      var h = KK.Recorder.start(stage, { maxSec: 30 });
+      var h = KK.Recorder.start(stage, { autoSave: false }); // selftest 不觸發下載
       await sleep(2000);
       var r = await h.stop('selftest 2 秒');
       var vf = r.verified || {};

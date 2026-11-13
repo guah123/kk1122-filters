@@ -95,6 +95,7 @@
       runs.forEach(function (r) {
         L.push('  #' + r.n + ' 濾鏡=' + r.filter + (r.facing ? ' 鏡頭=' + r.facing : '') + ' MIME=' + r.mime);
         L.push('     畫布=' + r.canvas + ' 影片檔=' + r.file + ' 方向=' + r.orientation + ' 時長=' + r.durationSec + 's 大小=' + (r.sizeBytes != null ? Math.round(r.sizeBytes / 1024) + 'KB' : '-'));
+        L.push('     副檔名=' + r.ext + ' 停止類型=' + r.stopKind + ' 自動下載=' + r.autoDownload + ' 備援鈕顯示=' + (r.fallbackShown ? '是' : '否') + ' 備援鈕使用=' + (r.fallbackUsed ? '是' : '否'));
         L.push('     fps 平均=' + r.fpsAvg + ' 最低=' + r.fpsMin + ' 音軌=' + (r.hasAudioTrack ? '有(' + r.audioTracks + ')' : '無') + ' 停止原因=' + r.stopReason +
           (r.warn ? ' 警告=' + r.warn : '') + (r.recErr ? ' 錄影器錯誤=' + r.recErr : ''));
       });

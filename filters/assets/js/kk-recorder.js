@@ -1,9 +1,11 @@
 /* 錄影：把 grok/261112-proto 的錄影流程改寫成共用模組，畫面來源是 KK.Stage。
- *   const h = KK.Recorder.start(stage, { maxSec: 30, onTick(sec) {} });
- *   const result = await h.done;      // 或 await h.stop('手動停止')
- *   KK.Recorder.save(result);         // 分享（iOS「儲存影片」）或 <a download>
- * 規則（同 proto）：MIME 依序試 mp4/avc1 → mp4 → webm vp9 → vp8 → webm；MediaRecorder 帶位元率失敗就用基本參數；
- * start(1000)；30 秒自動停；離開頁面（visibilitychange hidden / pagehide）停止並保留已錄部分；錄影中鎖住畫布尺寸（stage.lockForRecording）。
+ *   const h = KK.Recorder.start(stage, { onTick(sec) {}, onSaved(result) {} });
+ *   h.stop('使用者按停止')  // 請直接在「停止鈕的 click handler」裡呼叫，才保得住使用者手勢
+ * 規則：MIME 依序試 mp4/avc1 → mp4 → webm vp9 → vp8 → webm；MediaRecorder 帶位元率失敗就用基本參數；start(1000)；
+ * 沒有一般使用者看得到的長度上限，只有 10 分鐘的安全上限（R.limitSec，防止忘記按停止吃光記憶體，到了照常停止並存檔）；
+ * 離開頁面（visibilitychange hidden / pagehide）停止並保留已錄部分；錄影中鎖住畫布尺寸（stage.lockForRecording）。
+ * 停止後「立刻」（在 onstop 裡、讀回尺寸驗證之前）用 <a download> 自動存到手機（R.autoSave），不跳結果頁、不呼叫 navigator.share。
+ * 備援：下載可能被擋（iOS／內建瀏覽器／手勢已過期／在背景停止）→ result.save.fallback=true，UI 顯示「儲存剛剛這段」鈕 → R.saveAgain(result)。
  * 停止後會用離屏 <video> 讀回錄出檔案的 videoWidth/videoHeight，驗證真的是直向。 */
 (function () {
   'use strict';
@@ -15,7 +17,7 @@
     'video/webm;codecs=vp8,opus',
     'video/webm',
   ];
-  const R = { runs: [], active: null, last: null, MIMES: MIMES };
+  const R = { runs: [], active: null, last: null, MIMES: MIMES, limitSec: 600 };
   let seq = 0;
 
   const errStr = (e) => (e && (e.name ? e.name + ': ' : '') + (e.message || '')) || String(e);
@@ -65,7 +67,7 @@
     opts = opts || {};
     if (R.active) throw new Error('已經在錄影中');
     if (!R.supported()) throw Object.assign(new Error('此瀏覽器不支援 MediaRecorder／canvas.captureStream'), { name: 'NotSupported' });
-    const maxSec = opts.maxSec || 30;
+    if (R.last && R.last.blob) R.last.blob = null; // 上一段只保留到這次錄影開始，之後釋放
     const run = { n: ++seq, filter: stage.def ? stage.def.id : 'none', mime: R.pickMime(), facing: KK.Camera && KK.Camera.facing };
     stage.lockForRecording(true);
     const unlock = function () { stage.lockForRecording(false); };
@@ -93,6 +95,7 @@
     stage.onFrame = onFrame;
 
     let resolveDone, tick = 0, finished = false;
+    const limitSec = R.limitSec;
     const done = new Promise(function (r) { resolveDone = r; });
     rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
     rec.onerror = function (e) { run.recErr = errStr(e.error || e); };
@@ -115,7 +118,7 @@
       const result = {
         blob: blob, mime: type, size: blob.size, durationSec: dur, width: cw, height: ch,
         fpsAvg: avg, fpsMin: c.samples.length ? Math.min.apply(null, c.samples) : avg,
-        hasAudioTrack: c.hasAudio, audioTracks: c.audioTracks, stopReason: c.reason || '未知',
+        hasAudioTrack: c.hasAudio, audioTracks: c.audioTracks, stopReason: c.reason || '未知', stopKind: c.kind || 'user',
         filter: run.filter, n: run.n, facing: run.facing, warn: '', recErr: run.recErr || '',
       };
       result.orientation = orient(cw, ch);
@@ -123,6 +126,8 @@
       else if (blob.size / 1024 / Math.max(0.5, dur) < 5) result.warn = '檔案偏小（<5 KB/s），畫面可能靜止或編碼異常';
       if (avg != null && avg < 20) result.warn += (result.warn ? '；' : '') + '平均繪製幀率偏低（<20）';
       if (/離開|visibility|pagehide/.test(result.stopReason)) result.warn += (result.warn ? '；' : '') + '錄影因離開頁面被中斷，僅保留已錄部分';
+      if (opts.autoSave !== false) R.autoSave(result); else result.save = { skipped: true, triggered: false, fallback: false, usedFallback: false, name: R.filename(result) };
+      if (opts.onSaved) { try { opts.onSaved(result); } catch (e) { /* ignore */ } }
       result.verified = await R.verify(blob);
       if (result.verified.orientation) result.orientation = result.verified.orientation;
       if (result.verified.error) result.warn += (result.warn ? '；' : '') + '驗證：' + result.verified.error;
@@ -134,27 +139,27 @@
     }
     rec.onstop = finish;
 
-    function stop(reason) {
+    function stop(reason, kind) {
       if (c.stopped) return done;
-      c.stopped = true; c.reason = reason || '手動停止';
+      c.stopped = true; c.reason = reason || '使用者按停止'; c.kind = kind || 'user';
       c.dur = (performance.now() - c.t0) / 1000;
       clearInterval(tick);
       try { if (rec.state !== 'inactive') rec.stop(); else finish(); } catch (e) { run.recErr = errStr(e); finish(); }
       return done;
     }
-    function onVis() { if (document.hidden) stop('離開頁面／切換 App／鎖螢幕（visibilitychange），已保留已錄部分'); }
-    function onHide() { stop('離開頁面（pagehide），已保留已錄部分'); }
-    const handle = { run: run, done: done, stop: stop, elapsed: function () { return (performance.now() - c.t0) / 1000; }, maxSec: maxSec };
+    function onVis() { if (document.hidden) stop('離開頁面／切換 App／鎖螢幕（visibilitychange），已保留已錄部分', 'background'); }
+    function onHide() { stop('離開頁面（pagehide），已保留已錄部分', 'background'); }
+    const handle = { run: run, done: done, stop: stop, elapsed: function () { return (performance.now() - c.t0) / 1000; }, limitSec: limitSec };
     try { rec.start(1000); } catch (e) { cleanup(); throw e; }
     R.active = handle;
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('pagehide', onHide);
     tick = setInterval(function () {
       const el = handle.elapsed();
-      if (opts.onTick) { try { opts.onTick(el, maxSec); } catch (e) { /* ignore */ } }
-      if (el >= maxSec) stop(maxSec + ' 秒上限自動停止');
+      if (opts.onTick) { try { opts.onTick(el); } catch (e) { /* ignore */ } }
+      if (el >= limitSec) stop('已達 10 分鐘安全上限，自動停止並存檔', 'limit');
     }, 200);
-    if (opts.onTick) opts.onTick(0, maxSec);
+    if (opts.onTick) opts.onTick(0);
     return handle;
   };
 
@@ -168,53 +173,69 @@
       sizeBytes: r.size, fpsAvg: r.fpsAvg == null ? null : Math.round(r.fpsAvg * 10) / 10,
       fpsMin: r.fpsMin == null ? null : Math.round(r.fpsMin * 10) / 10,
       hasAudioTrack: r.hasAudioTrack, audioTracks: r.audioTracks, stopReason: r.stopReason, warn: r.warn || '', recErr: r.recErr || '',
+      ext: R.ext(r), stopKind: R.kindLabel(r.stopKind),
+      autoDownload: r.save ? (r.save.skipped ? '略過（selftest）' : r.save.triggered ? '已觸發' : r.save.pending ? '背景無法下載，待按鈕' : '未觸發' + (r.save.error ? '（' + r.save.error + '）' : '')) : '-',
+      fallbackShown: !!(r.save && r.save.fallback), fallbackUsed: !!(r.save && r.save.usedFallback),
     };
   };
 
-  /* 結果面板用的幾行文字 */
-  R.describe = function (r) {
-    const v = r.verified || {};
-    const f = (x, d) => (x == null ? '-' : x.toFixed(d));
-    const L = [
-      '格式：' + r.mime,
-      '畫布：' + r.width + '×' + r.height + '　影片檔：' + (v.videoWidth ? v.videoWidth + '×' + v.videoHeight : '未驗證') + '　方向：' + r.orientation + (r.orientation === '直向' ? ' ✓' : ' ✗'),
-      '時長：' + f(r.durationSec, 1) + ' 秒　大小：' + fmtSize(r.size),
-      '幀率：平均 ' + f(r.fpsAvg, 1) + '，最低 ' + f(r.fpsMin, 0),
-      '麥克風音軌：' + (r.hasAudioTrack ? '有（' + r.audioTracks + '）' : '沒有（網址加 ?audio=1 才會收音）'),
-      '停止原因：' + r.stopReason,
-    ];
-    if (r.warn) L.push('⚠ ' + r.warn);
-    return L;
-  };
-
-  R.fileName = function (r) {
-    const ext = (r.mime || '').indexOf('mp4') >= 0 ? 'mp4' : 'webm';
+  R.ext = function (r) { return ((r && r.mime) || '').indexOf('mp4') >= 0 ? 'mp4' : 'webm'; };
+  R.kindLabel = function (k) { return k === 'background' ? '背景' : k === 'limit' ? '10 分鐘上限' : '使用者'; };
+  /* kankan-YYYYMMDD-HHMMSS.<mp4|webm> */
+  R.filename = function (r) {
     const d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; };
-    return 'kankan-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + '.' + ext;
+    return 'kankan-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + '.' + R.ext(r);
   };
-
-  /* 存到相簿：能分享檔案就 share（iOS 會有「儲存影片」），否則 <a download>。回傳 { method, name, msg } */
-  R.save = async function (r) {
-    if (!r || !r.blob || !r.blob.size) return { method: 'none', msg: '沒有可儲存的影片' };
-    const base = (r.mime || 'video/webm').split(';')[0];
-    const name = R.fileName(r);
-    let file = null;
-    try { file = new File([r.blob], name, { type: base }); } catch (e) { /* ignore */ }
-    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: '看看｜錄影' });
-        return { method: 'share', name: name, msg: '已開啟分享選單。iPhone 請選「儲存影片」；Android 請選相簿／相片。' };
-      } catch (e) {
-        if (e && e.name === 'AbortError') return { method: 'cancel', name: name, msg: '你取消了分享。' };
-        /* 分享失敗 → 改用下載 */
-      }
-    }
-    const url = URL.createObjectURL(r.blob);
+  R.platform = function () {
+    const ua = navigator.userAgent || '';
+    if (/Line\/|FBAN|FBAV|Instagram|MicroMessenger|FB_IAB/i.test(ua)) return 'inapp';
+    if (/iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1)) return 'ios';
+    if (/Android/i.test(ua)) return 'android';
+    return 'desktop';
+  };
+  R.savedMsg = function (platform) {
+    return platform === 'ios' ? '已存到手機（iPhone：檔案 App › 下載項目）'
+      : platform === 'android' ? '已存到手機的「下載」'
+      : platform === 'inapp' ? '已嘗試下載；內建瀏覽器常會擋下，沒看到請按「儲存剛剛這段」或改用 Safari／Chrome'
+      : '已存到本機的「下載」資料夾';
+  };
+  function triggerDownload(blob, name) {
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = name;
+    a.href = url; a.download = name; a.style.display = 'none';
     document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-    return { method: 'download', name: name, msg: '已觸發下載（' + name + '）。iPhone 會存到「檔案」App、不是相簿；Android 請看「下載」。' };
+    setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) { /* ignore */ } }, 60000);
+  }
+  function syncRun(r) {
+    for (let i = R.runs.length - 1; i >= 0; i--) if (R.runs[i].n === r.n) { R.runs[i] = R.summary(r); return; }
+  }
+  /* 錄完自動存到手機（<a download>，不用 navigator.share）。要在 stop 這次點擊的使用者手勢仍有效時呼叫。
+   * 回傳（也放在 result.save）：{ name, triggered, pending, fallback, usedFallback, platform, msg, error } */
+  R.autoSave = function (r) {
+    const info = { name: r ? R.filename(r) : '', triggered: false, pending: false, fallback: false, usedFallback: false, platform: R.platform(), msg: '', error: '' };
+    if (r) r.save = info;
+    if (!r || !r.blob || !r.blob.size) { info.msg = '沒有可儲存的影片'; return info; }
+    if (document.hidden) {           // 背景頁面無法下載 → 回到前景再按鈕
+      info.pending = true; info.fallback = true;
+      info.msg = '剛剛的錄影已保留，還沒存到手機。請按「儲存剛剛這段」。';
+      return info;
+    }
+    try { triggerDownload(r.blob, info.name); info.triggered = true; }
+    catch (e) { info.error = errStr(e); info.fallback = true; }
+    const stale = !!(navigator.userActivation && !navigator.userActivation.isActive);
+    info.fallback = info.fallback || info.platform === 'ios' || info.platform === 'inapp' || stale;
+    info.msg = info.triggered ? R.savedMsg(info.platform) : '自動下載失敗，請按「儲存剛剛這段」。';
+    return info;
+  };
+  /* 備援：使用者再點一次（新的使用者手勢）重新觸發下載 */
+  R.saveAgain = function (r) {
+    if (!r || !r.blob || !r.blob.size) return { ok: false, msg: '這段影片已釋放，請重新錄影。' };
+    const info = r.save || (r.save = { platform: R.platform() });
+    info.name = info.name || R.filename(r);
+    try { triggerDownload(r.blob, info.name); } catch (e) { return { ok: false, msg: '下載失敗：' + errStr(e) }; }
+    info.triggered = true; info.pending = false; info.usedFallback = true; info.fallback = false;
+    syncRun(r);
+    return { ok: true, msg: R.savedMsg(info.platform) };
   };
 
   KK.Recorder = R;
