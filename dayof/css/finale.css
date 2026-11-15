@@ -98,7 +98,7 @@
 /* standout buttons under the filter stack: same 48px size as filter .round-btn, distinct by colour */
 .eg-pop { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .eg-pop button.eg-bigbtn {
-  width: 48px; height: 48px; border-radius: 50%; border: 2px solid #fff; padding: 0; cursor: pointer;
+  width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fff; padding: 0; cursor: pointer;
   display: flex; align-items: center; justify-content: center; color: #fff;
   box-shadow: 0 3px 10px rgba(74,60,48,.28);
   -webkit-tap-highlight-color: transparent;
