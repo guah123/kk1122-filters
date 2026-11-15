@@ -173,7 +173,7 @@
         var b = KK.boil(S.t || 0);
         ctx.translate(b * 61, b * 37);                      // 跟著手繪節奏輕微跳動
         if (pg) { ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 0.55; ctx.fillStyle = ctx.createPattern(pg, 'repeat'); }
-        else { if (!grain) grain = makeGrain(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.85; ctx.fillStyle = ctx.createPattern(grain, 'repeat'); }
+        else { if (!grain) grain = makeGrain(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.65; ctx.fillStyle = ctx.createPattern(grain, 'repeat'); }
         ctx.fillRect(-200, -200, S.w + 400, S.h + 400);
         ctx.restore();
       }
