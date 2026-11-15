@@ -10,10 +10,21 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     '.page-lyrics .lyr-title{font-family:var(--font-serif,serif);font-weight:700;font-size:26px;line-height:1.25;color:var(--ink,#4A3C30);margin:0;word-break:break-word}',
     '.page-lyrics .lyr-rule{width:40px;height:2px;border-radius:2px;background:var(--wood,#C9A27A);margin-top:12px;opacity:.7}',
     '.page-lyrics .lyr-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:8px 18px calc(env(safe-area-inset-bottom,0px) + 28px)}',
-    '.page-lyrics .lyr-paper{background:var(--paper,#FBF7EF);border-radius:var(--radius,18px);box-shadow:0 2px 14px rgba(74,60,48,.08);padding:22px 20px 18px;',
-    '  background-image:repeating-linear-gradient(0deg,transparent 0 33px,rgba(157,191,216,.13) 33px 34px);}',
-    '.page-lyrics .lyr-text{white-space:pre-line;font-family:var(--font-serif,serif);font-size:17px;line-height:2;color:var(--ink,#4A3C30);letter-spacing:.02em;margin:0;word-break:break-word}',
-    '.page-lyrics .lyr-trans{white-space:pre-line;font-family:var(--font,system-ui);font-size:14px;line-height:1.9;color:var(--ink-soft,#7A6A5A);margin:22px 0 0;padding-top:16px;border-top:1px dashed rgba(138,101,69,.3)}',
+    '.page-lyrics .lyr-paper{background:var(--paper,#FBF7EF);border-radius:var(--radius,18px);box-shadow:0 2px 14px rgba(74,60,48,.08);padding:22px 20px 18px;}',
+    '.page-lyrics.has-stack .lyr-scroll{padding-right:66px}',
+    '.page-lyrics.has-stack .lyr-head{padding-right:66px}',
+    '.page-lyrics .lyr-titlerow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+    '.page-lyrics .lyr-artist{font:400 13px/1.4 var(--font,system-ui);color:var(--ink-soft,#7A6A5A);margin:6px 0 0}',
+    '.page-lyrics .lyr-tbtn{font:600 12px/1 var(--font,system-ui);color:var(--sky-deep,#5E86A8);background:rgba(255,255,255,.7);border:1.5px solid var(--sky,#9DBFD8);border-radius:999px;padding:7px 12px;cursor:pointer;white-space:nowrap}',
+    '.page-lyrics .lyr-tbtn[aria-pressed="true"]{background:var(--sky-deep,#5E86A8);border-color:var(--sky-deep,#5E86A8);color:#fff}',
+    '.page-lyrics .lyr-text{font-family:var(--font-serif,serif);font-size:17px;line-height:1.9;color:var(--ink,#4A3C30);letter-spacing:.02em;margin:0;text-align:left;word-break:break-word}',
+    '.page-lyrics .lyr-stanza{margin:0 0 1.4em}',
+    '.page-lyrics .lyr-stanza:last-child{margin-bottom:0}',
+    '.page-lyrics .lyr-line{margin:0}',
+    '.page-lyrics .lyr-tl{display:none;font-family:var(--font,system-ui);font-size:14px;line-height:1.6;color:var(--sky-deep,#5E86A8);margin:1px 0 7px;letter-spacing:.01em}',
+    '.page-lyrics.show-tr .lyr-tl{display:block}',
+    '.page-lyrics .lyr-trans{white-space:pre-line;font-family:var(--font,system-ui);font-size:14px;line-height:1.9;color:var(--ink-soft,#7A6A5A);margin:22px 0 0;padding-top:16px;border-top:1px dashed rgba(138,101,69,.3);display:none}',
+    '.page-lyrics.show-tr .lyr-trans{display:block}',
     '.page-lyrics .lyr-empty{font-family:var(--font-serif,serif);font-size:18px;color:var(--ink-soft,#7A6A5A);text-align:center;padding:48px 0}',
     '.page-lyrics .lyr-loading{color:var(--ink-soft,#7A6A5A);text-align:center;padding:40px 0;font-size:14px}',
     '.page-lyrics .lyr-foot{display:flex;justify-content:flex-end;align-items:center;margin-top:18px;min-height:52px}',
@@ -43,6 +54,32 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     return null;
   }
 
+  /* 統一清理：同一套規則套到每首歌（防止 Kai 之後貼進來的歌詞帶雜訊） */
+  var LABEL_RE = /^\s*[\[（(【]?\s*(主歌|副歌|導歌|橋段|間奏|前奏|尾奏|verse|chorus|pre-?chorus|bridge|intro|outro|hook|refrain)\s*\d*\s*[\]）)】]?\s*[:：]?\s*$/i;
+  function cleanText(s) {
+    if (typeof s !== 'string') return '';
+    s = s.replace(/\r\n?/g, '\n')
+      .replace(/\{#[^}]*\}/g, '')
+      .replace(/\*\*|__/g, '')
+      .replace(/\\([\\`*_{}\[\]()#+\-.!~"'])/g, '$1')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/[　\t]+/g, ' ');
+    var lines = s.split('\n').map(function (l) { return l.replace(/ {2,}/g, ' ').trim(); }).filter(function (l) {
+      if (/蘭多/.test(l)) return false;
+      if (LABEL_RE.test(l)) return false;
+      if (/^[★☆*#=\-_~·•]{3,}$/.test(l)) return false;          // 裝飾線
+      if (/^\[?\d{1,2}:\d{2}(\.\d+)?\]?$/.test(l)) return false;  // 時間戳
+      return true;
+    });
+    return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  function stanzas(s) { return s ? s.split(/\n\n/).map(function (b) { return b.split('\n'); }) : []; }
+  function sameShape(a, b) {
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) if (a[i].length !== b[i].length) return false;
+    return true;
+  }
+
   DAYOF.registerPage('lyrics', {
     render: function (container, ctx) {
       injectCss();
@@ -51,8 +88,22 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var alive = true;
 
       var head = document.createElement('div'); head.className = 'lyr-head';
-      head.innerHTML = '<p class="lyr-kicker">LYRICS</p><h1 class="lyr-title screen-title"></h1><div class="lyr-rule"></div>';
+      head.innerHTML = '<p class="lyr-kicker">LYRICS</p><div class="lyr-titlerow"><h1 class="lyr-title screen-title"></h1></div><p class="lyr-artist" hidden></p><div class="lyr-rule"></div>';
       head.querySelector('.lyr-title').textContent = row.song || '';
+      var tbtn = document.createElement('button'); tbtn.type = 'button'; tbtn.className = 'lyr-tbtn';
+      tbtn.textContent = '翻譯中文'; tbtn.setAttribute('aria-pressed', 'false'); tbtn.hidden = true;
+      head.querySelector('.lyr-titlerow').appendChild(tbtn);
+      st.lyrTr = st.lyrTr || {};
+      function setTr(on) {
+        container.classList.toggle('show-tr', !!on);
+        tbtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        tbtn.textContent = on ? '看原文' : '翻譯中文';
+      }
+      tbtn.addEventListener('click', function () {
+        var on = !container.classList.contains('show-tr');
+        setTr(on); st.lyrTr[n] = on; ctx.save();
+        if (atBottom()) unlock();
+      });
       var scroll = document.createElement('div'); scroll.className = 'lyr-scroll';
       var paper = document.createElement('div'); paper.className = 'lyr-paper paper-bg';
       paper.innerHTML = '<div class="lyr-loading">載入中…</div>';
@@ -66,7 +117,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
 
       var stack = null;
       if (n >= 10 && DAYOF.FilterStack) {
-        try { stack = DAYOF.FilterStack.mount(container, ctx); } catch (e) { console.error(e); }
+        try { stack = DAYOF.FilterStack.mount(container, ctx); container.classList.add('has-stack'); } catch (e) { console.error(e); }
       }
 
       var unlocked = false;
@@ -98,15 +149,31 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       loadData().then(function (data) {
         if (!alive) return;
         var song = findSong(data, row);
-        var lyr = song && typeof song.lyrics === 'string' ? song.lyrics.trim() : '';
-        var tr = song && typeof song.translation === 'string' ? song.translation.trim() : '';
+        var lyr = cleanText(song && song.lyrics);
+        var tr = cleanText(song && song.translation);
+        var artist = song && song.artist && song.artist !== 'Kai' ? String(song.artist) : '';
+        if (artist) { var ar = head.querySelector('.lyr-artist'); ar.textContent = '原唱：' + artist; ar.hidden = false; }
         paper.innerHTML = '';
         if (lyr) {
-          var p = document.createElement('p'); p.className = 'lyr-text'; p.textContent = lyr; paper.appendChild(p);
+          var S = stanzas(lyr), T = stanzas(tr), aligned = !!tr && sameShape(S, T);
+          var box = document.createElement('div'); box.className = 'lyr-text';
+          S.forEach(function (lines, i) {
+            var sd = document.createElement('div'); sd.className = 'lyr-stanza';
+            lines.forEach(function (l, j) {
+              var ld = document.createElement('p'); ld.className = 'lyr-line'; ld.textContent = l; sd.appendChild(ld);
+              if (aligned && T[i][j]) { var td = document.createElement('p'); td.className = 'lyr-tl'; td.textContent = T[i][j]; sd.appendChild(td); }
+            });
+            box.appendChild(sd);
+          });
+          paper.appendChild(box);
+          if (tr && !aligned) { // 行數對不上時：翻譯整段放在原文下方（仍由按鈕切換）
+            console.warn('[lyrics] translation not line-aligned for', row.song);
+            var t = document.createElement('p'); t.className = 'lyr-trans'; t.textContent = tr; paper.appendChild(t);
+          }
+          if (tr) { tbtn.hidden = false; setTr(!!st.lyrTr[n]); }
         } else {
           var e = document.createElement('div'); e.className = 'lyr-empty'; e.textContent = '（歌詞待補）'; paper.appendChild(e);
         }
-        if (tr) { var t = document.createElement('p'); t.className = 'lyr-trans'; t.textContent = tr; paper.appendChild(t); }
         requestAnimationFrame(function () {
           if (!alive) return;
           var y = +st.scroll[n] || 0;
