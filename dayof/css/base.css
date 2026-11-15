@@ -176,7 +176,7 @@ a{color:var(--sky-deep)}
    Pages 1–3 (landing / form / rules) — owned by design (I)
    ====================================================================== */
 .page-landing,.page-form,.page-rules{background:var(--cream)}
-.dx-bg{position:absolute;inset:0;background:var(--cream) url("../assets/key-visual-portrait.jpg") center/cover no-repeat}
+.dx-bg{position:absolute;inset:0;background:var(--cream) url("../assets/key-visual-portrait.jpg") center bottom/cover no-repeat}
 @media (min-aspect-ratio:1/1){ .dx-bg{background-image:url("../assets/key-visual.jpg")} }
 @media (min-width:700px){ .page-landing{max-width:none} }
 .dx-bg.soft{filter:blur(7px) saturate(1.05);transform:scale(1.08)}
