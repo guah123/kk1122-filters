@@ -43,11 +43,12 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var curL = el('div', 'cr-curtain l'), curR = el('div', 'cr-curtain r'), valance = el('div', 'cr-valance');
     var rollwrap = el('div', 'cr-rollwrap'), roll = el('div', 'cr-roll');
     var zone = el('div', 'cr-walkzone');
-    var skip = el('a', 'cr-skip', '略過'); skip.href = '#'; skip.setAttribute('role', 'button');
+    // (Kai t480u) no skip: credits always play in full; the continue button appears only after the roll ends
+    var cont = el('button', 'btn cr-continue', '繼續看看'); cont.type = 'button'; cont.hidden = true;
     rollwrap.appendChild(roll); roll.style.visibility = 'hidden';
     stage.appendChild(curL); stage.appendChild(curR); stage.appendChild(valance);
     stage.appendChild(rollwrap); stage.appendChild(zone);
-    page.appendChild(stage); page.appendChild(skip);
+    page.appendChild(stage); page.appendChild(cont);
 
     function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
 
@@ -170,12 +171,15 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       roll.style.transform = 'translate3d(0,' + rollY.toFixed(1) + 'px,0)';
       if (rollY <= rollEnd - 20) finish();
     }
-    function finish() {
+    function finish() { // roll ended → reveal the continue button (no auto-advance, no skip)
       if (finished) return; finished = true;
+      cont.hidden = false; requestAnimationFrame(function () { cont.classList.add('show'); });
+    }
+    cont.addEventListener('click', function () {
+      if (cont.disabled) return; cont.disabled = true;
       page.classList.add('cr-out');
       later(function () { if (!cleaned) ctx.next(); }, 950);
-    }
-    skip.addEventListener('click', function (e) { e.preventDefault(); finish(); });
+    });
 
     // ---- curtain sequence ----
     walker.el.style.opacity = '0';
