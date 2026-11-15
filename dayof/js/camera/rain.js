@@ -1,11 +1,10 @@
-/* 16〈創作-毛毛雨〉下雨（id 'rain'）：像隔著一扇起霧、沾滿雨珠的窗看世界；手指在霧上抹出一道清楚的痕，
- * 過一陣子霧又慢慢回來。與 KK 濾鏡同一套 API／手繪風格／暖色盤（KK.PAL），loop 12 秒無縫。
- *
- * 圖層（由下而上）：相機畫面 → 暖米色薄罩 → 霧玻璃層（半解析度離屏 C：霧紋 tile，挖掉手指抹痕 M 與水珠滑落痕）
- *   → 玻璃上的水珠（預畫 sprite）＋滑落中的大水珠 → 窗外細斜雨絲（可平鋪 tile）→ 下緣水窪漣漪
- *   → 偶爾出現紅傘下的兩個人（大人牽小孩，人類）沿下緣走過 → 紙張顆粒＋暗角。
- * 分鏡（12 秒）：雨絲每 loop 落 6 個 tile 高；滑落水珠各自整數圈；漣漪整數圈；撐傘兩人 3–10.5s 走過一次（淡入淡出）。
- * 互動：手指抹霧（同〈明日晴れるかな〉抹烏雲的作法：1/6 解析度遮罩、destination-out）；遮罩每 0.25s 衰減一點 → 約 8 秒霧氣回來。
+/* 16〈創作-毛毛雨〉下雨（id 'rain'）：隔著淡淡起霧、沾著雨珠的鏡頭看世界；雨絲一直落、畫出來的水珠沿鏡頭滑下。
+ * 與 KK 濾鏡同一套 API／手繪風格／暖色盤（KK.PAL），loop 12 秒無縫。
+ * 圖層（由下而上）：相機畫面 → 暖米色薄罩 → 靜態薄霧（半解析度離屏 C，只挖掉水珠滑落痕）
+ *   → 玻璃上的水珠＋滑落中的大水珠 → 細斜雨絲 → 下緣水窪漣漪 → 手指點出的漣漪＋小水花
+ *   → 紅傘下的兩個人（人類：大人牽小孩）每 12 秒沿下緣走過一次 → 紙張顆粒＋暗角。
+ * 互動（Kai 02:47：與〈太陽〉的抹開烏雲區隔）：點一下／按住滑動 → 在手指處出現漣漪圈＋小水花（可多指）。不再抹霧。
+ * 點陣素材（有檔就用）：rain-mist（靜態薄霧）、rain-strokes、rain-drop-1..4、rain-puddle、rain-umbrella-walkers、rain-splash、rain-ripple。
  * 載入：KK 還沒載入時本檔只登記到 DAYOF.kkPlugins，由 camera.js 在 KK 載入後執行註冊。 */
 (function () {
   'use strict';
@@ -16,10 +15,9 @@
   DAYOF.kkPlugins.push(function (KK) {
     if (KK.byId.rain) return;
     var P = KK.PAL, TAU = KK.TAU;
-    var M_DIV = 6, C_DIV = 2, BRUSH = 0.13, FOG_ALPHA = 0.78;
-    /* 水彩點陣素材掛點（assets/filters/rain-*.png；沒有檔案就用向量畫法）。擦霧筆刷沿用 hareru-wipe-brush.png。 */
+    var C_DIV = 2, FOG_ALPHA = 0.5, TAP_LIFE = 1.3;
+    /* 水彩點陣素材掛點（assets/filters/rain-*.png；沒有檔案就用向量畫法） */
     var ART = function (n) { return KK.art ? KK.art(n) : null; };
-    var brush = function (m, x0, y0, x1, y1, lw) { return !!(KK.brushLine && KK.brushLine(m, x0, y0, x1, y1, lw)); };
     var dropImgs = function () { var a = []; for (var i = 1; i <= 4; i++) { var im = ART('rain-drop-' + i + '.png'); if (im) a.push(im); } return a; };
 
     /* 滑落的大水珠：x 比例、起點 y、行程、每 loop 圈數、起點偏移、大小 */
@@ -44,10 +42,10 @@
       title: '下雨',
       mood: '毛毛雨・起霧的窗・慢慢看清楚',
       duration: 12,
-      hint: '窗戶起霧了，用手指抹開看看',
+      hint: '點一下畫面，看雨滴濺起來',
       critterHint: '下緣偶爾有紅傘下的兩個人（大人牽小孩，人類）走過水窪',
       create: function () {
-        var st = { C: null, cg: null, M: null, mg: null, fog: null, rain: null, bead: null, beads: [], fingers: {}, lastDecay: 0, key: '', lw: 1 };
+        var st = { C: null, cg: null, fog: null, rain: null, bead: null, beads: [], fingers: {}, taps: [], key: '' };
 
         function makeFog(Cw, Ch, U) {
           var t = KK.canvas(Cw, Ch), g = t.getContext('2d');
@@ -102,10 +100,6 @@
         function resize(S) {
           var Cw = Math.max(2, Math.round(S.w / C_DIV)), Ch = Math.max(2, Math.round(S.h / C_DIV));
           st.C = KK.canvas(Cw, Ch); st.cg = st.C.getContext('2d');
-          var Mw = Math.max(2, Math.round(S.w / M_DIV)), Mh = Math.max(2, Math.round(S.h / M_DIV));
-          var oldM = st.M;
-          st.M = KK.canvas(Mw, Mh); st.mg = st.M.getContext('2d');
-          if (oldM) st.mg.drawImage(oldM, 0, 0, Mw, Mh);
           st.fingers = {};
           var U = S.u / C_DIV;
           var aMist = ART('rain-mist.png');
@@ -119,25 +113,58 @@
           st.key = S.w + 'x' + S.h + (aMist ? 'm' : '');
         }
 
-        function stamp(m, x, y) { if (brush(m, x, y, x, y, st.lw)) return; m.fillStyle = '#fff'; m.beginPath(); m.arc(x, y, st.lw / 2, 0, TAU); m.fill(); }
+        /* 手指：按下就濺一次；按住滑動時每移動一段距離（且間隔 ≥0.12 秒）再濺一次 */
+        function splash(S, x, y) {
+          st.taps.push({ x: x, y: y, born: S.now, seed: Math.random() * 1000 });
+          if (st.taps.length > 24) st.taps.shift();
+        }
         function pointer(S, ev) {
-          if (S.autoDemo || !st.mg) return;
-          var m = st.mg, x = ev.x / M_DIV, y = ev.y / M_DIV;
-          st.lw = (S.u * BRUSH) / M_DIV;
-          if (ev.type === 'down') { st.fingers[ev.id] = { x: x, y: y }; stamp(m, x, y); }
+          if (S.autoDemo) return;
+          if (ev.type === 'down') { st.fingers[ev.id] = { x: ev.x, y: ev.y, t: S.now }; splash(S, ev.x, ev.y); }
           else if (ev.type === 'move') {
             var f = st.fingers[ev.id];
-            if (!f) { st.fingers[ev.id] = { x: x, y: y }; stamp(m, x, y); return; }
-            if (!brush(m, f.x, f.y, x, y, st.lw)) {
-              m.strokeStyle = '#fff'; m.lineCap = 'round'; m.lineJoin = 'round';
-              m.beginPath(); m.moveTo(f.x, f.y); m.lineTo(x, y);
-              m.globalAlpha = 0.3; m.lineWidth = st.lw * 1.2; m.stroke();
-              m.globalAlpha = 1; m.lineWidth = st.lw; m.stroke();
-            }
-            f.x = x; f.y = y;
+            if (f && Math.hypot(ev.x - f.x, ev.y - f.y) > S.u * 0.08 && S.now - f.t > 0.12) { f.x = ev.x; f.y = ev.y; f.t = S.now; splash(S, ev.x, ev.y); }
           } else delete st.fingers[ev.id];
         }
-        function reset() { if (st.mg) st.mg.clearRect(0, 0, st.M.width, st.M.height); st.fingers = {}; }
+        function reset() { st.taps = []; st.fingers = {}; }
+        /* 漣漪圈＋小水花（點陣 rain-ripple.png／rain-splash.png，沒有就手繪） */
+        function drawTaps(g, S) {
+          if (!st.taps.length) return;
+          var u = S.u, aRp = ART('rain-ripple.png'), aSp = ART('rain-splash.png'), keep = [];
+          for (var i = 0; i < st.taps.length; i++) {
+            var tp = st.taps[i], age = S.now - tp.born;
+            if (age < 0 || age > TAP_LIFE) continue;
+            keep.push(tp);
+            var k = age / TAP_LIFE;
+            for (var ring = 0; ring < 3; ring++) {           // 三圈依序擴散
+              var kr = (age - ring * 0.16) / (TAP_LIFE - 0.3);
+              if (kr <= 0 || kr >= 1) continue;
+              var rx = u * (0.03 + 0.17 * Math.sqrt(kr)), al = (1 - kr) * (ring ? 0.55 : 0.85);
+              if (aRp) { g.globalAlpha = al; g.drawImage(aRp, tp.x - rx, tp.y - rx * 0.5, rx * 2, rx); g.globalAlpha = 1; }
+              else {
+                g.strokeStyle = KK.rgba(P.cream, al); g.lineWidth = Math.max(1.2, u * 0.005 * (1 - kr * 0.5));
+                g.beginPath(); g.ellipse(tp.x, tp.y, rx, rx * 0.42, 0, 0, TAU); g.stroke();
+              }
+            }
+            if (aSp) {                                        // 點陣水花：一張圖，彈起後縮小淡出
+              var ss = u * 0.16 * (0.6 + 0.6 * KK.smooth(0, 0.25, age)), sa = 1 - KK.smooth(0.25, 0.75, k);
+              if (sa > 0.01) { g.globalAlpha = sa; g.drawImage(aSp, tp.x - ss / 2, tp.y - ss * 0.85, ss, ss); g.globalAlpha = 1; }
+            } else {                                          // 手繪小水花：6 顆水滴往外彈、受重力落下
+              var r = KK.rng(Math.floor(tp.seed) + 1);
+              for (var j = 0; j < 7; j++) {
+                var ang = -Math.PI * (0.12 + 0.76 * (j + r() * 0.6) / 7), sp = u * (0.25 + r() * 0.3);
+                var x = tp.x + Math.cos(ang) * sp * age, y = tp.y + Math.sin(ang) * sp * age + 0.5 * u * 1.4 * age * age;
+                var ra = u * (0.005 + r() * 0.006) * (1 - k * 0.5), aa = 1 - KK.smooth(0.3, 0.8, k);
+                if (aa <= 0.01) continue;
+                g.fillStyle = KK.rgba(KK.mix(P.cream, P.mist, 0.3), 0.9 * aa);
+                g.beginPath(); g.arc(x, y, ra, 0, TAU); g.fill();
+                g.fillStyle = KK.rgba('#FFFFFF', 0.8 * aa);
+                g.beginPath(); g.arc(x - ra * 0.3, y - ra * 0.3, ra * 0.35, 0, TAU); g.fill();
+              }
+            }
+          }
+          st.taps = keep;
+        }
 
         /* 滑落水珠位置（決定性）：k 0..1 的行程，速度忽快忽慢（像真的水珠一頓一頓） */
         function runnerAt(rn, S) {
@@ -204,21 +231,14 @@
             var t = S.t, u = S.u, ph = S.phase, w = S.w, h = S.h;
             var cg = st.cg, Cw = st.C.width, Ch = st.C.height;
 
-            // 霧氣慢慢回來：遮罩每 0.25 秒衰減
-            if (S.now - st.lastDecay > 0.25 || S.now < st.lastDecay) {
-              st.lastDecay = S.now;
-              var m = st.mg; m.save(); m.globalCompositeOperation = 'destination-out'; m.globalAlpha = 0.035; m.fillStyle = '#fff'; m.fillRect(0, 0, st.M.width, st.M.height); m.restore();
-            }
-
             // 0. 暖米色薄罩（雨天的柔光）
             g.fillStyle = KK.rgba(KK.mix(P.cream, P.apricot, 0.25), 0.12);
             g.fillRect(0, 0, w, h);
 
-            // 1. 霧玻璃層
+            // 1. 靜態薄霧（不能抹；只有水珠滑落處留下清痕）
             cg.globalCompositeOperation = 'copy'; cg.globalAlpha = 1;
             cg.drawImage(st.fog, 0, 0);
             cg.globalCompositeOperation = 'destination-out';
-            cg.drawImage(st.M, 0, 0, Cw, Ch);
             // 水珠滑落留下的清痕（上淡下濃）
             cg.lineCap = 'round';
             var runs = RUNNERS.map(function (rn) { return runnerAt(rn, S); });
@@ -296,6 +316,9 @@
                 g.beginPath(); g.ellipse(w * rp[0], h * rp[1], rx, rx * 0.28, 0, 0, TAU); g.stroke();
               }
             }
+
+            // 4b. 手指點出的漣漪＋小水花
+            drawTaps(g, S);
 
             // 5. 紅傘下的兩個人（人類）：3–10.5 秒從左走到右，淡入淡出
             if (S.critter !== false) {

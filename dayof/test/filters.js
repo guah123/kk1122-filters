@@ -15,7 +15,11 @@ const PORT = 8100 + Math.floor(Math.random() * 800); const sleep = ms => new Pro
     await p.goto(`http://127.0.0.1:${PORT}/?step=32&test=1`, { waitUntil: 'load' }); await sleep(800);
     await p.evaluate(f => { window.__cam = DAYOF.Camera.open({ filter: f, mode: 'video', stepNo: 32 }); }, id);
     await sleep(2500); await p.screenshot({ path: path.join(OUT, `${id}-1.png`) });
-    if (id === 'rain' || id === 'sun') { // finger wipe interaction
+    if (id === 'rain') { // tap → ripple rings + splashes
+      for (const [x, y] of [[120, 320], [260, 420], [180, 560], [300, 250]]) { await p.mouse.click(x, y); await sleep(120); }
+      await sleep(250); await p.screenshot({ path: path.join(OUT, `${id}-tap.png`) });
+    }
+    if (id === 'sun') { // finger wipe interaction
       await p.mouse.move(110, 300); await p.mouse.down(); for (let i = 0; i <= 12; i++) await p.mouse.move(110 + i * 14, 300 + Math.sin(i / 2) * 40); await p.mouse.up();
     }
     if (id === 'helmet') { await p.mouse.move(320, 140); await p.mouse.down(); await p.mouse.move(120, 260, { steps: 8 }); await p.mouse.up(); }

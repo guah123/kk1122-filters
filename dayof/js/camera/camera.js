@@ -14,7 +14,7 @@
   var ROOT = (document.currentScript && document.currentScript.src.replace(/js\/camera\/camera\.js.*$/, '')) || '';
   var MAP = { helmet: 'otona', rain: 'rain', sun: 'hareru', fish: 'fish', home: 'remember' };
   var LABEL = { helmet: '太空人', rain: '下雨', sun: '太陽', fish: '魚眼', home: '家' };
-  var RESET_LABEL = { hareru: '重新佈滿烏雲', rain: '重新起霧' };
+  var RESET_LABEL = { hareru: '重新佈滿烏雲' };   // 只有〈太陽〉能抹開；〈下雨〉是點擊濺水花（Kai 02:47）
   var PHOTO_SIZE = [900, 1600];
 
   var EXPLAIN = {
@@ -554,7 +554,7 @@
       toast(o.msg, 3000);
       if (o.ok && !o.pending) saveBtn.hidden = true;
     });
-    resetBtn.addEventListener('click', function () { if (C.stage) { C.stage.reset(); toast(kkId === 'rain' ? '窗戶又起霧了' : '烏雲重新佈滿了', 1500); } });
+    resetBtn.addEventListener('click', function () { if (C.stage) { C.stage.reset(); toast('烏雲重新佈滿了', 1500); } });
     flip.addEventListener('click', async function () {
       if (C.rec || !C.stage || C.pv) return;
       var old = C.facing;

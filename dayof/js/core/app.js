@@ -38,8 +38,18 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     ':where(.popup-bg){position:absolute;inset:0;background:url(assets/main-visual.jpg) 30% center/cover no-repeat;filter:saturate(.9)}',
     ':where(.popup-bg)::after{content:"";position:absolute;inset:0;background:rgba(40,30,20,.45)}',
     ':where(.popup-host){position:absolute;inset:0;z-index:1}',
-    ':where(.restart-link){position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);z-index:60;text-align:center;font-size:13px}',
-    ':where(.restart-link a){color:var(--white,#fff);opacity:.85;text-decoration:underline;cursor:pointer;text-shadow:0 1px 3px rgba(0,0,0,.4)}'
+    '#app > .page > .restart-link{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 4px);z-index:60;display:flex;justify-content:center;pointer-events:none}',
+    '#app > .page > .restart-link a{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 14px;font-size:13px;color:var(--white,#fff);opacity:.9;text-decoration:underline;cursor:pointer;text-shadow:0 1px 3px rgba(0,0,0,.45)}',
+    /* top-level layer above every page / lyric scroll / filter stack / badge; only its children take taps */
+    '#dayof-top{position:fixed;inset:0;z-index:100001;pointer-events:none}',
+    '#dayof-top > .toast{z-index:1}',
+    '#dayof-top > .toast.has-action{pointer-events:auto}',
+    '#dayof-top > .resume-bubble{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateX(-50%);z-index:2;pointer-events:auto;box-sizing:border-box;width:max-content;max-width:calc(100vw - 32px);padding:12px 14px 10px;border-radius:20px;background:rgba(74,60,48,.94);color:#fff;box-shadow:0 8px 28px rgba(40,30,20,.35);text-align:center;font:500 14px/1.45 var(--font,system-ui);transition:opacity .25s,transform .25s}',
+    '#dayof-top > .resume-bubble.gone{opacity:0;transform:translate(-50%,12px);pointer-events:none}',
+    '#dayof-top > .resume-bubble .rb-actions{display:flex;justify-content:center;gap:10px;margin-top:8px}',
+    '#dayof-top > .resume-bubble button{min-height:44px;min-width:44px;padding:0 18px;border-radius:999px;font:600 15px/1 var(--font,system-ui);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}',
+    '#dayof-top > .resume-bubble .rb-continue{border:0;background:var(--cream,#F6EFE2);color:var(--ink,#4A3C30)}',
+    '#dayof-top > .resume-bubble .rb-restart{border:1.5px solid rgba(255,255,255,.7);background:transparent;color:#fff}'
   ].join('\n');
 
   /* ---------- storage ---------- */
@@ -92,6 +102,11 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   // Backend save returns its merged state: fold in anything we don't have locally (never moves current step).
   function adoptMerged(m) {
     var changed = false;
+    if (state.resetAt && !((+m.resetAt || 0) >= state.resetAt)) {
+      // server copy predates our 「從頭開始」: only take its finish flag (never un-send)
+      if (m.finish && m.finish.sent && !(state.finish && state.finish.sent)) { state.finish = m.finish; lsSet(keyFor(state.email), JSON.stringify(state)); }
+      return;
+    }
     ['answers', 'found', 'scroll'].forEach(function (k) {
       var src = m[k] || {}; state[k] = state[k] || {};
       Object.keys(src).forEach(function (kk) { if (state[k][kk] == null) { state[k][kk] = src[kk]; changed = true; } });
@@ -106,10 +121,19 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   /* ---------- UI helpers ---------- */
   var root, badge, cur = null, toastEl, toastTimer, modals = [];
 
+  var topLayer = null;
+  function top() {
+    if (!topLayer || !topLayer.parentNode) {
+      topLayer = document.getElementById('dayof-top');
+      if (!topLayer) { topLayer = document.createElement('div'); topLayer.id = 'dayof-top'; document.body.appendChild(topLayer); }
+    }
+    return topLayer;
+  }
   function toast(msg, opts) {
     opts = opts || {};
-    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'toast'; toastEl.setAttribute('role', 'status'); document.body.appendChild(toastEl); }
+    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'toast'; toastEl.setAttribute('role', 'status'); top().appendChild(toastEl); }
     toastEl.textContent = msg;
+    toastEl.classList.toggle('has-action', !!(opts.action && opts.onAction));
     if (opts.action && opts.onAction) {
       var a = document.createElement('a'); a.textContent = opts.action;
       a.addEventListener('click', function () { hide(); opts.onAction(); });
@@ -119,6 +143,30 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     clearTimeout(toastTimer);
     function hide() { toastEl.classList.remove('show'); }
     toastTimer = setTimeout(hide, opts.ms || 2600);
+  }
+
+  // resume bubble: 「恢復進度」 (keep going) / 「從頭開始」 (clear local progress, keep finish flags)
+  var bubbleEl = null, bubbleTimer = null;
+  function hideBubble() {
+    clearTimeout(bubbleTimer);
+    if (!bubbleEl) return;
+    var b = bubbleEl; bubbleEl = null;
+    b.classList.add('gone');
+    setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 300);
+  }
+  function showResumeBubble(n) {
+    hideBubble();
+    var b = document.createElement('div'); b.className = 'resume-bubble'; b.setAttribute('role', 'status');
+    var t = document.createElement('div'); t.className = 'rb-text'; t.textContent = '已接續你上次的進度（第 ' + n + ' 步）';
+    var acts = document.createElement('div'); acts.className = 'rb-actions';
+    var c = document.createElement('button'); c.type = 'button'; c.className = 'rb-continue'; c.textContent = '恢復進度';
+    var r = document.createElement('button'); r.type = 'button'; r.className = 'rb-restart'; r.textContent = '從頭開始';
+    c.addEventListener('click', function (ev) { ev.stopPropagation(); hideBubble(); });
+    r.addEventListener('click', function (ev) { ev.stopPropagation(); hideBubble(); resetProgress(); });
+    acts.appendChild(c); acts.appendChild(r); b.appendChild(t); b.appendChild(acts);
+    top().appendChild(b);
+    bubbleEl = b;
+    bubbleTimer = setTimeout(hideBubble, 12000);
   }
 
   function modal(content, opts) {
@@ -239,6 +287,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 320);
     }
     modals.slice().forEach(function (m) { m.close(); });
+    if (bubbleEl && cur && cur.n !== n) hideBubble();
 
     var el = document.createElement('div');
     el.className = 'page page-' + row.type;
@@ -281,7 +330,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   function addRestartLink(el) {
     var d = document.createElement('div'); d.className = 'restart-link';
     var a = document.createElement('a'); a.textContent = '從頭開始';
-    a.addEventListener('click', function (ev) { ev.preventDefault(); reset(); });
+    a.addEventListener('click', function (ev) { ev.preventDefault(); resetProgress(); });
     d.appendChild(a); el.appendChild(d);
   }
 
@@ -365,7 +414,12 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     return remoteP.then(function (remote) {
       if (remote && normEmail(remote.email || email) !== email) remote = null;
       if (remote && remote.v !== 1) remote = null;
-      var s = pickNewer(local, remote);
+      var s;
+      if (local && local.resetAt && remote && !((+remote.resetAt || 0) >= local.resetAt)) {
+        // user tapped 「從頭開始」 after the server copy was written → local wins, but keep a sent finish
+        if (remote.finish && remote.finish.sent && !(local.finish && local.finish.sent)) local.finish = remote.finish;
+        s = local;
+      } else s = pickNewer(local, remote);
       var isNew = !s;
       if (isNew) s = blankState(email, nickname);
       s.email = email;
@@ -380,10 +434,35 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     });
   }
 
+  // debug-only full wipe (also forgets finish flags)
   function reset() {
+    hideBubble();
     if (state.email) lsDel(keyFor(state.email));
     lsDel(LAST_KEY);
     state = blankState();
+    render(1);
+  }
+
+  // 「從頭開始」 (resume bubble / landing link): clear this user's LOCAL progress, keep identity + finish flags
+  // so the finish email can never be re-sent. Not pushed to the backend here.
+  function resetProgress() {
+    hideBubble();
+    var email = state.email || lsGet(LAST_KEY) || '';
+    var old = state.email ? state : (email ? loadLocal(email) : null);
+    var fresh = blankState(email, old && old.nickname);
+    if (old && old.finish) fresh.finish = JSON.parse(JSON.stringify(old.finish));
+    if (old && old.filterSeen) fresh.filterSeen = old.filterSeen;
+    fresh.resetAt = Date.now();
+    state = fresh;
+    if (email) { lsSet(keyFor(email), JSON.stringify(state)); lsSet(LAST_KEY, email); }
+    render(1);
+  }
+
+  // egg page 「從頭開始」: back to landing WITHOUT clearing progress (answers, maxStep, finish untouched)
+  function restartKeepProgress() {
+    hideBubble();
+    state.step = 1;
+    save();
     render(1);
   }
 
@@ -410,11 +489,12 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     if (saved && saved.step >= 3) {
       state = fixState(saved);
       render(state.step);
-      if (state.step > 3) toast('已接續你上次的進度（第 ' + state.step + ' 步）', { ms: 4200, action: '從頭開始', onAction: reset });
+      if (state.step > 3) showResumeBubble(state.step);
       retryQueued();
       return;
     }
-    render(1);
+    if (saved) { state = fixState(saved); state.step = Math.min(state.step, 2); } // keep identity + finish flags in memory
+    render(state.step === 2 ? 2 : 1);
   }
 
   DAYOF.app = {
@@ -426,7 +506,9 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     state: function () { return state; },
     toast: toast,
     modal: modal,
-    reset: reset
+    reset: reset,
+    resetProgress: resetProgress,
+    restartKeepProgress: restartKeepProgress
   };
 
   var dbg = DAYOF.debug = DAYOF.debug || {};

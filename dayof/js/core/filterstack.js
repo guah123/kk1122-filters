@@ -10,6 +10,13 @@ window.DAYOF = window.DAYOF || {};
     ':where(.filter-stack .round-btn svg){width:30px;height:30px;display:block}',
     ':where(.filter-stack .round-btn .ico){display:flex;align-items:center;justify-content:center}',
     ':where(.filter-stack .fs-label){font:600 10px/1.2 var(--font,system-ui);color:var(--ink,#4A3C30);background:rgba(255,255,255,.6);padding:1px 6px;border-radius:8px;white-space:nowrap}',
+    /* new-filter pulse: until the user taps that filter once (state.filterSeen[id]) */
+    '.filter-stack .round-btn.is-new{animation:fsPulse 1.6s ease-in-out infinite;border-color:var(--sun,#F2C66D)}',
+    '.filter-stack .round-btn.is-new::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--sun,#F2C66D);animation:fsRing 1.6s ease-out infinite;pointer-events:none}',
+    '.filter-stack .round-btn{position:relative}',
+    '@keyframes fsPulse{0%,100%{transform:scale(1);box-shadow:0 3px 10px rgba(74,60,48,.18)}50%{transform:scale(1.1);box-shadow:0 0 0 6px rgba(242,198,109,.35),0 3px 14px rgba(242,198,109,.55)}}',
+    '@keyframes fsRing{0%{opacity:.9;transform:scale(.9)}100%{opacity:0;transform:scale(1.45)}}',
+    '@media (prefers-reduced-motion:reduce){.filter-stack .round-btn.is-new,.filter-stack .round-btn.is-new::after{animation-duration:3.2s}}',
     ':where(.filter-stack .fs-extra){margin-top:6px;display:flex;flex-direction:column;align-items:center;gap:10px}'
   ].join('\n');
   function injectCss() {
@@ -43,8 +50,15 @@ window.DAYOF = window.DAYOF || {};
         b.setAttribute('aria-label', f.label + '濾鏡'); b.title = f.label;
         b.dataset.filter = f.id;
         b.appendChild(iconEl(f.icon, f.label));
+        var st = ctx && ctx.state;
+        if (st && !(st.filterSeen && st.filterSeen[f.id])) b.classList.add('is-new');
         b.addEventListener('click', function (ev) {
           ev.preventDefault(); ev.stopPropagation();
+          if (st && b.classList.contains('is-new')) {
+            b.classList.remove('is-new');
+            st.filterSeen = st.filterSeen || {}; st.filterSeen[f.id] = true;
+            try { ctx.save(); } catch (e) {}
+          }
           if (busy) return; busy = true;
           var p;
           try { p = ctx.openFilter(f.id); } catch (e) { p = null; }
