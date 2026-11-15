@@ -995,6 +995,54 @@ window.DAYOF = window.DAYOF || {};
             B.g.setAttribute('transform', 'translate(' + B.p[0].toFixed(0) + ',' + (B.p[1] + f * B.R * 0.15).toFixed(0) + ') scale(' + sc.toFixed(3) + ')'); B.g.setAttribute('opacity', (f < 0.15 ? f / 0.15 : 1 - (f - 0.15) / 0.85).toFixed(3)); B.vis = true;
           }
         });
+      } else if (kind === 'sky') {
+        // Animated fireworks over an EMPTY painted sky: rockets rise from the horizon, burst into falling sparks with a soft warm glow.
+        // o.region = [x0,y0,x1,y1] (fractions), o.n = simultaneous shells, o.colors
+        var rg = o.region || [0, 0, 1, 0.38], X0 = rg[0] * Wd, Y0 = rg[1] * Ht, X1 = rg[2] * Wd, Y1 = rg[3] * Ht;
+        var palette = o.colors || ['#FFD27A', '#FF9E7A', '#FFB3C7', '#BFE3FF', '#E8C6FF', '#FFF1B8', '#9FE6C8'];
+        var defsS = S.defs || E('defs', null, L), gid = 'skyglow' + Math.floor(Math.random() * 1e6);
+        var grd = E('radialGradient', { id: gid }, defsS);
+        E('stop', { offset: '0', 'stop-color': '#FFE9B8', 'stop-opacity': '0.55' }, grd); E('stop', { offset: '1', 'stop-color': '#FFB86B', 'stop-opacity': '0' }, grd);
+        var NSH = o.n || 5, NP = o.particles || 26, shells = [], seed = 7;
+        function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+        for (i = 0; i < NSH; i++) {
+          var sg = E('g', { opacity: 0 }, L), glow = E('circle', { r: 1, fill: 'url(#' + gid + ')' }, sg);
+          var trail = E('line', { stroke: '#FFE7B0', 'stroke-width': Math.max(2, Wd * 0.003), 'stroke-linecap': 'round', 'stroke-opacity': 0.8 }, sg), ps = [];
+          for (j = 0; j < NP; j++) ps.push(E('circle', { r: Math.max(1.5, Wd * 0.004), fill: '#fff' }, sg));
+          shells.push({ g: sg, glow: glow, trail: trail, ps: ps, t0: -i * (o.gap || 0.9) - rnd() * 0.6 });
+        }
+        function launch(s, tt) {
+          s.t0 = tt; s.x = X0 + (X1 - X0) * (0.12 + 0.76 * rnd()); s.y = Y0 + (Y1 - Y0) * (0.18 + 0.45 * rnd());
+          s.R = Wd * (0.09 + 0.08 * rnd()); s.col = palette[Math.floor(rnd() * palette.length)]; s.col2 = palette[Math.floor(rnd() * palette.length)];
+          s.rise = 0.7 + 0.3 * rnd(); s.life = 2.2 + 0.6 * rnd();
+          for (var k = 0; k < s.ps.length; k++) s.ps[k].setAttribute('fill', k % 3 ? s.col : s.col2);
+        }
+        S.anim(function (tt) {
+          for (var a = 0; a < shells.length; a++) {
+            var s = shells[a];
+            if (s.x == null || tt - s.t0 > s.rise + s.life + 0.4) { if (tt >= s.t0) launch(s, tt); else continue; }
+            var u = tt - s.t0;
+            if (u < 0) { s.g.setAttribute('opacity', 0); continue; }
+            s.g.setAttribute('opacity', 1);
+            if (u < s.rise) { // rocket rising from the horizon line
+              var f = u / s.rise, yy = Y1 + (s.y - Y1) * (1 - Math.pow(1 - f, 2));
+              s.trail.setAttribute('x1', s.x.toFixed(1)); s.trail.setAttribute('x2', s.x.toFixed(1));
+              s.trail.setAttribute('y1', yy.toFixed(1)); s.trail.setAttribute('y2', Math.min(Y1, yy + Ht * 0.05).toFixed(1)); s.trail.setAttribute('stroke-opacity', 0.8);
+              s.glow.setAttribute('r', 0); for (var k = 0; k < s.ps.length; k++) s.ps[k].setAttribute('opacity', 0);
+              continue;
+            }
+            s.trail.setAttribute('stroke-opacity', 0);
+            var e = (u - s.rise) / s.life; if (e > 1) { s.g.setAttribute('opacity', 0); continue; }
+            var spread = 1 - Math.pow(1 - Math.min(1, e * 1.6), 3), fade = e < 0.08 ? e / 0.08 : Math.max(0, 1 - (e - 0.08) / 0.92);
+            s.glow.setAttribute('cx', s.x.toFixed(1)); s.glow.setAttribute('cy', s.y.toFixed(1)); s.glow.setAttribute('r', (s.R * (0.6 + 1.1 * spread)).toFixed(1)); s.glow.setAttribute('opacity', (fade * 0.9).toFixed(3));
+            for (var m = 0; m < s.ps.length; m++) {
+              var ang = m / s.ps.length * Math.PI * 2 + (m % 2) * 0.12, rr = s.R * spread * (m % 2 ? 0.78 : 1);
+              var cx = s.x + Math.cos(ang) * rr, cy = s.y + Math.sin(ang) * rr + e * e * s.R * 0.55; // gentle gravity droop
+              s.ps[m].setAttribute('cx', cx.toFixed(1)); s.ps[m].setAttribute('cy', cy.toFixed(1));
+              s.ps[m].setAttribute('opacity', (fade * (0.6 + 0.4 * Math.sin(tt * 18 + m))).toFixed(3));
+            }
+          }
+        });
       } else if (kind === 'moon') {
         // rect: [x,y,w,h] reflection area ; n shimmer strokes
         var rc = o.rect || [0.35, 0.6, 0.3, 0.12]; if (!Array.isArray(rc)) rc = [rc.x, rc.y, rc.w, rc.h];
