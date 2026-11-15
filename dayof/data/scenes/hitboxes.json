@@ -1,11 +1,11 @@
 {
-  "_note": "Kai and the quokka (formerly 'wombat'; it is a quokka = sister) are PAINTED INTO each scene at normal size. Do not composite sprites. Boxes are [x0,y0,x1,y1] fractions of image width/height. Add ~15% padding for phone taps. 'quokka' is the secret bonus tap (no UI counter).",
-  "s05-park.jpg":      {"kai": [0.29,0.37,0.41,0.52], "quokka": [0.04,0.71,0.14,0.82]},
-  "s07-escalator.jpg": {"kai": [0.54,0.47,0.71,0.79], "quokka": [0.27,0.48,0.40,0.68]},
+  "_note": "v6. Kai and the quokka (sister) are PAINTED INTO each scene at the SAME size as neighbours. Do not composite sprites. Boxes are [x0,y0,x1,y1] fractions of image width/height. Add ~15% padding for phone taps. 'quokka' is the secret bonus tap (no UI text, no counter).",
+  "s05-park.jpg":      {"kai": [0.31,0.41,0.38,0.50], "quokka": [0.09,0.79,0.17,0.91]},
+  "s07-escalator.jpg": {"kai": [0.56,0.46,0.70,0.70], "quokka": [0.26,0.47,0.41,0.68]},
   "s17-bridge.jpg":    {"kai": [0.26,0.24,0.46,0.52], "quokka": [0.10,0.71,0.32,0.93]},
   "s19-moumoon.jpg":   {"kai": null, "_note": "audience POV, no Kai; icon-only flip-camera button goes to selfie"},
-  "s19-moumoon-selfie.jpg": {"kai": [0.08,0.20,0.62,0.95], "_note": "reaching this view counts as found; guitarist is a black cat"},
+  "s19-moumoon-selfie.jpg": {"kai": [0.00,0.18,0.62,1.00], "_note": "full-bleed selfie, NO phone frame; reaching this view counts as found; guitarist is a black cat"},
   "s23-office.jpg":    {"kai": [0.44,0.42,0.53,0.53], "quokka": [0.27,0.44,0.36,0.53]},
-  "s25-fireworks.jpg": {"kai": [0.45,0.49,0.57,0.67], "quokka": [0.12,0.15,0.28,0.29]},
-  "s27-nyc.jpg":       {"kai": [0.27,0.55,0.43,0.77], "quokka": null}
+  "s25-fireworks.jpg": {"kai": [0.44,0.50,0.56,0.69], "quokka": [0.13,0.55,0.21,0.65], "_note": "Kai in striped yukata. SKY IS EMPTY on purpose (top ~0-38%): render animated canvas fireworks over the sky region, behind lanterns feel, with soft glow."},
+  "s27-nyc.jpg":       {"kai": [0.54,0.46,0.60,0.56], "quokka": [0.83,0.38,0.90,0.43], "_note": "quokka is in the yellow taxi window"}
 }
