@@ -1,104 +1,55 @@
 {
- "id": "escalator",
- "views": {
-  "main": "assets/scenes/s07-escalator.jpg"
- },
- "initView": "main",
- "kai": {
-  "view": "main",
-  "x": 0.3,
-  "y": 0.94,
-  "h": 0.1,
-  "flip": false,
-  "rot": 0,
-  "visible": 1
- },
- "occluders": [],
- "bonus": [
-  {
-   "id": "sister",
-   "label": "姊姊（袋熊）",
-   "sprite": "assets/scenes/wombat.png",
-   "view": "main",
-   "x": 0.88,
-   "y": 0.95,
-   "h": 0.055,
-   "flip": false,
-   "visible": 1
+  "id": "escalator",
+  "views": {
+    "main": "assets/scenes/s07-escalator.jpg"
   },
-  {
-   "id": "pick",
-   "label": "凱凱掉的吉他彈片",
-   "sprite": "assets/scenes/pick.png",
-   "view": "main",
-   "x": 0.69,
-   "y": 0.8,
-   "h": 0.02,
-   "rot": 20
+  "initView": "main",
+  "kai": {
+    "view": "main",
+    "x": 0.3,
+    "y": 0.94,
+    "h": 0.1,
+    "flip": false,
+    "rot": 0,
+    "visible": 1
   },
-  {
-   "id": "item",
-   "label": "夕陽城市",
-   "view": "main",
-   "x": 0.84,
-   "y": 0.3,
-   "w": 0.16,
-   "h": 0.22
-  }
- ],
- "hotspots": [
-  {
-   "view": "main",
-   "x": 0.289,
-   "y": 0.525,
-   "w": 0.087,
-   "h": 0.082,
-   "say": "不是我啦～"
-  },
-  {
-   "view": "main",
-   "x": 0.584,
-   "y": 0.521,
-   "w": 0.087,
-   "h": 0.091,
-   "say": "不是我啦～"
-  },
-  {
-   "view": "main",
-   "x": 0.631,
-   "y": 0.326,
-   "w": 0.087,
-   "h": 0.061,
-   "say": "不是我啦～"
-  },
-  {
-   "view": "main",
-   "x": 0.683,
-   "y": 0.421,
-   "w": 0.069,
-   "h": 0.065,
-   "say": "不是我啦～"
-  }
- ],
- "ambient": {
-  "type": "escalator",
-  "lanes": [
-   {
-    "x0": 0.26,
-    "y0": 0.8,
-    "x1": 0.43,
-    "y1": 0.27,
-    "w": 0.14,
-    "dir": "up"
-   },
-   {
-    "x0": 0.75,
-    "y0": 0.84,
-    "x1": 0.56,
-    "y1": 0.27,
-    "w": 0.17,
-    "dir": "down"
-   }
-  ]
- }
+  "occluders": [],
+  "bonus": [
+    {
+      "id": "item",
+      "label": "夕陽城市",
+      "view": "main",
+      "x": 0.84,
+      "y": 0.3,
+      "w": 0.16,
+      "h": 0.22
+    }
+  ],
+  "hotspots": [
+    {
+      "view": "main",
+      "x": 0.289,
+      "y": 0.525,
+      "w": 0.087,
+      "h": 0.082,
+      "say": "不是我啦～"
+    },
+    {
+      "view": "main",
+      "x": 0.631,
+      "y": 0.326,
+      "w": 0.087,
+      "h": 0.061,
+      "say": "不是我啦～"
+    },
+    {
+      "view": "main",
+      "x": 0.683,
+      "y": 0.421,
+      "w": 0.069,
+      "h": 0.065,
+      "say": "不是我啦～"
+    }
+  ],
+  "ambient": null
 }

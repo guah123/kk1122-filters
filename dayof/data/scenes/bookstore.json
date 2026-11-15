@@ -1,13 +1,66 @@
-{"id":"bookstore","views":{"main":"assets/scenes/s19-moumoon.jpg","selfie":"assets/scenes/s19-moumoon-selfie.jpg"},"initView":"main",
-"kai":{"view":"selfie","painted":true,"foundOnView":true,"rect":{"x":0.09,"y":0.19,"w":0.62,"h":0.81}},
-"occluders":[],
-"bonus":[
-{"id":"sister","label":"姊姊（袋熊）","sprite":"assets/scenes/wombat.png","view":"main","x":0.62,"y":0.42,"h":0.05,"flip":false,"visible":1},
-{"id":"pick","label":"凱凱掉的吉他彈片","sprite":"assets/scenes/pick.png","view":"main","x":0.42,"y":0.81,"h":0.02,"rot":20},
-{"id":"item","label":"熊貓","view":"main","x":0.57,"y":0.475,"w":0.18,"h":0.15}],
-"hotspots":[
-{"view":"main","x":0.48,"y":0.385,"w":0.14,"h":0.14,"say":"不是我啦～"},
-{"view":"main","x":0.29,"y":0.60,"w":0.22,"h":0.17,"say":"不是我啦～"},
-{"view":"main","x":0.57,"y":0.64,"w":0.15,"h":0.14,"say":"不是我啦～"},
-{"view":"main","x":0.76,"y":0.52,"w":0.14,"h":0.14,"say":"不是我啦～"}],
-"ambient":null}
+{
+ "id": "bookstore",
+ "views": {
+  "main": "assets/scenes/s19-moumoon.jpg",
+  "selfie": "assets/scenes/s19-moumoon-selfie.jpg"
+ },
+ "initView": "main",
+ "kai": {
+  "view": "selfie",
+  "painted": true,
+  "foundOnView": true,
+  "rect": {
+   "x": 0.09,
+   "y": 0.19,
+   "w": 0.62,
+   "h": 0.81
+  }
+ },
+ "occluders": [],
+ "bonus": [
+  {
+   "id": "item",
+   "label": "熊貓",
+   "view": "main",
+   "x": 0.57,
+   "y": 0.475,
+   "w": 0.18,
+   "h": 0.15
+  }
+ ],
+ "hotspots": [
+  {
+   "view": "main",
+   "x": 0.48,
+   "y": 0.385,
+   "w": 0.14,
+   "h": 0.14,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.29,
+   "y": 0.6,
+   "w": 0.22,
+   "h": 0.17,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.57,
+   "y": 0.64,
+   "w": 0.15,
+   "h": 0.14,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.76,
+   "y": 0.52,
+   "w": 0.14,
+   "h": 0.14,
+   "say": "不是我啦～"
+  }
+ ],
+ "ambient": null
+}

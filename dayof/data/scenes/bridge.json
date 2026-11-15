@@ -14,38 +14,7 @@
   "visible": 1
  },
  "occluders": [],
- "bonus": [
-  {
-   "id": "sister",
-   "label": "姊姊（袋熊）",
-   "sprite": "assets/scenes/wombat.png",
-   "view": "main",
-   "x": 0.07,
-   "y": 0.45,
-   "h": 0.045,
-   "flip": false,
-   "visible": 1
-  },
-  {
-   "id": "pick",
-   "label": "凱凱掉的吉他彈片",
-   "sprite": "assets/scenes/pick.png",
-   "view": "main",
-   "x": 0.34,
-   "y": 0.47,
-   "h": 0.02,
-   "rot": 20
-  },
-  {
-   "id": "item",
-   "label": "棉花糖",
-   "view": "main",
-   "x": 0.385,
-   "y": 0.585,
-   "w": 0.115,
-   "h": 0.085
-  }
- ],
+ "bonus": [],
  "hotspots": [
   {
    "view": "main",

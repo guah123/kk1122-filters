@@ -1,11 +1,66 @@
-{"id":"fireworks","views":{"main":"assets/scenes/s25-fireworks.jpg"},"initView":"main",
-"kai":{"view":"main","x":0.46,"y":0.59,"h":0.085,"flip":false,"rot":0,"visible":1},
-"occluders":[],
-"bonus":[
-{"id":"sister","label":"姊姊（袋熊）","sprite":"assets/scenes/wombat.png","view":"main","x":0.33,"y":0.64,"h":0.045,"flip":false,"visible":1},
-{"id":"pick","label":"凱凱掉的吉他彈片","sprite":"assets/scenes/pick.png","view":"main","x":0.5,"y":0.97,"h":0.02,"rot":20},
-{"id":"item","label":"金魚袋","view":"main","x":0.335,"y":0.86,"w":0.065,"h":0.09}],
-"hotspots":[
-{"view":"main","x":0.645,"y":0.555,"w":0.105,"h":0.165,"say":"不是我啦～"},
-{"view":"main","x":0.765,"y":0.775,"w":0.23,"h":0.21,"say":"不是我啦～"}],
-"ambient":{"type":"fireworks","bursts":[{"x":0.4,"y":0.1,"r":0.07},{"x":0.62,"y":0.05,"r":0.08},{"x":0.88,"y":0.08,"r":0.07},{"x":0.2,"y":0.2,"r":0.06},{"x":0.5,"y":0.3,"r":0.06}]}}
+{
+ "id": "fireworks",
+ "views": {
+  "main": "assets/scenes/s25-fireworks.jpg"
+ },
+ "initView": "main",
+ "kai": {
+  "view": "main",
+  "x": 0.46,
+  "y": 0.59,
+  "h": 0.085,
+  "flip": false,
+  "rot": 0,
+  "visible": 1
+ },
+ "occluders": [],
+ "bonus": [],
+ "hotspots": [
+  {
+   "view": "main",
+   "x": 0.645,
+   "y": 0.555,
+   "w": 0.105,
+   "h": 0.165,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.765,
+   "y": 0.775,
+   "w": 0.23,
+   "h": 0.21,
+   "say": "不是我啦～"
+  }
+ ],
+ "ambient": {
+  "type": "fireworks",
+  "bursts": [
+   {
+    "x": 0.4,
+    "y": 0.1,
+    "r": 0.07
+   },
+   {
+    "x": 0.62,
+    "y": 0.05,
+    "r": 0.08
+   },
+   {
+    "x": 0.88,
+    "y": 0.08,
+    "r": 0.07
+   },
+   {
+    "x": 0.2,
+    "y": 0.2,
+    "r": 0.06
+   },
+   {
+    "x": 0.5,
+    "y": 0.3,
+    "r": 0.06
+   }
+  ]
+ }
+}

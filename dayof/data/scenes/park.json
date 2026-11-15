@@ -16,27 +16,6 @@
  "occluders": [],
  "bonus": [
   {
-   "id": "sister",
-   "label": "姊姊（袋熊）",
-   "sprite": "assets/scenes/wombat.png",
-   "view": "main",
-   "x": 0.3,
-   "y": 0.775,
-   "h": 0.05,
-   "flip": false,
-   "visible": 0.75
-  },
-  {
-   "id": "pick",
-   "label": "凱凱掉的吉他彈片",
-   "sprite": "assets/scenes/pick.png",
-   "view": "main",
-   "x": 0.555,
-   "y": 0.745,
-   "h": 0.02,
-   "rot": 20
-  },
-  {
    "id": "item",
    "label": "踩大球的街頭藝人",
    "view": "main",

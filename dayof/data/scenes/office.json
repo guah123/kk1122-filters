@@ -17,27 +17,6 @@
  "patches": [],
  "bonus": [
   {
-   "id": "sister",
-   "label": "姊姊（袋熊）",
-   "sprite": "assets/scenes/wombat.png",
-   "view": "main",
-   "x": 0.84,
-   "y": 0.748,
-   "h": 0.05,
-   "flip": true,
-   "visible": 1
-  },
-  {
-   "id": "pick",
-   "label": "凱凱掉的吉他彈片",
-   "sprite": "assets/scenes/pick.png",
-   "view": "main",
-   "x": 0.66,
-   "y": 0.637,
-   "h": 0.02,
-   "rot": 20
-  },
-  {
    "id": "item",
    "label": "熊貓同事",
    "view": "main",
@@ -48,14 +27,6 @@
   }
  ],
  "hotspots": [
-  {
-   "view": "main",
-   "x": 0.469,
-   "y": 0.441,
-   "w": 0.098,
-   "h": 0.082,
-   "say": "不是我啦～"
-  },
   {
    "view": "main",
    "x": 0.457,

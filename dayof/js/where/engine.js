@@ -251,18 +251,69 @@ window.DAYOF = window.DAYOF || {};
     return withTimeout(sceneCfg(sceneId), 3000, null).then(function (c) {
       if (!c || !c.views || !c.views.main) return null;
       var ms = c.loadTimeoutMs || 4000, names = Object.keys(c.views);
-      var kaiUrl = imgUrl((c.kai && c.kai.sprite) || KAI_SPRITE), bonus = interactive ? (c.bonus || []).filter(function (b) { return b && b.sprite; }) : [];
+      var kaiUrl = imgUrl(KAI_SPRITE); // intro-card portrait only — nothing is composited onto the scene
       var jobs = names.map(function (n) { return loadBg(imgUrl(c.views[n]), ms); });
       jobs.push(interactive ? withTimeout(loadImg(kaiUrl), ms, null) : Promise.resolve(null));
-      bonus.forEach(function (b) { jobs.push(withTimeout(loadImg(imgUrl(b.sprite)), ms, null)); });
+      jobs.push(interactive ? withTimeout(hitboxes(), ms, null) : Promise.resolve(null));
       return Promise.all(jobs).then(function (r) {
-        var views = {}, i, bonusImg = {};
+        var views = {}, i;
         for (i = 0; i < names.length; i++) { if (!r[i]) return null; views[names[i]] = { url: imgUrl(c.views[names[i]]), img: r[i] }; }
-        var m = views.main.img, kaiImg = r[names.length];
-        bonus.forEach(function (b, j) { if (r[names.length + 1 + j]) bonusImg[b.id] = r[names.length + 1 + j]; });
-        return { cfg: c, W: m.naturalWidth || 768, H: m.naturalHeight || 1024, views: views, kaiImg: kaiImg, kaiUrl: kaiImg ? kaiUrl : null, bonusImg: bonusImg };
+        var m = views.main.img, kaiImg = r[names.length], W0 = m.naturalWidth || 768, H0 = m.naturalHeight || 1024;
+        return { cfg: c, W: W0, H: H0, views: views, kaiImg: kaiImg, kaiUrl: kaiImg ? kaiUrl : null, hits: sceneHits(r[names.length + 1], sceneId, c, W0, H0) };
       });
     });
+  }
+  /* data/scenes/hitboxes.json — painted Kai / wombat boxes per scene (tolerant of shape; re-fetched per page load).
+     keys: scene id (park) or image stem (s05-park, s19-moumoon-selfie[.jpg]); values {kai:box, wombat|sister:box, view?}
+     box: [x,y,w,h] | {x,y,w,h} (top-left) | {cx,cy,w,h} (centre) | {x0,y0,x1,y1} | {left,top,width,height}; >1.5 → pixels */
+  function hitboxes() {
+    if (IMG.off || typeof fetch !== 'function') return Promise.resolve(null);
+    if (!IMG.hb) IMG.hb = fetch('data/scenes/hitboxes.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    return IMG.hb;
+  }
+  function normBox(b, W, H) {
+    if (!b) return null;
+    var x, y, w, h, n = function (v) { return v == null ? null : +v; };
+    if (Array.isArray(b)) { // real format: corners [x0,y0,x1,y1]; [x,y,w,h] only if it cannot be corners
+      x = n(b[0]); y = n(b[1]);
+      if (n(b[2]) > x && n(b[3]) > y) { w = n(b[2]) - x; h = n(b[3]) - y; } else { w = n(b[2]); h = n(b[3]); }
+    }
+    else if (typeof b === 'object') {
+      if (b.box || b.rect || b.bbox) return normBox(b.box || b.rect || b.bbox, W, H);
+      w = n(b.w != null ? b.w : b.width); h = n(b.h != null ? b.h : b.height);
+      if (b.cx != null && b.cy != null) { x = n(b.cx) - w / 2; y = n(b.cy) - h / 2; }
+      else if (b.x0 != null && b.x1 != null) { x = n(b.x0); y = n(b.y0); w = n(b.x1) - x; h = n(b.y1) - y; }
+      else if (b.x1 != null && b.x2 != null) { x = n(b.x1); y = n(b.y1); w = n(b.x2) - x; h = n(b.y2) - y; }
+      else { x = n(b.x != null ? b.x : b.left); y = n(b.y != null ? b.y : b.top); }
+    }
+    if ([x, y, w, h].some(function (v) { return v == null || isNaN(v); }) || w <= 0 || h <= 0) return null;
+    if (Math.max(x + w, y + h) > 1.5) { x /= W; w /= W; y /= H; h /= H; } // pixels → fractions
+    return { x: x, y: y, w: w, h: h };
+  }
+  // → {kai:{view,box}, sister:{view,box}} for this scene (either may be missing)
+  function sceneHits(all, sceneId, cfg, W, H) {
+    var out = {}; if (!all || typeof all !== 'object') return out;
+    if (all.scenes && typeof all.scenes === 'object') all = all.scenes;
+    var views = cfg.views || {}, cand = [];
+    Object.keys(views).forEach(function (v) {
+      var stem = String(views[v]).split('/').pop(), base = stem.replace(/\.[a-z0-9]+$/i, '');
+      [stem, base].forEach(function (k) { if (all[k]) cand.push({ view: v, e: all[k] }); });
+    });
+    if (all[sceneId]) cand.push({ view: null, e: all[sceneId] });
+    cand.forEach(function (c0) {
+      var e = c0.e; if (!e || typeof e !== 'object') return;
+      var ev = c0.view || (e.view && views[e.view] ? e.view : null);
+      [['kai', ['kai', 'Kai', 'mouse']], ['sister', ['wombat', 'sister', 'Wombat']]].forEach(function (pair) {
+        if (out[pair[0]]) return;
+        for (var i = 0; i < pair[1].length; i++) {
+          var raw = e[pair[1][i]]; if (!raw) continue;
+          var bx = normBox(raw, W, H); if (!bx) continue;
+          var v = (raw && raw.view && views[raw.view]) ? raw.view : ev;
+          out[pair[0]] = { view: v, box: bx }; break;
+        }
+      });
+    });
+    return out;
   }
   function preloadScene(sceneId) {
     sceneCfg(sceneId).then(function (c) { if (!c || !c.views) return; Object.keys(c.views).forEach(function (n) { loadImg(imgUrl(c.views[n])); }); });
@@ -287,7 +338,7 @@ window.DAYOF = window.DAYOF || {};
     var hintAfter = opts.hintAfterSec != null ? opts.hintAfterSec : (cfg.HINT_AFTER_SEC || 30);
     var autoHintAfter = opts.autoHintSec != null ? opts.autoHintSec : (cfg.AUTO_HINT_SEC || 45);
     var skipAfter = opts.skipAfterSec != null ? opts.skipAfterSec : (cfg.SKIP_AFTER_SEC || 60);
-    var autoHinted = false, skipShown = false, skipBtn = null, bonusUi = null;
+    var autoHinted = false, skipShown = false, skipBtn = null;
     var def = D.Where._scenes[sceneId] || (D.Where._scenes['__fallback'] = D.Where._scenes['__fallback'] || FALLBACK);
     var destroyed = false, S = null;
     var qs = ''; try { qs = location.search; } catch (e) { }
@@ -369,9 +420,10 @@ window.DAYOF = window.DAYOF || {};
       var wasMin = !first && prevC && prevC.k <= minK * 1.001;
       vw = nw; vh = nh;
       var contain = Math.min(vw / S.W, vh / S.H), cover = Math.max(vw / S.W, vh / S.H);
-      minK = interactive ? contain : cover; maxK = interactive ? Math.max(cover * 4, 1.6, contain * 2) : cover;
+      // full-bleed (Kai 02:14): cover fit is both the minimum zoom and the opening view (no empty bands)
+      minK = cover; maxK = interactive ? Math.max(cover * 4, 1.6, contain * 2) : cover;
       if (first) {
-        Object.keys(S.views).forEach(function (n) { cams[n] = { k: minK, tx: 0, ty: 0 }; clampCam(cams[n]); });
+        Object.keys(S.views).forEach(function (n) { cams[n] = { k: minK, tx: (vw - S.W * minK) / 2, ty: (vh - S.H * minK) / 2 }; clampCam(cams[n]); });
       } else if (wc) {
         var c = cams[curView]; c.k = wasMin ? minK : clamp(c.k, minK, maxK); c.tx = vw / 2 - wc.x * c.k; c.ty = vh / 2 - wc.y * c.k;
         Object.keys(cams).forEach(function (n) { clampCam(cams[n]); });
@@ -470,7 +522,7 @@ window.DAYOF = window.DAYOF || {};
       var ring = E('circle', { cx: cx, cy: cy, r: 10, fill: 'none', stroke: '#F2C66D', 'stroke-width': 8, 'stroke-opacity': 0.95 }, g0);
       var ring2 = E('circle', { cx: cx, cy: cy, r: 10, fill: 'rgba(255,248,225,.25)', stroke: '#C2674E', 'stroke-width': 3, 'stroke-opacity': 0.8, 'stroke-dasharray': '10 8' }, g0);
       if (K.painted) { /* nothing to move */ }
-      else if (K.img) { K.g.removeAttribute('clip-path'); layer.appendChild(K.g); if (skipBtn) skipBtn.classList.remove('show'); } // sprite: brought to front, hops/waves via its inner group (frame loop)
+ // sprite: brought to front, hops/waves via its inner group (frame loop)
       else {
         // Kai steps out of the crowd and waves (redrawn with the wave pose, no item)
         var ng = D.Chars.draw('mouse', { x: K.x, y: K.y, s: K.s, flip: K.flip, pose: 'wave', rnd: Math.random, outfit: K.outfit, kai: true });
@@ -495,40 +547,37 @@ window.DAYOF = window.DAYOF || {};
       if (Si.view !== curView && fromDebug) showView(Si.view);
       burst((Si.x0 + Si.x1) / 2, Si.y0 + 10, Si.view, { stars: 10, conf: 26, speed: 0.7 });
       hops.push({ g: Si.inner, t0: t, big: true, sis: true });
-      banner('找到姊姊了！', 1900, 'sis');
+      twinkle((Si.x0 + Si.x1) / 2, Si.y0 + 10, 24, Si.view, true);
       Si.g.classList.add('found');
       if (typeof opts.onSister === 'function') { try { opts.onSister({ sec: Math.round(sec), hints: hints }); } catch (e) { console.error(e); } }
     }
 
+    // secret find: a little surprise AT the spot (twinkling stars; wombat also gets a soft heart). No text, no count.
     function foundBonus(B) {
       if (!B || B.found) return;
       B.found = true;
-      burst((B.x0 + B.x1) / 2, (B.y0 + B.y1) / 2, B.view, { stars: 10, conf: 18, speed: 0.55 });
-      if (B.inner) hops.push({ g: B.inner, t0: t, big: true, sis: true });
-      toast('找到' + B.label + '了！', 1900);
-      updBonusUi(true);
-      var info = { sec: Math.round(sec), hints: hints, id: B.id, label: B.label };
+      var cx = (B.x0 + B.x1) / 2, cy = (B.y0 + B.y1) / 2, sz = Math.max(14, Math.min(Math.min(B.x1 - B.x0, B.y1 - B.y0) * 0.22, S.W * 0.035));
+      twinkle(cx, cy, sz, B.view, B.id === 'sister');
+      var info = { sec: Math.round(sec), hints: hints, id: B.id };
       if (typeof opts.onBonus === 'function') { try { opts.onBonus(B.id, info); } catch (e) { console.error(e); } }
       if (B.id === 'sister' && typeof opts.onSister === 'function') { try { opts.onSister(info); } catch (e) { console.error(e); } }
     }
-    function updBonusUi(pop) {
-      if (!bonusUi) return;
-      var n = S.bonus.filter(function (b) { return b.found; }).length;
-      bonusUi.count.textContent = n + '/' + S.bonus.length;
-      S.bonus.forEach(function (b, i) { var li = bonusUi.items[i]; li.className = b.found ? 'on' : ''; li.firstChild.textContent = b.found ? '☑' : '☐'; });
-      if (pop) { bonusUi.el.classList.remove('pop'); void bonusUi.el.offsetWidth; bonusUi.el.classList.add('pop'); }
-      if (n === S.bonus.length) bonusUi.el.classList.add('all');
+    function twinkle(cx, cy, sz, viewName, heart) {
+      var g = E('g', { class: 'twinkle', 'pointer-events': 'none' }, S.views[viewName || curView].layer.top), ps = [], i, n = 7;
+      for (i = 0; i < n; i++) {
+        var a = i / n * Math.PI * 2 + Math.random() * 0.5, d = sz * (0.9 + Math.random() * 0.9), e = E('g', null, g);
+        star(e, sz * (0.18 + Math.random() * 0.14), ['#FFF3C4', '#F2C66D', '#FFFFFF'][i % 3]);
+        ps.push({ e: e, x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d, d0: Math.random() * 0.5 });
+      }
+      var hp = null;
+      if (heart) { hp = E('path', { d: 'M0 4C-6-2-12 2-9 8L0 16L9 8C12 2 6-2 0 4Z', fill: '#E8998F', stroke: '#FBF7EF', 'stroke-width': 1.5 }, g); }
+      fx.push({ t0: t, g: g, life: 1.9, update: function (cu) {
+        ps.forEach(function (p) { var u = clamp((cu - p.d0) / 1.1, 0, 1), sc = Math.sin(Math.PI * u) * (0.8 + 0.3 * Math.sin(cu * 18)); p.e.setAttribute('transform', 'translate(' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ') scale(' + Math.max(0, sc).toFixed(3) + ') rotate(' + (cu * 90).toFixed(0) + ')'); });
+        if (hp) { var hu = clamp(cu / 1.7, 0, 1), hs = sz / 16 * (0.6 + 0.5 * Math.min(1, hu * 4)); hp.setAttribute('transform', 'translate(' + cx.toFixed(1) + ',' + (cy - sz * 0.6 - hu * sz * 1.4).toFixed(1) + ') scale(' + hs.toFixed(3) + ')'); hp.setAttribute('opacity', (hu < 0.6 ? 1 : 1 - (hu - 0.6) / 0.4).toFixed(2)); }
+        return cu < this.life;
+      } });
     }
-    function buildBonusUi() {
-      if (!S.bonus || !S.bonus.length) return;
-      var el = H('div', 'where-bonus', root), b = H('button', 'where-bonus-chip', el, '彩蛋 <b></b><i>▾</i>'), list = H('ul', 'where-bonus-list', el);
-      b.type = 'button'; b.setAttribute('aria-label', '彩蛋清單（可選）');
-      var items = S.bonus.map(function (B) { var li = H('li', null, list); H('span', null, li, '☐'); H('span', 'l', li).textContent = B.label; return li; });
-      bonusUi = { el: el, count: b.querySelector('b'), items: items };
-      ['pointerdown', 'pointermove', 'pointerup'].forEach(function (ev) { el.addEventListener(ev, function (e) { e.stopPropagation(); }); });
-      b.addEventListener('click', function (e) { e.stopPropagation(); el.classList.toggle('open'); });
-      updBonusUi(false);
-    }
+
     // level 1 = zoom to the image quarter that holds Kai + pulse its border; level 2 = pulse a circle on Kai.
     // Scenes where Kai is found by switching views (kai.foundOnView) → both levels point at the 換鏡頭 button.
     var hintLevel = 0;
@@ -629,7 +678,6 @@ window.DAYOF = window.DAYOF || {};
         skipBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
         skipBtn.addEventListener('click', function (e) { e.stopPropagation(); if (done) return; skipBtn.disabled = true; try { opts.onSkip({ sec: Math.round(sec), hints: hints }); } catch (er) { console.error(er); } });
       }
-      buildBonusUi();
       buildMap();
       hintBtn.style.bottom = 'calc(' + (map.h + 28) + 'px + env(safe-area-inset-bottom))';
     }
@@ -641,7 +689,6 @@ window.DAYOF = window.DAYOF || {};
       else { try { var p = D.Chars.portrait({ w: 150, h: 255, pose: 'wave' }); pt.appendChild(p); } catch (e) { } }
       H('h2', null, card, '找到他！點他一下');
       H('p', 'sub', card, '他是一隻老鼠，穿著這身衣服<br>混在大家之間');
-      H('p', 'sis', card, '<img src="' + (S.sisterUrl) + '" alt="">場景裡還偷偷藏著姊姊喔');
       var b = H('button', 'where-intro-btn', card, '開始找'); b.type = 'button';
       function go() {
         if (started) return; started = true; ov.classList.add('out'); setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 450);
@@ -783,8 +830,7 @@ window.DAYOF = window.DAYOF || {};
       if (t >= nextPick) { pickAmbient(); nextPick = t + 7 + Math.random() * 3; }
       for (i = 0; i < amb.length; i++) stepAmb(amb[i], dt);
       if (kaiAmb && !done && S.kaiInfo && S.kaiInfo.view === curView) {
-        if (S.kaiInfo.img) { var bs = Math.sin(t * 1.9); S.kaiInfo.inner.setAttribute('transform', 'translate(0,' + (-0.012 * S.kaiInfo.h * Math.max(0, bs)).toFixed(2) + ') scale(' + (1 - 0.006 * bs).toFixed(4) + ',' + (1 + 0.014 * bs).toFixed(4) + ')'); }
-        else { D.Chars.bodyXf(kaiAmb.g, 0, 1 + 0.013 * Math.sin(t * 1.9), 1 - 0.006 * Math.sin(t * 1.9)); stepAmb(kaiAmb, dt); }
+        D.Chars.bodyXf(kaiAmb.g, 0, 1 + 0.013 * Math.sin(t * 1.9), 1 - 0.006 * Math.sin(t * 1.9)); stepAmb(kaiAmb, dt);
       }
       // little hops (wrong-tap animals, sister)
       for (i = hops.length - 1; i >= 0; i--) {
@@ -808,12 +854,7 @@ window.DAYOF = window.DAYOF || {};
         celebrate.ring2.setAttribute('r', celebrate.R * (0.5 + 0.9 * eo)); celebrate.ring2.setAttribute('stroke-opacity', 0.9 * (1 - f));
         var K = S.kaiInfo, kg = K.g, bounce = cu < 0.9 ? Math.abs(Math.sin(cu * 9)) * 12 * (1 - cu / 0.9) : 0, pop = 1 + 0.08 * Math.sin(Math.min(cu, 1) * Math.PI);
         if (K.painted) { /* painted into the background: ring + confetti only */ }
-        else if (K.img) {
-          // sprite has no wave pose: two happy hops + a side-to-side "wave" wiggle around the feet, then settle
-          var hop = cu < 1.3 ? Math.abs(Math.sin(cu * Math.PI / 0.65)) * K.h * 0.16 * (1 - cu / 1.6) : 0;
-          var wig = cu < 3.2 ? Math.sin(cu * 10) * 9 * Math.max(0, 1 - cu / 3.2) : 0;
-          K.inner.setAttribute('transform', 'translate(0,' + (-hop).toFixed(1) + ') rotate(' + wig.toFixed(2) + ') scale(' + pop.toFixed(3) + ')');
-        } else {
+        else {
           kg.setAttribute('transform', 'translate(' + K.x + ',' + (K.y - bounce).toFixed(1) + ') scale(' + ((K.flip ? -1 : 1) * K.s * pop).toFixed(3) + ',' + (K.s * pop).toFixed(3) + ')');
           D.Chars.setArm(kg, 1, 148 + 24 * Math.sin(cu * 11));
         }
@@ -871,38 +912,33 @@ window.DAYOF = window.DAYOF || {};
         E('image', { href: IM.views[n].url, x: 0, y: 0, width: S.W, height: S.H, preserveAspectRatio: 'xMidYMid slice', class: 'where-bgimg' }, v.layer.bg);
       });
       function vw_(name) { return name && IM.views[name] ? name : 'main'; }
-      function P(o) { o = o || {}; var h = o.h != null ? o.h : (o.scale != null ? o.scale : 0.08); return { view: vw_(o.view), x: (o.x != null ? o.x : 0.62) * S.W, y: (o.y != null ? o.y : 0.71) * S.H, h: h * S.H, flip: !!o.flip, rot: +o.rot || 0, vis: clamp(o.visible != null ? +o.visible : 1, 0.15, 1) }; }
-      // sprite with feet at (x,y); `visible` = fraction shown from the top (static clip on the outer group)
-      function sprite(q, url, img, cls) {
-        var ar = (img && img.naturalWidth / img.naturalHeight) || 0.5, w = q.h * ar;
-        var g = E('g', { class: cls, transform: 'translate(' + q.x.toFixed(1) + ',' + q.y.toFixed(1) + ')' + (q.rot ? ' rotate(' + q.rot + ')' : '') }, S.views[q.view].layer.mid);
-        if (q.vis < 0.999) {
-          var cid = S.uid('clip'), cp = E('clipPath', { id: cid, clipPathUnits: 'userSpaceOnUse' }, defs);
-          E('rect', { x: -w, y: -q.h * 1.4, width: w * 2, height: q.h * (0.4 + q.vis) }, cp);
-          g.setAttribute('clip-path', 'url(#' + cid + ')');
-        } else E('ellipse', { cx: 0, cy: -q.h * 0.01, rx: w * 0.32, ry: q.h * 0.03, fill: '#5B4A3C', 'fill-opacity': 0.12 }, g);
-        var inner = E('g', { class: 'spr-in' }, g), fl = E('g', q.flip ? { transform: 'scale(-1,1)' } : null, inner);
-        E('image', { href: url, x: -w / 2, y: -q.h, width: w, height: q.h, preserveAspectRatio: 'xMidYMax meet' }, fl);
-        // visible box (+30% padding each way) for hit-testing
-        var vh = q.h * q.vis, px = w * 0.3, py = vh * 0.3;
-        return { g: g, inner: inner, img: true, view: q.view, x: q.x, y: q.y, s: q.h / 100, w: w, h: q.h, flip: q.flip, x0: q.x - w / 2 - px, x1: q.x + w / 2 + px, y0: q.y - q.h - py, y1: q.y - q.h + vh + py };
-      }
       if (interactive) {
-        var k = P(c.kai), ck = c.kai || {};
-        if (ck.painted && ck.rect) {
-          // Kai is painted into the background: hit rect (+30%), no sprite
-          var R0 = ck.rect, rx0 = R0.x * S.W, ry0 = R0.y * S.H, rw0 = R0.w * S.W, rh0 = R0.h * S.H;
-          S.kaiInfo = { painted: true, foundOnView: !!ck.foundOnView, view: k.view, x: rx0 + rw0 / 2, y: ry0 + rh0, s: rh0 / 100, w: rw0, h: rh0, x0: rx0 - rw0 * 0.3, x1: rx0 + rw0 * 1.3, y0: ry0 - rh0 * 0.3, y1: ry0 + rh0 * 1.3 };
-        } else if (IM.kaiImg) S.kaiInfo = sprite(k, IM.kaiUrl, IM.kaiImg, 'kai kai-img');
-        else { S.useView(k.view); S.kai({ x: k.x, y: k.y, s: k.h / 98, flip: k.flip }); S.useView('main'); } // procedural Kai ≈ 98 units tall at s=1
+        // NO sprites on the scene (Kai and the wombat are painted into the art). Kai box: hitboxes.json →
+        // scene json kai.rect → derived from kai x/y/h (sprite-sized box). Hit = box + 30% padding.
+        var ck = c.kai || {}, HB = IM.hits || {}, KAR = 158 / 320, WAR = 216 / 320;
+        function fromXYH(o, ar) { var h = o.h != null ? o.h : (o.scale || 0.08), vis = clamp(o.visible != null ? +o.visible : 1, 0.15, 1), w = h * ar * S.H / S.W; return { x: (o.x != null ? o.x : 0.62) - w / 2, y: (o.y != null ? o.y : 0.71) - h, w: w, h: h * vis }; }
+        function padBox(bx, view, pad) {
+          var x = bx.x * S.W, y = bx.y * S.H, w = bx.w * S.W, h = bx.h * S.H;
+          return { painted: true, view: view, x: x + w / 2, y: y + h, s: h / 100, w: w, h: h, x0: x - w * pad, x1: x + w * (1 + pad), y0: y - h * pad, y1: y + h * (1 + pad) };
+        }
+        var kv = HB.kai ? vw_(HB.kai.view || ck.view) : vw_(ck.view);
+        var kbox = HB.kai ? HB.kai.box : (ck.rect ? normBox(ck.rect, S.W, S.H) : fromXYH(ck, KAR));
+        S.kaiInfo = padBox(kbox, kv, 0.3);
+        // Kai not in the opening view (bookstore selfie) → flipping to his view finds him
+        S.kaiInfo.foundOnView = ck.foundOnView != null ? !!ck.foundOnView : kv !== vw_(c.initView);
+        // secrets (no UI): sister/wombat + painted scene items; recorded silently via onBonus
         S.bonus = [];
+        var sb = (c.bonus || []).filter(function (b) { return b && (b.id === 'sister' || b.id === 'wombat'); })[0];
+        if (HB.sister || sb) {
+          var sv = HB.sister ? vw_(HB.sister.view || (sb && sb.view)) : vw_(sb.view);
+          var sbox = HB.sister ? HB.sister.box : (sb.w != null && !sb.sprite ? normBox(sb, S.W, S.H) : fromXYH(sb, WAR));
+          var SB = padBox(sbox, sv, 0.3); SB.id = 'sister'; SB.label = (sb && sb.label) || '姊姊'; S.bonus.push(SB);
+        }
         (c.bonus || []).forEach(function (b, i) {
-          if (!b) return; var id = b.id || ('b' + i), lab = b.label || id, B;
-          if (b.sprite) { var im = IM.bonusImg[id]; if (!im) return; B = sprite(P(b), imgUrl(b.sprite), im, 'bonus bonus-' + id); }
-          else if (b.w != null) { var v = vw_(b.view); B = { view: v, x0: b.x * S.W, y0: b.y * S.H, x1: (b.x + b.w) * S.W, y1: (b.y + b.h) * S.H }; var pw = (B.x1 - B.x0) * 0.15, ph = (B.y1 - B.y0) * 0.15; B.x0 -= pw; B.x1 += pw; B.y0 -= ph; B.y1 += ph; }
-          else return;
-          B.id = id; B.label = lab; B.found = !!(opts.bonusFound && opts.bonusFound[id]); S.bonus.push(B);
+          if (!b || b.sprite || b.w == null || b.id === 'sister' || b.id === 'wombat') return; // sprite bonuses (pick) are gone
+          var B = padBox({ x: b.x, y: b.y, w: b.w, h: b.h }, vw_(b.view), 0.15); B.id = b.id || ('b' + i); B.label = b.label || B.id; S.bonus.push(B);
         });
+        S.bonus.forEach(function (B) { B.found = !!(opts.bonusFound && opts.bonusFound[B.id]); });
         S.hotspots = (c.hotspots || []).map(function (h) { return { view: vw_(h.view), x0: h.x * S.W, y0: h.y * S.H, x1: (h.x + h.w) * S.W, y1: (h.y + h.h) * S.H, say: h.say }; });
       }
       // occluders: crops of the background redrawn ABOVE the sprites (fake foreground)

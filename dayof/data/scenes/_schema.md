@@ -1,5 +1,10 @@
 # data/scenes/<id>.json — 凱凱在哪裡 圖片模式設定
 
+> **2026-11-16 02:16 起：場景上不再疊任何貼圖**（凱凱、袋熊都畫在圖裡）。凱凱/袋熊的位置以 `data/scenes/hitboxes.json` 為準：
+> key = 圖檔名（`s05-park.jpg`，也接受無副檔名或場景 id），值 `{"kai":[x0,y0,x1,y1]|null, "wombat":[x0,y0,x1,y1]}`（比例，左上/右下角；也接受 {x,y,w,h}/{cx,cy,w,h}/像素），`_note` 忽略。
+> 點擊判定 = 框 +30%。hitboxes 沒有該場景 → 用本檔 `kai.rect`，再不然用 `kai.x/y/h` 推一個框（不畫任何東西）。袋熊與畫在圖裡的 item 是「隱藏驚喜」：沒有任何清單/計數/文字，點到只在原地閃星星（袋熊多一顆愛心），默默記到 `found[n].bonus`。
+> 下方的 `sprite`、`visible`、`pick` 等欄位已停用（保留說明供參考）。換圖＋換 hitboxes.json 不需要改程式。全螢幕 cover：最小縮放＝填滿畫面，無留白。
+
 id ∈ `park escalator bridge bookstore office fireworks newyork`。檔案不存在、或 `views.main` 圖載不到（4 秒內沒載完且 HEAD 也找不到）→ 引擎自動改用程式畫的場景（`js/where/scenes/<id>.js`）。
 
 **座標一律是背景圖寬/高的比例（0~1）**，左上角 (0,0)。量座標用 `tools/place.html?scene=<id>`。

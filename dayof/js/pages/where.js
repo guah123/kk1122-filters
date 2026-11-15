@@ -58,11 +58,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var secs = info && info.sec != null ? info.sec : 0;
         var meta = el('div', 'meta', box, '<b>找到凱凱了！</b>花了 ' + secs + ' 秒');
         var note = el('span', null, meta, ''); note.className = 'sis-note';
-        var upd = function () {
-          var bl = handle && handle.getBonus ? handle.getBonus() : [];
-          if (bl.length) { var nf = bl.filter(function (x) { return x.found; }).length; note.textContent = nf === bl.length ? '・彩蛋全找到了！' : '・彩蛋 ' + nf + '/' + bl.length + '（可以繼續找）'; }
-          else note.textContent = sisterDone ? '・姊姊也找到了' : '・姊姊還躲著～';
-        };
+        var upd = function () { note.textContent = ''; }; // secrets are never advertised
         upd(); box._upd = upd;
         var b = el('button', 'btn', box, '繼續看看'); b.type = 'button';
         b.addEventListener('click', function () { b.disabled = true; ctx.next(); });
