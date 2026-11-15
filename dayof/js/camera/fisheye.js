@@ -13,7 +13,8 @@
 
   var A = 1.1;            // 魚眼強度（tan 映射參數）
   var CIRCLE = 0.59;      // 圓半徑＝畫面寬 × 0.59
-  var EDGE = [0.227, 0.18, 0.157]; // 暖炭褐（KK.PAL.umber）
+  var EDGE = [0.42, 0.33, 0.26];   // 暖褐（比炭褐亮、偏暖，避免髒黑）
+  var FRAME_HOLE = 325 / 720;     // fisheye-frame.png 中央圓洞半徑（畫布寬比例）
 
   var VS = 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }';
   var FS = [
@@ -79,7 +80,7 @@
     var hasFrame = false;
     return {
       mode: 'webgl', canvas: cv,
-      render: function (v, W, H, mirror) {
+      render: function (v, W, H, mirror, Rr) {
         if (cv.width !== W) cv.width = W;
         if (cv.height !== H) cv.height = H;
         gl.viewport(0, 0, W, H);
@@ -90,7 +91,7 @@
         gl.uniform2f(U.uV, v && v.videoWidth || W, v && v.videoHeight || H);
         gl.uniform2f(U.uOut, W, H);
         gl.uniform1f(U.uMirror, mirror ? 1 : 0);
-        gl.uniform1f(U.uR, W * CIRCLE);
+        gl.uniform1f(U.uR, Rr || W * CIRCLE);
         gl.uniform1f(U.uA, A);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         return cv;
@@ -104,9 +105,9 @@
     var out = document.createElement('canvas'), og = out.getContext('2d');
     var src = document.createElement('canvas'), sg = src.getContext('2d', { willReadFrequently: true });
     var map = null, vig = null, key = '', img = null;
-    function build(w, h, vw, vh) {
+    function build(w, h, vw, vh, Rf) {
       map = new Int32Array(w * h); vig = new Float32Array(w * h);
-      var R = w * CIRCLE, cx = w / 2, cy = h / 2;
+      var R = w * (Rf || CIRCLE), cx = w / 2, cy = h / 2;
       var k = Math.max(w / vw, h / vh), dw = vw * k, dh = vh * k;
       var Rs = Math.min(R, Math.min(dw, dh) / 2) * 0.98, tA = Math.tan(A);
       for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
@@ -123,7 +124,8 @@
     }
     return {
       mode: '2d', canvas: out,
-      render: function (v, W, H, mirror) {
+      render: function (v, W, H, mirror, Rr) {
+        var Rf = Rr ? Rr / W : CIRCLE;
         var w = Math.max(2, Math.round(W / 2)), h = Math.max(2, Math.round(H / 2));
         if (out.width !== w) out.width = w;
         if (out.height !== h) out.height = h;
@@ -133,8 +135,8 @@
           if (!img) { og.fillStyle = '#3A2E28'; og.fillRect(0, 0, w, h); }
           return out;
         }
-        var k2 = w + 'x' + h + ':' + v.videoWidth + 'x' + v.videoHeight;
-        if (k2 !== key) { build(w, h, v.videoWidth, v.videoHeight); key = k2; }
+        var k2 = w + 'x' + h + ':' + v.videoWidth + 'x' + v.videoHeight + ':' + Rf;
+        if (k2 !== key) { build(w, h, v.videoWidth, v.videoHeight, Rf); key = k2; }
         var k = Math.max(w / v.videoWidth, h / v.videoHeight), dw = v.videoWidth * k, dh = v.videoHeight * k;
         sg.save();
         if (mirror) { sg.translate(w, 0); sg.scale(-1, 1); }
@@ -184,11 +186,15 @@
           engineMode: eng.mode,
           draw: function (g, S) {
             var stage = S.stage, v = (stage && stage.video) || (KK.Camera && KK.Camera.video);
-            var cv = eng.render(v, S.w, S.h, !!(stage && stage.mirror));
+            var aFrame = KK.art ? KK.art('fisheye-frame.png') : null, aBub = KK.art ? KK.art('fisheye-bubble.png') : null;
+            var R = S.w * (aFrame ? FRAME_HOLE * 1.03 : CIRCLE);   // 有舷窗外框時，變形圓縮到外框洞裡（略大一點被框蓋住接縫）
+            var cv = eng.render(v, S.w, S.h, !!(stage && stage.mirror), R);
             g.imageSmoothingEnabled = true;
             g.drawImage(cv, 0, 0, S.w, S.h);
+            // 繪本舷窗外框（錄影與第 29 步拍照都一起輸出）
+            if (aFrame) g.drawImage(aFrame, 0, 0, S.w, S.h);
             // 鏡頭外暗邊上冒幾顆小泡泡（手繪、整數圈 → 無縫）
-            var u = S.u, R = S.w * CIRCLE, cx = S.w / 2, cy = S.h / 2;
+            var u = S.u, cx = S.w / 2, cy = S.h / 2;
             g.lineWidth = Math.max(1.2, u * 0.003);
             for (var i = 0; i < 7; i++) {
               var side = i % 2 ? 1 : -1;
@@ -199,10 +205,11 @@
               if (x < -u * 0.05 || x > S.w + u * 0.05) continue;
               var r = u * (0.008 + 0.012 * KK.hash(i, 9));
               var a = 0.55 * Math.sin(k * Math.PI);
+              if (aBub) { g.globalAlpha = Math.min(1, a * 1.6); g.drawImage(aBub, x - r * 1.6, y - r * 1.6, r * 3.2, r * 3.2); g.globalAlpha = 1; continue; }
               g.strokeStyle = KK.rgba(P.cream, a);
               KK.wobCircle(g, x, y, r, r * 0.08, i * 7, S.t, 10); g.stroke();
             }
-            KK.paper(g, S, { grain: 0.28, vignette: 0 });
+            KK.paper(g, S, { grain: 0.28, vignette: aFrame ? 0.2 : 0.3 });
           },
           destroy: function () { eng.destroy(); },
         };

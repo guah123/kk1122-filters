@@ -10,6 +10,8 @@
 (function () {
   'use strict';
   const KK = window.KK, P = KK.PAL, TAU = KK.TAU;
+  /* DAYOF：水彩點陣素材掛點（assets/filters/remember-*.png；沒有檔案就用原本向量畫法）。奔跑的姊弟維持「人類」。 */
+  const ART = (n) => (KK.art ? KK.art(n) : null);
 
   KK.defineFilter({
     id: 'remember',
@@ -21,7 +23,7 @@
     hint: '點一下或滑過畫面，放出螢火蟲',
     critterHint: '遠坡坡頂：Kai 牽著小袋熊慢慢走向小屋，走到屋前淡出',
     create() {
-      const st = { back: null, front: null, flies: [], lastSpawn: 0 };
+      const st = { back: null, front: null, flies: [], lastSpawn: 0, runX: null, runFace: 1 };
 
       function bandUnit(S) { return S.u * (S.h >= S.w ? 1 : 0.95); }
 
@@ -124,8 +126,9 @@
           drawHouse(g, t);
         });
         st.front = mk((g, t) => {
-          hill(g, fgY, KK.rgba(KK.mix(P.umber, P.moss, 0.22), 0.94), t, 300, b * 0.003);
-          tufts(g, fgY, KK.rgba(KK.mix(P.umber, P.moss, 0.22), 0.95), 33, b * 0.09, b * 0.034, t);
+          const fgc = KK.mix(KK.mix(P.umber, P.moss, 0.42), P.apricot, 0.14);   // DAYOF：前景略暖略亮
+          hill(g, fgY, KK.rgba(fgc, 0.92), t, 300, b * 0.003);
+          tufts(g, fgY, KK.rgba(fgc, 0.95), 33, b * 0.09, b * 0.034, t);
         });
       }
 
@@ -263,8 +266,13 @@
           KK.drawSprite(g, KK.glow(P.cream, 128), w * 0.1, u * 0.1, u * 0.3 * br, 0.4);
           g.restore();
 
-          // 草坡＋房子
-          g.drawImage(st.back[bi], 0, 0);
+          // 草坡＋房子（點陣：remember-hill.png 貼齊底部、remember-house.png 放在山丘上）
+          const aHill = ART('remember-hill.png'), aHouse = ART('remember-house.png'), aSmoke = ART('remember-smoke.png');
+          const aRunA = ART('remember-runner-a.png'), aRunB = ART('remember-runner-b.png');
+          const bmHouse = !!(aHill && aHouse);
+          if (aHill) g.drawImage(aHill, 0, h - w * aHill.naturalHeight / aHill.naturalWidth, w, w * aHill.naturalHeight / aHill.naturalWidth);
+          else g.drawImage(st.back[bi], 0, 0);
+          if (bmHouse) { const hs = b * 0.4; g.drawImage(aHouse, G.hx - hs / 2, G.base + b * 0.02 - hs, hs, hs); }
 
           // 窗光與門光
           const boost = 0.3 * KK.smooth(11.2, 12, t) * (1 - KK.smooth(13, 14, t));
@@ -281,7 +289,7 @@
           KK.drawSprite(g, KK.glow(P.apricot, 64), G.hx, G.base - G.doorH * 0.4, b * 0.08, 0.3 + 0.5 * open);
           g.restore();
           g.fillStyle = KK.rgba(P.page, 0.95);
-          G.win.forEach((p) => {
+          if (!bmHouse) G.win.forEach((p) => {
             g.globalAlpha = Math.min(1, winA);
             g.fillRect(p[0] - G.winS / 2, p[1] - G.winS / 2, G.winS, G.winS);
             g.globalAlpha = Math.min(1, winA) * 0.7;
@@ -289,7 +297,7 @@
             g.fillRect(p[0] - G.winS * 0.04, p[1] - G.winS / 2, G.winS * 0.08, G.winS);
             g.fillStyle = KK.rgba(P.page, 0.95);
           });
-          g.globalAlpha = open;
+          g.globalAlpha = bmHouse ? 0 : open;
           g.fillStyle = KK.rgba(P.cream, 0.95);
           g.fillRect(G.hx - G.doorW / 2, G.base - G.doorH, G.doorW, G.doorH + b * 0.01);
           g.globalAlpha = 1;
@@ -297,7 +305,17 @@
           // 炊煙：細細一縷、S 形捲曲；每 0.5 秒一團、壽命 7 秒（整除 14）
           const smk = KK.glow(P.cream, 64, 0.1);
           const wind = 0.7 * Math.sin(ph * TAU);
-          for (let i = 0; i < 14; i++) {
+          if (aSmoke) {                               // 點陣炊煙：3 縷依序往上飄、輕晃（7 秒一輪，整除 14）
+            for (let i = 0; i < 3; i++) {
+              const k = KK.mod(t / 7 + i / 3, 1), env = KK.smooth(0, 0.15, k) * (1 - KK.smooth(0.55, 1, k));
+              if (env <= 0.01) continue;
+              const sw = b * 0.09, sh = sw * 2;
+              const x = G.chx + Math.sin(k * TAU + wind) * b * 0.015 + k * b * 0.03, y = G.chTop - k * b * 0.25;
+              g.globalAlpha = env * 0.85; g.drawImage(aSmoke, x - sw / 2, y - sh, sw, sh);
+            }
+            g.globalAlpha = 1;
+          }
+          for (let i = 0; i < (aSmoke ? 0 : 14); i++) {
             const age = KK.mod(t - i * 0.5, 7), k = age / 7;
             const env = KK.smooth(0, 0.1, k) * (1 - KK.smooth(0.3, 1, k));
             if (env <= 0.01) continue;
@@ -346,13 +364,22 @@
             const xb = base - sep / 2, xs = base + sep / 2;
             // 離房子近時兩人略分層，弟弟在前（先到門口）
             const order = sep > 0 ? [[xb, Hb, f + 1.2, false], [xs, Hs, f, true]] : [[xs, Hs, f, true], [xb, Hb, f + 1.2, false]];
-            order.forEach((o) => {
+            if (aRunA) {                              // 點陣姊弟（一張圖含兩人，a/b 交替成跑步動畫，原圖面朝右；往左跑時水平翻轉）
+              if (st.runX != null && Math.abs(base - st.runX) > 0.5) st.runFace = base >= st.runX ? 1 : -1;
+              st.runX = base;
+              const fr = (aRunB && Math.floor(t / 0.14) % 2) ? aRunB : aRunA, sz = u * 0.26;
+              const hop = Math.abs(Math.sin(f)) * sz * 0.02;
+              if (fade > 0.01 && base > -sz && base < w + sz) {
+                g.save(); g.globalAlpha = fade; g.translate(base, runY(base) - hop); g.scale(st.runFace, 1);
+                g.drawImage(fr, -sz / 2, -sz * 0.95, sz, sz); g.restore();
+              }
+            } else order.forEach((o) => {
               if (o[0] > -b * 0.1 && o[0] < w + b * 0.1 && fade > 0.01) drawKid(g, o[0], runY(o[0]), o[1], o[2], o[3], fade, t);
             });
           }
 
           // 前景草叢（蓋住小動物的身體）
-          g.drawImage(st.front[bi], 0, 0);
+          if (!aHill) g.drawImage(st.front[bi], 0, 0);
 
           // 螢火蟲
           g.save();

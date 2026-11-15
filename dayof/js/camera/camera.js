@@ -195,6 +195,7 @@
   /* ---------- KK 動態載入 ---------- */
   var kkPromise = null;
   function runPlugins() {
+    try { installSave(window.KK); } catch (e) { /* ignore */ }
     try { installPaper(window.KK); } catch (e) { /* ignore */ }
     (DAYOF.kkPlugins || []).forEach(function (f) { try { f(window.KK); } catch (e) { (window.KK_LOAD_ERRORS = window.KK_LOAD_ERRORS || []).push('plugin:' + e); } });
   }
@@ -223,20 +224,77 @@
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) { /* ignore */ } }, 60000);
   }
-  /* 手機：系統分享單（iPhone 可「儲存影像」到照片）；不行就 <a download>。須在使用者點擊當下呼叫。 */
-  function savePhoto(blob, name) {
-    name = name || ('kankan-photo-' + stamp() + '.jpg');
-    var pf = platform(), info = { name: name, method: '', platform: pf };
-    try {
-      var file = (typeof File === 'function') ? new File([blob], name, { type: 'image/jpeg' }) : null;
-      if (file && pf !== 'desktop' && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        info.method = 'share';
-        info.promise = navigator.share({ files: [file], title: '看看' }).then(function () { return 'shared'; }, function (e) { return (e && e.name) || 'cancel'; });
-        return info;
-      }
-    } catch (e) { /* 改用下載 */ }
+  /* ---------- 存到相簿（Kai 02:42）：手機用系統分享單（iPhone「儲存影片／儲存影像」→ 照片 App），沒有分享單才 <a download> ----------
+   * shareOrDownload(blob, name, mime) → info { name, method:'share'|'download'|'none', promise: Promise<'shared'|'AbortError'|'NotAllowedError'|'download'|...> }
+   *   AbortError（使用者取消）／NotAllowedError（點擊手勢已過期，iOS 錄影收尾後常見）→ 不下載，呼叫端顯示「存到相簿」鈕讓使用者一鍵重試；
+   *   其他錯誤 → 改用下載。桌機一律下載（桌機的分享單不能存到相簿）。須盡量在使用者點擊當下呼叫。 */
+  function hhmmss() { var d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; }; return p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()); }
+  function canShareFile(file) {
+    try { return !!(file && platform() !== 'desktop' && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) { return false; }
+  }
+  function shareOrDownload(blob, name, mime) {
+    var info = { name: name, method: '', platform: platform() };
+    var file = null;
+    try { file = new File([blob], name, { type: mime }); } catch (e) { file = null; }
+    if (canShareFile(file)) {
+      info.method = 'share';
+      info.promise = navigator.share({ files: [file] }).then(function () { return 'shared'; }, function (e) {
+        var n = (e && e.name) || 'Error';
+        if (n === 'AbortError' || n === 'NotAllowedError') return n;
+        try { triggerDownload(blob, name); return 'download'; } catch (e2) { return n; }
+      });
+      return info;
+    }
     try { triggerDownload(blob, name); info.method = 'download'; } catch (e) { info.method = 'none'; info.error = String(e); }
+    info.promise = Promise.resolve(info.method);
     return info;
+  }
+  function savePhoto(blob, name) {
+    return shareOrDownload(blob, name || ('kanKan-1122-fisheye-' + hhmmss() + '.jpg'), 'image/jpeg');
+  }
+
+  /* KK.Recorder 改用「存到相簿」流程：檔名 kanKan-1122-<濾鏡>-<HHMMSS>.mp4/.webm；MIME 優先 mp4（iOS Safari）。
+   * autoSave 在 MediaRecorder onstop 當下（停止鈕點擊後幾十毫秒內）就呼叫分享單；結果透過 SaveHook.onShare(r, outcome) 通知相機畫面。 */
+  var SaveHook = { filter: '', onShare: null };
+  function installSave(KK) {
+    var R = KK.Recorder;
+    if (!R || R._dayofSave) return;
+    R._dayofSave = true;
+    R.MIMES.splice(0, R.MIMES.length, 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm');
+    R.filename = function (r) { return 'kanKan-1122-' + (SaveHook.filter || (r && r.filter) || 'video') + '-' + hhmmss() + '.' + R.ext(r); };
+    var baseMime = function (r) { return ((r && r.mime) || '').indexOf('mp4') >= 0 ? 'video/mp4' : 'video/webm'; };
+    function track(r, info) {
+      info.promise.then(function (out) {
+        var sv = r.save || {};
+        if (out === 'shared' || out === 'download') { sv.triggered = true; sv.fallback = false; sv.pending = false; }
+        else { sv.fallback = true; sv.pending = true; }
+        sv.outcome = out;
+        if (SaveHook.onShare) { try { SaveHook.onShare(r, out); } catch (e) { /* ignore */ } }
+      });
+    }
+    R.autoSave = function (r) {
+      var info = { name: r ? R.filename(r) : '', triggered: false, pending: false, fallback: false, usedFallback: false, platform: R.platform(), msg: '', error: '' };
+      if (r) r.save = info;
+      if (!r || !r.blob || !r.blob.size) { info.msg = '沒有可儲存的影片'; return info; }
+      if (document.hidden) { info.pending = true; info.fallback = true; info.msg = '剛剛的錄影已保留，還沒存到手機。請按「存到相簿」。'; return info; }
+      var o = shareOrDownload(r.blob, info.name, baseMime(r));
+      info.method = o.method;
+      if (o.method === 'share') { info.pending = true; info.msg = '跳出選單後選「儲存影片」，就會存到相簿'; }
+      else if (o.method === 'download') { info.triggered = true; info.fallback = info.platform === 'inapp'; info.msg = R.savedMsg(info.platform); }
+      else { info.fallback = true; info.msg = '自動儲存失敗，請按「存到相簿」。'; }
+      if (o.promise) track(r, o);
+      return info;
+    };
+    R.saveAgain = function (r) {
+      if (!r || !r.blob || !r.blob.size) return { ok: false, msg: '這段影片已釋放，請重新錄影。' };
+      var info = r.save || (r.save = { platform: R.platform() });
+      info.name = info.name || R.filename(r);
+      var o = shareOrDownload(r.blob, info.name, baseMime(r));
+      info.usedFallback = true;
+      if (o.method === 'none') return { ok: false, msg: '儲存失敗：' + (o.error || '') };
+      track(r, o);
+      return { ok: true, pending: o.method === 'share', msg: o.method === 'share' ? '選「儲存影片」就會存到相簿' : R.savedMsg(info.platform) };
+    };
   }
 
   var active = null;
@@ -266,7 +324,7 @@
     canvas.setAttribute('aria-label', '相機預覽（直式 9:16）');
     var timer = h('div', 'cam-timer', '● 00:00'); timer.hidden = true;
     var toastEl = h('div', 'cam-toast'); toastEl.setAttribute('role', 'status');
-    var saveBtn = h('button', 'cam-save', '儲存剛剛這段'); saveBtn.type = 'button'; saveBtn.hidden = true;
+    var saveBtn = h('button', 'cam-save', '存到相簿'); saveBtn.type = 'button'; saveBtn.hidden = true;
     var resetBtn = h('button', 'cam-reset', RESET_LABEL[kkId] || ''); resetBtn.type = 'button'; resetBtn.hidden = true;
     var flash = h('div', 'cam-flash');
     frame.appendChild(canvas); frame.appendChild(flash); frame.appendChild(timer); frame.appendChild(resetBtn); frame.appendChild(saveBtn); frame.appendChild(toastEl);
@@ -408,6 +466,15 @@
     function startRec() {
       if (C.rec || !C.stage || !C.stage.video) return;
       saveBtn.hidden = true;
+      SaveHook.filter = filter;
+      SaveHook.onShare = function (r, out) {
+        if (C.closed) { if (out === 'shared') floatToast('已存到相簿'); return; }
+        if (r !== C.lastResult && C.lastResult) return;
+        if (C.closeOnShared) { C.closeOnShared = false; if (out === 'shared' || out === 'download') { floatToast(out === 'shared' ? '已存到相簿' : KK.Recorder.savedMsg(platform())); close(); return; } }
+        if (out === 'shared') { saveBtn.hidden = true; toast('已存好了', 2000); }
+        else if (out === 'download') { saveBtn.hidden = true; toast(KK.Recorder.savedMsg(platform()), 3000); }
+        else { saveBtn.hidden = false; toast(out === 'AbortError' ? '還沒存喔，想存的時候按「存到相簿」' : '按「存到相簿」就能存到手機相簿', 4000); }
+      };
       var hd;
       try {
         hd = KK.Recorder.start(C.stage, {
@@ -430,7 +497,8 @@
       saveBtn.hidden = !s.fallback;
       if (C.closeAfterSave) {
         C.closeAfterSave = false;
-        if (s.fallback) { toast('錄影已停止。若手機沒存到，請按「儲存剛剛這段」，再按「' + back.textContent + '」', 6000); return; }
+        if (s.method === 'share' && s.pending) { C.closeOnShared = true; toast(msg, 4000); return; }   // 等分享單結果：存好才回去，取消就留著「存到相簿」
+        if (s.fallback) { toast('錄影已停止。請按「存到相簿」，再按「' + back.textContent + '」', 6000); return; }
         floatToast(msg);
         close();
         return;
@@ -484,7 +552,7 @@
     saveBtn.addEventListener('click', function () {
       var o = C.lastResult ? KK.Recorder.saveAgain(C.lastResult) : { ok: false, msg: '沒有可儲存的影片' };
       toast(o.msg, 3000);
-      if (o.ok) saveBtn.hidden = true;
+      if (o.ok && !o.pending) saveBtn.hidden = true;
     });
     resetBtn.addEventListener('click', function () { if (C.stage) { C.stage.reset(); toast(kkId === 'rain' ? '窗戶又起霧了' : '烏雲重新佈滿了', 1500); } });
     flip.addEventListener('click', async function () {
@@ -518,7 +586,7 @@
       } else if (C.wasCam) {
         C.wasCam = false;
         resumeCam();
-        if (!saveBtn.hidden) toast('剛剛的錄影還沒存到手機，請按「儲存剛剛這段」', 4000);
+        if (!saveBtn.hidden) toast('剛剛的錄影還沒存到手機，請按「存到相簿」', 4000);
       }
     }
     function onHide() { try { if (window.KK && KK.Camera) KK.Camera.stop(); } catch (e) { /* ignore */ } }

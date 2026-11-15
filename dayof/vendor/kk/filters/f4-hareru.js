@@ -14,6 +14,16 @@
 (function () {
   'use strict';
   const KK = window.KK, P = KK.PAL, TAU = KK.TAU;
+  /* DAYOF：水彩點陣素材掛點（assets/filters/hareru-*.png；沒有檔案就用原本向量畫法） */
+  const ART = (n) => (KK.art ? KK.art(n) : null);
+  /* 用擦除筆刷（hareru-wipe-brush.png，軟邊水漬）沿線段蓋章；沒有筆刷回傳 false */
+  KK.brushLine = KK.brushLine || function (m, x0, y0, x1, y1, lw) {
+    const br = ART('hareru-wipe-brush.png');
+    if (!br) return false;
+    const sz = lw * 1.5, step = Math.max(1, lw * 0.22), d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(d / step));
+    for (let i = (d ? 1 : 0); i <= n; i++) { const k = i / n; m.drawImage(br, x0 + (x1 - x0) * k - sz / 2, y0 + (y1 - y0) * k - sz / 2, sz, sz); }
+    return true;
+  };
 
   const RAYS = 12;            // 太陽光芒數
   const CLOUD_ALPHA = 0.95;   // 雲層合成透明度（亮灰白暖雲；底層＋雲紋疊後整體約 85% 不透明，隱約透出後方）
@@ -227,7 +237,7 @@
         const land = S.w > S.h;
         st.sun = { x: S.w * (land ? 0.82 : 0.77), y: S.h * (land ? 0.21 : 0.15), r: S.u * 0.075 };
 
-        const lt = KK.mix(P.cream, P.mist, 0.25), dk = KK.mix(P.page, P.slate, 0.35), md = KK.mix(lt, dk, 0.45);   // 亮灰白帶暖：亮部燈下米＋霧藍、暗部舊書頁＋雨雲灰
+        const lt = KK.mix(P.cream, P.mist, 0.22), dk = KK.mix(KK.mix(P.mist, P.slate, 0.35), P.cream, 0.2), md = KK.mix(lt, dk, 0.45);   // DAYOF：暗部改偏藍灰、較亮（避免髒褐灰）   // 亮灰白帶暖：亮部燈下米＋霧藍、暗部舊書頁＋雨雲灰
         const far = buildLayer(Cw, Ch, 411, { cells: 3, aspect: 2.2, topBias: 0.3, lo: 0.38, hi: 0.62, alpha: 0.9, relief: 4.2, dark: dk, mid: md, lite: lt, base: true });       // 遠層：暗、碎
         const near = buildLayer(Cw, Ch, 977, { cells: 2, aspect: 2.0, topBias: 0.25, lo: 0.45, hi: 0.7, alpha: 0.8, relief: 4.6, dark: KK.mix(dk, lt, 0.35), mid: KK.mix(lt, P.cream, 0.3), lite: KK.mix(P.cream, P.apricot, 0.1), base: false }); // 近層：大朵、較亮
         st.rain = buildRain(Cw, Ch, U, 21, 11, 0.09);   // 毛毛雨：約 1/3 數量、更淡
@@ -261,6 +271,7 @@
 
       /* ---------- 手指 ---------- */
       function stamp(m, x, y) {
+        if (KK.brushLine(m, x, y, x, y, st.lw)) return;
         m.fillStyle = '#fff';
         m.beginPath(); m.arc(x, y, st.lw / 2, 0, TAU); m.fill();
       }
@@ -276,10 +287,12 @@
         } else if (ev.type === 'move') {
           const f = st.fingers[ev.id];
           if (!f) { st.fingers[ev.id] = { x, y }; stamp(m, x, y); st.dirty = true; return; }
-          m.strokeStyle = '#fff'; m.lineCap = 'round'; m.lineJoin = 'round';
-          m.beginPath(); m.moveTo(f.x, f.y); m.lineTo(x, y);
-          m.globalAlpha = 0.3; m.lineWidth = st.lw * 1.18; m.stroke(); // 柔邊暈
-          m.globalAlpha = 1; m.lineWidth = st.lw; m.stroke();
+          if (!KK.brushLine(m, f.x, f.y, x, y, st.lw)) {
+            m.strokeStyle = '#fff'; m.lineCap = 'round'; m.lineJoin = 'round';
+            m.beginPath(); m.moveTo(f.x, f.y); m.lineTo(x, y);
+            m.globalAlpha = 0.3; m.lineWidth = st.lw * 1.18; m.stroke(); // 柔邊暈
+            m.globalAlpha = 1; m.lineWidth = st.lw; m.stroke();
+          }
           f.x = x; f.y = y;
           st.dirty = true;
         } else {
@@ -302,6 +315,14 @@
         KK.drawSprite(g, KK.glow(P.apricot, 256), x, y, u * 1.5, 0.95 * sa);
         KK.drawSprite(g, KK.glow(P.cream, 256, 0.2), x, y, u * 0.5, 0.6 * sa);
         g.globalCompositeOperation = 'source-over';
+        const aSun = ART('hareru-sun.png');
+        if (aSun) {
+          const sz = r * 4.4;
+          g.save(); g.globalAlpha = sa; g.translate(x, y); g.rotate(Math.sin(S.phase * TAU) * 0.08);
+          g.drawImage(aSun, -sz / 2, -sz / 2, sz, sz); g.restore();
+          g.globalAlpha = 1;
+          return;
+        }
         g.globalAlpha = sa;
         // 光芒：長短相間，整個 loop 轉 2 格（保持長短相間對稱）→ 無縫
         const a0 = (S.phase * 2 * TAU) / RAYS + 0.1;
@@ -386,7 +407,8 @@
         g.globalAlpha = 1;
         // 雲紋（遠近層已預合成、含雲底漸層）整張取代；來源視窗每 loop 平移 1 個 tile 寬
         g.globalCompositeOperation = 'copy';
-        g.drawImage(st.sky, ph * Cw, 0, Cw, Ch, 0, 0, Cw, Ch);
+        const aCl = ART('hareru-clouds.jpg');
+        if (aCl) g.drawImage(aCl, 0, 0, Cw, Ch); else g.drawImage(st.sky, ph * Cw, 0, Cw, Ch, 0, 0, Cw, Ch);
         g.globalCompositeOperation = 'source-over';
         // 雨絲：每 loop 下落整數倍高度（視窗往上移＝內容往下）
         g.drawImage(st.rain, 0, Ch - KK.mod(ph * 5, 1) * Ch, Cw, Ch, 0, 0, Cw, Ch);
@@ -439,7 +461,9 @@
           if (st.vis > 0.005) {
             const bs = u * 1.5, sway = 1 + Math.sin(S.phase * TAU) * 0.05;
             g.globalAlpha = (0.32 + 0.1 * Math.sin(S.phase * TAU * 2)) * KK.smooth(0, 0.1, st.vis);
-            g.drawImage(st.beams, st.sun.x - bs * sway / 2, st.sun.y - bs * sway / 2, bs * sway, bs * sway);
+            const aLt = ART('hareru-sunlight.png');
+            if (aLt) { g.globalCompositeOperation = 'screen'; g.globalAlpha = Math.min(1, g.globalAlpha * 2.2); }
+            g.drawImage(aLt || st.beams, st.sun.x - bs * sway / 2, st.sun.y - bs * sway / 2, bs * sway, bs * sway);
             g.globalAlpha = 1;
           }
           g.globalCompositeOperation = 'source-over';

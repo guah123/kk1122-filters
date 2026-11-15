@@ -63,6 +63,7 @@
         '<div class="photo-result" hidden>' +
         '  <img class="photo-img" alt="你拍的照片">' +
         '  <p class="photo-hint">長按照片可以存到相簿</p>' +
+        '  <button type="button" class="btn photo-btn photo-save" hidden>存到相簿</button>' +
         '  <a class="photo-dl" href="#" download>下載這張照片</a>' +
         '</div>' +
         '<p class="photo-status" role="status"></p>' +
@@ -75,12 +76,24 @@
       var $ = function (s) { return wrap.querySelector(s); };
       $('.photo-text').textContent = (ctx.step && (ctx.step.text || ctx.step.q)) || TEXT;
       var shootBtn = $('.photo-shoot'), doneBtn = $('.photo-done'), skip = $('.photo-skip');
+      var saveBtn = $('.photo-save'), lastBlob = null;
+      /* 存到相簿：分享單被取消（AbortError）或手勢過期（NotAllowedError）→ 留著「存到相簿」鈕，一鍵重試 */
+      function watchSave(info) {
+        if (!info || !info.promise) { if (info && info.method === 'none') saveBtn.hidden = false; return; }
+        info.promise.then(function (out) {
+          if (!alive) return;
+          if (out === 'shared') { saveBtn.hidden = true; if (ctx.toast) ctx.toast('已存到相簿'); }
+          else if (out === 'download') saveBtn.hidden = true;
+          else saveBtn.hidden = false;
+        });
+      }
+      saveBtn.addEventListener('click', function () { if (lastBlob && DAYOF.Camera) watchSave(DAYOF.Camera.savePhoto(lastBlob)); });
       var result = $('.photo-result'), img = $('.photo-img'), dl = $('.photo-dl'), status = $('.photo-status');
 
       function setStatus(msg, ok) { status.textContent = msg || ''; status.classList.toggle('ok', !!ok); }
       function showPhoto(src) {
         img.src = src; dl.href = src;
-        dl.setAttribute('download', 'kankan-photo.jpg');
+        dl.setAttribute('download', 'kanKan-1122-fisheye.jpg');
         result.hidden = false;
         wrap.classList.add('has-photo');
         shootBtn.textContent = '再拍一張';
@@ -134,6 +147,7 @@
           onPhoto: function (blob, dataUrl, info) {
             if (!alive) return;
             showPhoto(dataUrl);
+            lastBlob = blob; watchSave(info);
             if (info && info.method === 'none') setStatus('自動儲存沒成功，請長按照片或按「下載這張照片」');
             shrink(dataUrl).then(function (d) { if (alive) upload(d); });
           },
