@@ -1,0 +1,16 @@
+{
+  "_說明": "可編輯字卡：每個 section 是一張字卡，items 是 {role, name}。section 留空且有 note 則顯示一行結語。蘭多只出現在這裡。",
+  "sections": [
+    { "section": "工作人員", "items": [
+      { "role": "主唱", "name": "Kai" },
+      { "role": "吉他手", "name": "蘭多" },
+      { "role": "視覺設計", "name": "聖壹" },
+      { "role": "程式設計", "name": "Kai" }
+    ] },
+    { "section": "感謝名單", "items": [
+      { "role": "寫詞顧問", "name": "Emma" },
+      { "role": "甜點大師", "name": "Lynn @失眠動物園" }
+    ] },
+    { "section": "", "note": "謝謝你，今天來看看", "items": [] }
+  ]
+}

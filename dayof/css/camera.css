@@ -1,0 +1,158 @@
+/* 相機覆蓋層（DAYOF.Camera）＋ 第 29 頁拍照頁。變數來自 css/base.css（有後備值）。 */
+html.cam-open, html.cam-open body { overflow: hidden; }
+
+.cam-overlay {
+  position: fixed; inset: 0; z-index: 9000; background: #1b1512; color: var(--cream, #F6EFE2);
+  font-family: var(--font, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif);
+  touch-action: none; overscroll-behavior: contain; -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.cam-overlay button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cam-stagebox { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; padding-top: env(safe-area-inset-top, 0px); }
+.cam-frame { position: relative; width: 270px; height: 480px; background: #000; overflow: hidden; border-radius: 4px; }
+.cam-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+/* 左上：編號徽章（.step-no 由 base.css 定義外觀，這裡固定位置）＋ 返回鈕 */
+.cam-overlay .cam-badge {
+  position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); left: 10px; z-index: 10;
+  min-width: 28px; height: 26px; padding: 0 8px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(251, 247, 239, 0.88); color: var(--ink, #4A3C30); font-size: 13px; font-weight: 700; letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); pointer-events: none;
+}
+.cam-back {
+  position: absolute; top: calc(6px + env(safe-area-inset-top, 0px)); left: 78px; z-index: 10;
+  min-height: 40px; padding: 0 16px; border-radius: 20px; border: 0;
+  background: rgba(251, 247, 239, 0.92); color: var(--ink, #4A3C30); font-size: 16px; font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.cam-back:active { transform: scale(0.97); }
+.cam-tag {
+  position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); right: 12px; z-index: 4;
+  padding: 3px 10px; border-radius: 12px; font-size: 13px; background: rgba(27, 21, 18, 0.5); color: var(--cream, #F6EFE2); pointer-events: none;
+}
+.cam-overlay.recording .cam-tag { display: none; }
+.cam-timer {
+  position: absolute; top: 56px; left: 50%; transform: translateX(-50%); z-index: 4;
+  padding: 4px 12px; border-radius: 14px; background: rgba(194, 103, 78, 0.92); color: #fff;
+  font: 700 15px ui-monospace, Menlo, Consolas, monospace; pointer-events: none;
+}
+.cam-toast {
+  position: absolute; left: 50%; top: 100px; transform: translate(-50%, -6px); z-index: 4; width: min(92%, 360px);
+  padding: 9px 14px; border-radius: 14px; background: rgba(27, 21, 18, 0.78); color: var(--cream, #F6EFE2);
+  font-size: 14px; line-height: 1.5; text-align: center; opacity: 0; transition: opacity 0.25s, transform 0.25s; pointer-events: none;
+}
+.cam-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.cam-save, .cam-reset {
+  position: absolute; z-index: 5; right: 10px; min-height: 38px; padding: 0 14px; border-radius: 19px; border: 0; font-size: 14px; font-weight: 700;
+}
+.cam-save { top: 56px; background: var(--sun, #F2C66D); color: var(--ink, #4A3C30); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+.cam-reset { bottom: 12px; right: 10px; background: rgba(251, 247, 239, 0.75); color: var(--ink, #4A3C30); }
+.cam-overlay.recording .cam-reset { bottom: 12px; }
+.cam-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 3; }
+.cam-flash.go { animation: camflash 0.35s ease-out; }
+@keyframes camflash { 0% { opacity: 0.85; } 100% { opacity: 0; } }
+
+.cam-inapp {
+  position: absolute; left: 10px; right: 10px; top: calc(54px + env(safe-area-inset-top, 0px)); z-index: 7;
+  padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.5;
+  background: rgba(242, 198, 109, 0.95); color: var(--ink, #4A3C30);
+}
+
+/* 下方控制列：左 切換鏡頭、中 錄影／快門、右 留白 */
+.cam-ctrl {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; justify-items: center;
+  padding: 18px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, rgba(27, 21, 18, 0.7) 55%, rgba(27, 21, 18, 0));
+}
+.cam-ctrl.hide { display: none; }
+.cam-flip {
+  width: 66px; min-height: 58px; border: 0; background: none; color: var(--cream, #F6EFE2);
+  display: grid; justify-items: center; gap: 2px;
+}
+.cam-flip .cam-ico, .cam-flip .cam-ico svg { width: 30px; height: 30px; display: block; }
+.cam-flip .cam-ico-txt { font-size: 28px; line-height: 30px; text-align: center; }
+.cam-flip small { font-size: 11px; opacity: 0.85; }
+.cam-flip:disabled { opacity: 0.35; }
+.cam-overlay.recording .cam-flip { opacity: 0.3; pointer-events: none; }
+
+.cam-rec, .cam-shutter {
+  width: 76px; height: 76px; border-radius: 50%; border: 4px solid rgba(255, 255, 255, 0.95); background: rgba(255, 255, 255, 0.12);
+  display: grid; place-items: center; padding: 0;
+}
+.cam-rec i { display: block; width: 56px; height: 56px; border-radius: 50%; background: #d9534a; transition: all 0.2s; }
+.cam-rec.on i { width: 30px; height: 30px; border-radius: 7px; }
+.cam-shutter i { display: block; width: 58px; height: 58px; border-radius: 50%; background: var(--paper, #FBF7EF); }
+.cam-shutter:active i { transform: scale(0.92); }
+.cam-rec:disabled, .cam-shutter:disabled { opacity: 0.4; }
+
+/* 啟動中／錯誤卡片 */
+.cam-status { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; padding: 70px 18px 24px; background: rgba(27, 21, 18, 0.55); touch-action: pan-y; }
+.cam-status[hidden] { display: none; }
+.cam-card {
+  box-sizing: border-box; width: min(100%, 380px); max-width: calc(100vw - 36px); padding: 18px 18px 16px; border-radius: var(--radius, 18px);
+  background: var(--paper, #FBF7EF); color: var(--ink, #4A3C30); text-align: center; box-shadow: var(--shadow, 0 6px 20px rgba(0, 0, 0, 0.3));
+  -webkit-user-select: text; user-select: text;
+}
+.cam-card h3 { margin: 0 0 8px; font-size: 18px; }
+.cam-card p { margin: 0 0 8px; font-size: 14px; line-height: 1.6; text-align: left; }
+.cam-card .cam-loading { text-align: center; margin: 4px 0; font-size: 16px; }
+.cam-card .cam-errcode { font-size: 11px; color: var(--ink-soft, #7A6A5A); }
+.cam-card-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+.cam-btn {
+  min-height: 46px; padding: 0 22px; border-radius: 23px; border: 0; font-size: 16px; font-weight: 700;
+  background: var(--wood, #C9A27A); color: #fff; box-shadow: 0 3px 10px rgba(74, 60, 48, 0.2);
+}
+.cam-btn.ghost { background: rgba(251, 247, 239, 0.9); color: var(--wood-dark, #8A6545); border: 1.5px solid var(--wood, #C9A27A); }
+
+/* 拍照預覽 */
+.cam-preview {
+  position: absolute; inset: 0; z-index: 7; display: grid; grid-template-rows: minmax(0, 1fr) auto; justify-items: center;
+  padding: calc(56px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px)); background: rgba(27, 21, 18, 0.92);
+  -webkit-touch-callout: default; touch-action: auto;
+}
+.cam-preview[hidden] { display: none; }
+.cam-preview-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5); -webkit-user-select: auto; user-select: auto; }
+.cam-preview-actions { display: flex; gap: 14px; padding-top: 14px; }
+.cam-preview-actions .cam-btn { min-width: 120px; }
+
+.cam-floast {
+  position: fixed; left: 50%; bottom: 90px; transform: translate(-50%, 8px); z-index: 9100; max-width: 90%;
+  padding: 10px 16px; border-radius: 14px; background: rgba(74, 60, 48, 0.92); color: #fff; font-size: 14px; opacity: 0; transition: all 0.3s; pointer-events: none;
+}
+.cam-floast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- 第 29 頁：拍照 ---------- */
+.page-photo { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.page-photo .photo-wrap {
+  position: relative; min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px; padding: 64px 22px 40px; max-width: 480px; margin: 0 auto; text-align: center; color: var(--ink, #4A3C30);
+}
+.page-photo .photo-lens {
+  width: 132px; height: 132px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, rgba(255, 255, 255, 0.9) 0 9%, rgba(157, 191, 216, 0.85) 10% 38%, var(--sky-deep, #5E86A8) 39% 58%, var(--ink, #4A3C30) 59% 66%, var(--wood, #C9A27A) 67% 100%);
+  box-shadow: var(--shadow, 0 6px 20px rgba(74, 60, 48, 0.15)), inset 0 0 0 6px rgba(251, 247, 239, 0.6);
+}
+.page-photo .photo-text { margin: 0; font-family: var(--font-serif, serif); font-size: 22px; line-height: 1.7; letter-spacing: 0.04em; }
+.page-photo .photo-actions { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.page-photo .photo-actions .btn, .page-photo .photo-actions .photo-btn { min-width: 180px; }
+.page-photo .photo-btn {
+  min-height: 50px; padding: 0 28px; border-radius: 25px; border: 0; font-size: 17px; font-weight: 700; cursor: pointer;
+  background: var(--wood, #C9A27A); color: #fff; box-shadow: var(--shadow, 0 6px 20px rgba(74, 60, 48, 0.15));
+}
+.page-photo .photo-btn.ghost { background: transparent; color: var(--wood-dark, #8A6545); border: 1.5px solid var(--wood, #C9A27A); box-shadow: none; }
+.page-photo .photo-result { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.page-photo .photo-result[hidden] { display: none; }
+.page-photo .photo-wrap.has-photo { gap: 12px; padding-top: 48px; }
+.page-photo .photo-wrap.has-photo .photo-lens { display: none; }
+.page-photo .photo-wrap.has-photo .photo-text { font-size: 18px; }
+.page-photo .photo-img {
+  width: auto; max-width: min(72%, 300px); max-height: 46vh; max-height: 46dvh; border-radius: 12px; background: var(--paper, #FBF7EF); padding: 6px;
+  box-shadow: var(--shadow, 0 6px 20px rgba(74, 60, 48, 0.15)); transform: rotate(-1.5deg); -webkit-touch-callout: default;
+}
+.page-photo .photo-hint { margin: 0; font-size: 13px; color: var(--ink-soft, #7A6A5A); line-height: 1.6; }
+.page-photo .photo-status { margin: 0; font-size: 14px; color: var(--ink-soft, #7A6A5A); line-height: 1.6; min-height: 1.6em; }
+.page-photo .photo-status.ok { color: var(--leaf, #8FA37A); }
+.page-photo .photo-dl { font-size: 13px; color: var(--sky-deep, #5E86A8); }
+.page-photo .photo-skip { font-size: 13px; color: var(--ink-soft, #7A6A5A); background: none; border: 0; text-decoration: underline; cursor: pointer; padding: 6px; }
+.page-photo [hidden] { display: none !important; }
