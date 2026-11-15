@@ -1,0 +1,14 @@
+{"id":"newyork","views":{"main":"assets/scenes/s27-nyc.jpg"},"initView":"main",
+"kai":{"view":"main","x":0.185,"y":0.62,"h":0.085,"flip":false,"rot":0,"visible":1},
+"occluders":[],
+"bonus":[
+{"id":"sister","label":"姊姊（袋熊）","sprite":"assets/scenes/wombat.png","view":"main","x":0.60,"y":0.665,"h":0.045,"flip":false,"visible":1},
+{"id":"pick","label":"凱凱掉的吉他彈片","sprite":"assets/scenes/pick.png","view":"main","x":0.46,"y":0.915,"h":0.02,"rot":20},
+{"id":"item","label":"黃色計程車","view":"main","x":0.765,"y":0.35,"w":0.23,"h":0.11}],
+"hotspots":[
+{"view":"main","x":0.665,"y":0.404,"w":0.056,"h":0.061,"say":"不是我啦～"},
+{"view":"main","x":0.365,"y":0.543,"w":0.058,"h":0.078,"say":"不是我啦～"},
+{"view":"main","x":0.486,"y":0.543,"w":0.064,"h":0.082,"say":"不是我啦～"},
+{"view":"main","x":0.422,"y":0.62,"w":0.058,"h":0.075,"say":"不是我啦～"},
+{"view":"main","x":0.62,"y":0.816,"w":0.087,"h":0.09,"say":"不是我啦～"}],
+"ambient":null}

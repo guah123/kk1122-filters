@@ -93,3 +93,27 @@
 .where-done .btn{pointer-events:auto;min-width:0;padding:11px 22px;font-size:17px;white-space:nowrap}
 .where-done .meta{flex:1;text-align:left;font-size:12px;line-height:1.5}
 .where-done .meta b{display:block;font-size:14px;color:var(--wood-dark,#8A6545);letter-spacing:.08em}
+
+/* ---- v3: raster image mode (data/scenes.json + assets/scenes/*.png) ---- */
+.where-img .where-paper{opacity:.16}
+.where-img .where-bgimg{image-rendering:auto}
+.where-intro-pt img{height:100%;width:auto;max-width:100%;object-fit:contain;animation:whereWiggle 2.4s ease-in-out infinite;transform-origin:50% 100%}
+.where-chip img{height:40px;width:auto;display:block;margin:-6px 0 -4px}
+.where-ref-big img{height:255px;width:auto;max-width:80vw;object-fit:contain}
+/* bonus checklist (optional finds) — top-right of the scene area, below the done bar once Kai is found */
+.where-bonus{position:absolute;z-index:5;top:10px;right:max(10px,env(safe-area-inset-right));display:flex;flex-direction:column;align-items:flex-end;gap:6px;pointer-events:auto;transition:top .35s}
+.where-found .where-bonus{top:88px}
+.where-bonus-chip{font:inherit;font-family:var(--font,system-ui,sans-serif);font-size:13px;letter-spacing:.06em;color:var(--ink,#4A3C30);background:rgba(251,247,239,.86);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1.5px solid rgba(201,162,122,.7);border-radius:999px;padding:6px 12px;box-shadow:0 3px 12px rgba(74,60,48,.14);cursor:pointer;display:flex;align-items:center;gap:5px}
+.where-bonus-chip b{color:var(--wood-dark,#8A6545)}
+.where-bonus-chip i{font-style:normal;font-size:10px;opacity:.6;transition:transform .2s}
+.where-bonus.open .where-bonus-chip i{transform:rotate(180deg)}
+.where-bonus.all .where-bonus-chip{background:rgba(242,198,109,.92)}
+.where-bonus.pop .where-bonus-chip{animation:whereBonusPop .5s ease-out}
+@keyframes whereBonusPop{40%{transform:scale(1.15)}100%{transform:none}}
+.where-bonus-list{display:none;margin:0;padding:8px 12px;list-style:none;background:rgba(251,247,239,.95);border:1.5px solid rgba(201,162,122,.6);border-radius:14px;box-shadow:0 6px 18px rgba(74,60,48,.16);font-size:13px;line-height:1.8;color:var(--ink-soft,#7A6A5A);max-width:62vw}
+.where-bonus.open .where-bonus-list{display:block}
+.where-bonus-list li{display:flex;gap:6px;white-space:nowrap}
+.where-bonus-list li.on{color:var(--wood-dark,#8A6545);font-weight:700}
+/* skip button (appears after SKIP_AFTER_SEC) — top-left of the scene area */
+.where-skip{position:absolute;top:10px;left:max(10px,env(safe-area-inset-left));height:38px;padding:0 14px;font-size:13px;letter-spacing:.06em;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .4s,transform .4s}
+.where-skip.show{opacity:1;pointer-events:auto;transform:none}

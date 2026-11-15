@@ -11,6 +11,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var state = ctx.state || {};
       var already = state.found && state.found[step.n] && state.found[step.n].sec != null ? state.found[step.n] : null;
       var sisterDone = !!(state.found && state.found[step.n] && state.found[step.n].sister);
+      var bonusFound = (state.found && state.found[step.n] && state.found[step.n].bonus) || {};
       var handle = null, destroyed = false;
 
       var head = el('header', 'where-head', container);
@@ -19,10 +20,18 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var chip = el('button', 'where-chip', row, '<span><b>要找的凱凱</b>看衣服！</span>');
       chip.type = 'button'; chip.setAttribute('aria-label', '要找的凱凱');
       try { if (DAYOF.Chars) chip.insertBefore(DAYOF.Chars.portrait({ w: 26, h: 44, pose: 'stand' }), chip.firstChild); } catch (e) { }
+      // raster Kai sprite (assets/scenes/kai-mouse.png) replaces the procedural portrait once it has loaded
+      var kaiSprite = null;
+      if (DAYOF.Where && DAYOF.Where.sprites) DAYOF.Where.sprites().then(function (u) {
+        if (destroyed || !u || !u.kai) return; kaiSprite = u.kai;
+        var im = document.createElement('img'); im.src = u.kai; im.alt = '';
+        var old = chip.querySelector('svg'); if (old) chip.replaceChild(im, old); else chip.insertBefore(im, chip.firstChild);
+      });
       chip.addEventListener('click', function () {
         if (!ctx.modal) return;
         var box = el('div', 'where-ref-big');
-        try { var p = DAYOF.Chars.portrait({ w: 150, h: 255, pose: 'wave' }); box.appendChild(p); } catch (e) { }
+        if (kaiSprite) { var bi = el('img', null, box); bi.src = kaiSprite; bi.alt = '凱凱'; }
+        else { try { var p = DAYOF.Chars.portrait({ w: 150, h: 255, pose: 'wave' }); box.appendChild(p); } catch (e) { } }
         el('p', null, box, '這就是凱凱（一隻老鼠）<br>今天他穿這身衣服，混在大家之間。');
         ctx.modal(box, { closeX: true });
       });
@@ -49,7 +58,11 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var secs = info && info.sec != null ? info.sec : 0;
         var meta = el('div', 'meta', box, '<b>找到凱凱了！</b>花了 ' + secs + ' 秒');
         var note = el('span', null, meta, ''); note.className = 'sis-note';
-        var upd = function () { note.textContent = sisterDone ? '・姊姊也找到了' : '・姊姊還躲著～'; };
+        var upd = function () {
+          var bl = handle && handle.getBonus ? handle.getBonus() : [];
+          if (bl.length) { var nf = bl.filter(function (x) { return x.found; }).length; note.textContent = nf === bl.length ? '・彩蛋全找到了！' : '・彩蛋 ' + nf + '/' + bl.length + '（可以繼續找）'; }
+          else note.textContent = sisterDone ? '・姊姊也找到了' : '・姊姊還躲著～';
+        };
         upd(); box._upd = upd;
         var b = el('button', 'btn', box, '繼續看看'); b.type = 'button';
         b.addEventListener('click', function () { b.disabled = true; ctx.next(); });
@@ -68,9 +81,27 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         sisterDone = true; saveFound({ sister: true });
         var bar = container.querySelector('.where-done'); if (bar && bar._upd) bar._upd();
       }
+      // optional bonus finds (image mode): state.found[n].bonus = {sister:true, pick:true, item:true}
+      function onBonus(id) {
+        var prev = (state.found && state.found[step.n] && state.found[step.n].bonus) || {};
+        var bonus = Object.assign({}, prev); bonus[id] = true;
+        saveFound({ bonus: bonus });
+        var bar = container.querySelector('.where-done'); if (bar && bar._upd) bar._upd();
+      }
+      // skip after SKIP_AFTER_SEC (engine shows 「直接看下一首」)
+      function onSkip(info) {
+        if (destroyed) return;
+        saveFound({ skipped: true, skipSec: info && info.sec });
+        ctx.next();
+      }
 
       if (DAYOF.Where && DAYOF.Where.mount) {
-        handle = DAYOF.Where.mount(area, step.scene, { interactive: true, onFound: onFound, onSister: onSister, intro: !already, hintAfterSec: Math.min((ctx.config && ctx.config.HINT_AFTER_SEC) || 30, 30) });
+        var C = ctx.config || window.DAYOF_CONFIG || {};
+        handle = DAYOF.Where.mount(area, step.scene, {
+          interactive: true, onFound: onFound, onSister: onSister, onBonus: onBonus, bonusFound: bonusFound, intro: !already,
+          onSkip: already ? null : onSkip,
+          hintAfterSec: Math.min(C.HINT_AFTER_SEC || 15, 15), autoHintSec: C.AUTO_HINT_SEC || 30, skipAfterSec: C.SKIP_AFTER_SEC || 45
+        });
       } else {
         el('p', null, area, '場景載入中…').style.cssText = 'padding:40px;text-align:center';
       }

@@ -1,0 +1,100 @@
+{
+ "id": "park",
+ "views": {
+  "main": "assets/scenes/s05-park.jpg"
+ },
+ "initView": "main",
+ "kai": {
+  "view": "main",
+  "x": 0.619,
+  "y": 0.512,
+  "h": 0.095,
+  "flip": false,
+  "rot": 0,
+  "visible": 1
+ },
+ "occluders": [],
+ "bonus": [
+  {
+   "id": "sister",
+   "label": "姊姊（袋熊）",
+   "sprite": "assets/scenes/wombat.png",
+   "view": "main",
+   "x": 0.3,
+   "y": 0.775,
+   "h": 0.05,
+   "flip": false,
+   "visible": 0.75
+  },
+  {
+   "id": "pick",
+   "label": "凱凱掉的吉他彈片",
+   "sprite": "assets/scenes/pick.png",
+   "view": "main",
+   "x": 0.555,
+   "y": 0.745,
+   "h": 0.02,
+   "rot": 20
+  },
+  {
+   "id": "item",
+   "label": "踩大球的街頭藝人",
+   "view": "main",
+   "x": 0.448,
+   "y": 0.33,
+   "w": 0.125,
+   "h": 0.19
+  }
+ ],
+ "hotspots": [
+  {
+   "view": "main",
+   "x": 0.1447,
+   "y": 0.3194,
+   "w": 0.0949,
+   "h": 0.0972,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.2106,
+   "y": 0.375,
+   "w": 0.0579,
+   "h": 0.0781,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.2593,
+   "y": 0.4514,
+   "w": 0.0671,
+   "h": 0.0712,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.897,
+   "y": 0.638,
+   "w": 0.103,
+   "h": 0.1519,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.8275,
+   "y": 0.1111,
+   "w": 0.081,
+   "h": 0.1172,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.2199,
+   "y": 0.5382,
+   "w": 0.081,
+   "h": 0.0738,
+   "say": "不是我啦～"
+  }
+ ],
+ "ambient": null
+}

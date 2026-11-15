@@ -183,8 +183,8 @@ window.DAYOF = window.DAYOF || {};
     S.sister = function (o) {
       o = o || {};
       if (S.sisterInfo && S.sisterInfo.g.parentNode) S.sisterInfo.g.parentNode.removeChild(S.sisterInfo.g);
-      var s = o.s == null ? 1 : o.s, H0 = 68, W0 = Math.round(H0 * 163 / 200);
-      var g = E('g', { class: 'sister', transform: 'translate(' + (o.x || 0) + ',' + (o.y || 0) + ') scale(' + (s * (o.flip ? -1 : 1)) + ',' + s + ')' }, o.parent || S.layer.mid);
+      var s = o.s == null ? 1 : o.s, H0 = 68, W0 = Math.round(H0 * (o.ar || 163 / 200));
+      var g = E('g', { class: 'sister', transform: 'translate(' + (o.x || 0) + ',' + (o.y || 0) + ')' + (o.rot ? ' rotate(' + o.rot + ')' : '') + ' scale(' + (s * (o.flip ? -1 : 1)) + ',' + s + ')' }, o.parent || S.layer.mid);
       E('ellipse', { cx: 0, cy: 0, rx: 14, ry: 3, fill: '#5B4A3C', 'fill-opacity': 0.13 }, g);
       var inner = E('g', { class: 'sis-in' }, g);
       E('image', { href: S.sisterUrl, x: -W0 / 2, y: -H0, width: W0, height: H0, preserveAspectRatio: 'xMidYMax meet' }, inner);
@@ -207,6 +207,73 @@ window.DAYOF = window.DAYOF || {};
     }
   };
 
+  /* -------------------------------------------------------------- image mode (raster scene art, data/scenes.json)
+     If data/scenes.json has an entry for the scene AND its background image(s) load, the scene is a raster
+     image + sprites; otherwise the procedural scene file is used (auto fallback). Debug: ?scenesBase=<url/>
+     replaces the leading "assets/scenes/" of every image path. */
+  var IMG = { cfg: null, cache: {}, base: null };
+  try { var mb = /[?&]scenesBase=([^&#]+)/.exec(location.search); if (mb) { IMG.base = decodeURIComponent(mb[1]); if (!/\/$/.test(IMG.base)) IMG.base += '/'; } } catch (e) { }
+  if (/[?&]noimg=1/.test((function () { try { return location.search; } catch (e) { return ''; } })())) IMG.off = true;
+  function imgUrl(u) { if (!u) return u; return (IMG.base && u.indexOf('assets/scenes/') === 0) ? IMG.base + u.slice(14) : u; }
+  function withTimeout(p, ms, val) { return new Promise(function (res) { var to = setTimeout(function () { res(val); }, ms); p.then(function (v) { clearTimeout(to); res(v); }, function () { clearTimeout(to); res(null); }); }); }
+  var KAI_SPRITE = 'assets/scenes/kai-mouse.png';
+  // per-scene config data/scenes/<id>.json (cached per id; null when missing/invalid)
+  function sceneCfg(id) {
+    if (IMG.off || typeof fetch !== 'function' || !id) return Promise.resolve(null);
+    if (!IMG.cfg) IMG.cfg = {};
+    if (!IMG.cfg[id]) IMG.cfg[id] = fetch('data/scenes/' + id + '.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    return IMG.cfg[id];
+  }
+  // cached: resolves the loaded HTMLImageElement, or null on error (never rejects, no timeout; callers race it)
+  function loadImg(url) {
+    if (!url) return Promise.resolve(null);
+    if (!IMG.cache[url]) IMG.cache[url] = new Promise(function (res) {
+      var im = new Image(); im.decoding = 'async';
+      im.onload = function () { if (im.decode) im.decode().then(function () { res(im); }, function () { res(im); }); else res(im); };
+      im.onerror = function () { res(null); };
+      im.src = url;
+    });
+    return IMG.cache[url];
+  }
+  // background must exist: fast path = load within `ms`; if slow but the file exists (HEAD ok) keep waiting (≤20s)
+  function loadBg(url, ms) {
+    var p = loadImg(url);
+    return withTimeout(p, ms, 'slow').then(function (r) {
+      if (r !== 'slow') return r;
+      return withTimeout(fetch(url, { method: 'HEAD' }).then(function (h) { return h.ok; }), 1500, false).then(function (ok) {
+        if (!ok) { console.warn('[Where] scene image timeout → procedural', url); return null; }
+        return withTimeout(p, 20000, null);
+      });
+    });
+  }
+  // → null (procedural) or {cfg, W, H, views:{name:{url,img}}, kaiImg, kaiUrl, bonusImg:{id:img}}
+  function probeImage(sceneId, interactive) {
+    return withTimeout(sceneCfg(sceneId), 3000, null).then(function (c) {
+      if (!c || !c.views || !c.views.main) return null;
+      var ms = c.loadTimeoutMs || 4000, names = Object.keys(c.views);
+      var kaiUrl = imgUrl((c.kai && c.kai.sprite) || KAI_SPRITE), bonus = interactive ? (c.bonus || []).filter(function (b) { return b && b.sprite; }) : [];
+      var jobs = names.map(function (n) { return loadBg(imgUrl(c.views[n]), ms); });
+      jobs.push(interactive ? withTimeout(loadImg(kaiUrl), ms, null) : Promise.resolve(null));
+      bonus.forEach(function (b) { jobs.push(withTimeout(loadImg(imgUrl(b.sprite)), ms, null)); });
+      return Promise.all(jobs).then(function (r) {
+        var views = {}, i, bonusImg = {};
+        for (i = 0; i < names.length; i++) { if (!r[i]) return null; views[names[i]] = { url: imgUrl(c.views[names[i]]), img: r[i] }; }
+        var m = views.main.img, kaiImg = r[names.length];
+        bonus.forEach(function (b, j) { if (r[names.length + 1 + j]) bonusImg[b.id] = r[names.length + 1 + j]; });
+        return { cfg: c, W: m.naturalWidth || 768, H: m.naturalHeight || 1024, views: views, kaiImg: kaiImg, kaiUrl: kaiImg ? kaiUrl : null, bonusImg: bonusImg };
+      });
+    });
+  }
+  function preloadScene(sceneId) {
+    sceneCfg(sceneId).then(function (c) { if (!c || !c.views) return; Object.keys(c.views).forEach(function (n) { loadImg(imgUrl(c.views[n])); }); });
+  }
+  // page helper: {kai: url|null} once the Kai sprite has loaded (or failed)
+  function spriteUrls() {
+    if (IMG.off) return Promise.resolve({ kai: null });
+    var u = imgUrl(KAI_SPRITE);
+    return withTimeout(loadImg(u), 4000, null).then(function (im) { return { kai: im ? u : null }; });
+  }
+
   /* -------------------------------------------------------------- mount */
   var current = null; // handle of the latest interactive mount (for debug.solveWhere)
   var MAG = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="21" cy="21" r="12"/><path d="M30 30l11 11"/><path d="M16 18c1-2.4 3-3.8 5.4-4" opacity=".6"/></svg>';
@@ -216,7 +283,11 @@ window.DAYOF = window.DAYOF || {};
     opts = opts || {};
     var interactive = opts.interactive !== false;
     var cfg = (window.DAYOF_CONFIG || {});
-    var hintAfter = opts.hintAfterSec != null ? opts.hintAfterSec : (cfg.HINT_AFTER_SEC || 30);
+    // difficulty timeline (Kai 02:06): hint button 15s → auto-pulse 30s → skip button 45s (seconds of active search)
+    var hintAfter = opts.hintAfterSec != null ? opts.hintAfterSec : Math.min(cfg.HINT_AFTER_SEC || 15, 15);
+    var autoHintAfter = opts.autoHintSec != null ? opts.autoHintSec : (cfg.AUTO_HINT_SEC || 30);
+    var skipAfter = opts.skipAfterSec != null ? opts.skipAfterSec : (cfg.SKIP_AFTER_SEC || 45);
+    var autoHinted = false, skipShown = false, skipBtn = null, bonusUi = null;
     var def = D.Where._scenes[sceneId] || (D.Where._scenes['__fallback'] = D.Where._scenes['__fallback'] || FALLBACK);
     var destroyed = false, S = null;
     var qs = ''; try { qs = location.search; } catch (e) { }
@@ -366,12 +437,16 @@ window.DAYOF = window.DAYOF || {};
       return b;
     }
     function bubbleFor(gEl, text) {
-      if (bubbleEl && bubbleEl.parentNode) bubbleEl.parentNode.removeChild(bubbleEl);
       var rr = gEl.getBoundingClientRect(), rb = root.getBoundingClientRect();
+      bubbleAt((rr.left + rr.right) / 2 - rb.left, rr.top - rb.top - 4, rr.bottom - rb.top + 6, text);
+    }
+    // bubble anchored at a screen point (root coords): above `ty`, or below at `by` when too close to the top
+    function bubbleAt(cx, ty, by, text) {
+      if (bubbleEl && bubbleEl.parentNode) bubbleEl.parentNode.removeChild(bubbleEl);
+      var rb = root.getBoundingClientRect();
       var b = H('div', 'where-bubble', root, text);
-      var cx = (rr.left + rr.right) / 2 - rb.left, ty = rr.top - rb.top - 4;
       b.style.left = clamp(cx, 56, rb.width - 56) + 'px'; b.style.top = ty + 'px';
-      if (ty < 40) { b.style.top = (rr.bottom - rb.top + 6) + 'px'; b.classList.add('below'); }
+      if (ty < 40) { b.style.top = by + 'px'; b.classList.add('below'); }
       bubbleEl = b; clearTimeout(bubbleT); bubbleT = setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 1500);
     }
 
@@ -381,18 +456,21 @@ window.DAYOF = window.DAYOF || {};
       done = true; locked = true; started = true; foundFired = false; kaiAmb = null;
       var K = S.kaiInfo;
       if (curView !== K.view) showView(K.view);
-      if (hintBtn) hintBtn.classList.remove('show'); hintBtn && hintBtn.classList.add('gone');
+      if (hintBtn) hintBtn.classList.remove('show'); hintBtn && hintBtn.classList.add('gone'); if (skipBtn) skipBtn.classList.remove('show'); root.classList.add('where-found');
       if (hintObj) { if (hintObj.g.parentNode) hintObj.g.parentNode.removeChild(hintObj.g); hintObj = null; }
       var cx = (K.x0 + K.x1) / 2, cy = (K.y0 + K.y1) / 2;
       var layer = S.views[K.view].layer.top;
       var g0 = E('g', { class: 'found-fx', 'pointer-events': 'none' }, layer);
       var ring = E('circle', { cx: cx, cy: cy, r: 10, fill: 'none', stroke: '#F2C66D', 'stroke-width': 8, 'stroke-opacity': 0.95 }, g0);
       var ring2 = E('circle', { cx: cx, cy: cy, r: 10, fill: 'rgba(255,248,225,.25)', stroke: '#C2674E', 'stroke-width': 3, 'stroke-opacity': 0.8, 'stroke-dasharray': '10 8' }, g0);
-      // Kai steps out of the crowd and waves (redrawn with the wave pose, no item)
-      var ng = D.Chars.draw('mouse', { x: K.x, y: K.y, s: K.s, flip: K.flip, pose: 'wave', rnd: Math.random, outfit: K.outfit, kai: true });
-      ng.setAttribute('class', 'ch ch-mouse kai'); ng.__flip = K.flip;
-      if (K.g.parentNode) K.g.parentNode.removeChild(K.g);
-      layer.appendChild(ng); K.g = ng;
+      if (K.img) { K.g.removeAttribute('clip-path'); layer.appendChild(K.g); if (skipBtn) skipBtn.classList.remove('show'); } // sprite: brought to front, hops/waves via its inner group (frame loop)
+      else {
+        // Kai steps out of the crowd and waves (redrawn with the wave pose, no item)
+        var ng = D.Chars.draw('mouse', { x: K.x, y: K.y, s: K.s, flip: K.flip, pose: 'wave', rnd: Math.random, outfit: K.outfit, kai: true });
+        ng.setAttribute('class', 'ch ch-mouse kai'); ng.__flip = K.flip;
+        if (K.g.parentNode) K.g.parentNode.removeChild(K.g);
+        layer.appendChild(ng); K.g = ng;
+      }
       burst(cx, cy - 30, K.view, { stars: 18, conf: 54 });
       celebrate = { g: g0, ring: ring, ring2: ring2, cx: cx, cy: cy, t0: t, R: Math.max(70, (K.x1 - K.x0) * 1.2) };
       tweenTo(cx, cy, Math.max(cams[curView].k, Math.min(maxK, 170 / (100 * K.s))), 0.8);
@@ -415,25 +493,54 @@ window.DAYOF = window.DAYOF || {};
       if (typeof opts.onSister === 'function') { try { opts.onSister({ sec: Math.round(sec), hints: hints }); } catch (e) { console.error(e); } }
     }
 
-    function useHint() {
+    function foundBonus(B) {
+      if (!B || B.found) return;
+      B.found = true;
+      burst((B.x0 + B.x1) / 2, (B.y0 + B.y1) / 2, B.view, { stars: 10, conf: 18, speed: 0.55 });
+      if (B.inner) hops.push({ g: B.inner, t0: t, big: true, sis: true });
+      toast('找到' + B.label + '了！', 1900);
+      updBonusUi(true);
+      var info = { sec: Math.round(sec), hints: hints, id: B.id, label: B.label };
+      if (typeof opts.onBonus === 'function') { try { opts.onBonus(B.id, info); } catch (e) { console.error(e); } }
+      if (B.id === 'sister' && typeof opts.onSister === 'function') { try { opts.onSister(info); } catch (e) { console.error(e); } }
+    }
+    function updBonusUi(pop) {
+      if (!bonusUi) return;
+      var n = S.bonus.filter(function (b) { return b.found; }).length;
+      bonusUi.count.textContent = n + '/' + S.bonus.length;
+      S.bonus.forEach(function (b, i) { var li = bonusUi.items[i]; li.className = b.found ? 'on' : ''; li.firstChild.textContent = b.found ? '☑' : '☐'; });
+      if (pop) { bonusUi.el.classList.remove('pop'); void bonusUi.el.offsetWidth; bonusUi.el.classList.add('pop'); }
+      if (n === S.bonus.length) bonusUi.el.classList.add('all');
+    }
+    function buildBonusUi() {
+      if (!S.bonus || !S.bonus.length) return;
+      var el = H('div', 'where-bonus', root), b = H('button', 'where-bonus-chip', el, '彩蛋 <b></b><i>▾</i>'), list = H('ul', 'where-bonus-list', el);
+      b.type = 'button'; b.setAttribute('aria-label', '彩蛋清單（可選）');
+      var items = S.bonus.map(function (B) { var li = H('li', null, list); H('span', null, li, '☐'); H('span', 'l', li).textContent = B.label; return li; });
+      bonusUi = { el: el, count: b.querySelector('b'), items: items };
+      ['pointerdown', 'pointermove', 'pointerup'].forEach(function (ev) { el.addEventListener(ev, function (e) { e.stopPropagation(); }); });
+      b.addEventListener('click', function (e) { e.stopPropagation(); el.classList.toggle('open'); });
+      updBonusUi(false);
+    }
+    function useHint(auto) {
       if (done || !S.kaiInfo || !started) return;
-      var K = S.kaiInfo; hints++;
+      var K = S.kaiInfo; if (!auto) hints++;
       if (K.view !== curView) {
         if (flipBtn) flipBtn.classList.add('pulse');
         toast('他好像不在這個畫面…試試「更換前後鏡頭」', 3200); return;
       }
       var cx = (K.x0 + K.x1) / 2, cy = (K.y0 + K.y1) / 2;
-      var ang = S.rng() * Math.PI * 2, off = 60 + S.rng() * 50;
+      var ang = S.rng() * Math.PI * 2, off = (60 + S.rng() * 50) * (S.imageMode ? S.W / 2000 : 1);
       var hx = cx + Math.cos(ang) * off, hy = cy + Math.sin(ang) * off;
       if (hintObj && hintObj.g.parentNode) hintObj.g.parentNode.removeChild(hintObj.g);
       var g = E('g', { class: 'hint-fx', 'pointer-events': 'none' }, S.views[K.view].layer.top);
-      var R = clamp(115 / cams[curView].k, 130, 480);
+      var R = S.imageMode ? clamp(115 / cams[curView].k, S.W * 0.08, S.W * 0.22) : clamp(115 / cams[curView].k, 130, 480);
       E('circle', { cx: hx, cy: hy, r: R, fill: 'rgba(255,240,200,.16)', stroke: '#E3B873', 'stroke-width': 5 / Math.max(0.4, Math.min(1, cams[curView].k * 2)), 'stroke-opacity': 0.8, 'stroke-dasharray': '16 12' }, g);
       var c2 = E('circle', { cx: hx, cy: hy, r: R, fill: 'none', stroke: '#F2C66D', 'stroke-width': 3, 'stroke-opacity': 0.6 }, g);
       hintObj = { g: g, c2: c2, hx: hx, hy: hy, R: R, t0: t };
       var cm = cams[curView], sx = hx * cm.k + cm.tx, sy = hy * cm.k + cm.ty;
       if (sx < 40 || sx > vw - 40 || sy < 60 || sy > vh - 60 || cm.k < minK * 1.6) tweenTo(hx, hy, Math.max(cm.k, Math.min(maxK, 0.75)), 0.8);
-      toast('Kai 大概在這個圈圈附近', 2200);
+      toast(auto ? '幫你圈出來了～凱凱就在圈圈裡' : 'Kai 大概在這個圈圈附近', 2400);
     }
 
     /* -------------- minimap -------------- */
@@ -462,6 +569,7 @@ window.DAYOF = window.DAYOF || {};
     }
     function thumb(n) {
       try {
+        if (S.views[n].bgImg) { var cv0 = map.canv[n], cx0 = cv0.getContext('2d'); cx0.drawImage(S.views[n].bgImg, 0, 0, cv0.width, cv0.height); return; }
         var v = S.views[n], clone = v.g.cloneNode(true); clone.removeAttribute('style');
         ['.kai', '.sister', '.hint-fx', '.found-fx', '.burst', 'image', 'text'].forEach(function (sel) { [].slice.call(clone.querySelectorAll(sel)).forEach(function (e) { e.parentNode && e.parentNode.removeChild(e); }); });
         [].slice.call(clone.querySelectorAll('[filter]')).forEach(function (e) { e.removeAttribute('filter'); });
@@ -493,6 +601,12 @@ window.DAYOF = window.DAYOF || {};
       hintBtn.type = 'button'; hintBtn.setAttribute('aria-label', '提示');
       hintBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
       hintBtn.addEventListener('click', function (e) { e.stopPropagation(); useHint(); });
+      if (typeof opts.onSkip === 'function') {
+        skipBtn = H('button', 'where-btn where-skip', hud, '直接看下一首 ›'); skipBtn.type = 'button';
+        skipBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+        skipBtn.addEventListener('click', function (e) { e.stopPropagation(); if (done) return; skipBtn.disabled = true; try { opts.onSkip({ sec: Math.round(sec), hints: hints }); } catch (er) { console.error(er); } });
+      }
+      buildBonusUi();
       buildMap();
       hintBtn.style.bottom = 'calc(' + (map.h + 28) + 'px + env(safe-area-inset-bottom))';
     }
@@ -500,7 +614,8 @@ window.DAYOF = window.DAYOF || {};
       var ov = H('div', 'where-intro', root);
       var card = H('div', 'where-intro-card', ov);
       var pt = H('div', 'where-intro-pt', card);
-      try { var p = D.Chars.portrait({ w: 150, h: 255, pose: 'wave' }); pt.appendChild(p); } catch (e) { }
+      if (S.kaiSpriteUrl) { var pi = H('img', null, pt); pi.src = S.kaiSpriteUrl; pi.alt = '凱凱'; }
+      else { try { var p = D.Chars.portrait({ w: 150, h: 255, pose: 'wave' }); pt.appendChild(p); } catch (e) { } }
       H('h2', null, card, '找到他！點他一下');
       H('p', 'sub', card, '他是一隻老鼠，穿著這身衣服<br>混在大家之間');
       H('p', 'sis', card, '<img src="' + (S.sisterUrl) + '" alt="">場景裡還偷偷藏著姊姊喔');
@@ -571,7 +686,13 @@ window.DAYOF = window.DAYOF || {};
       var K = S.kaiInfo, Si = S.sisterInfo, w = world(sx, sy), c = cams[curView], pad = 13 / c.k;
       if (!done && K && K.view === curView && inBox(K, w, pad)) { found(); return; }
       if (!sisterFound && Si && Si.view === curView && inBox(Si, w, pad)) { foundSister(); return; }
+      if (S.bonus) for (var bi = 0; bi < S.bonus.length; bi++) { var Bn = S.bonus[bi]; if (!Bn.found && Bn.view === curView && inBox(Bn, w, pad)) { foundBonus(Bn); return; } }
       if (isDouble) { lastTap.t = 0; tweenZoom(sx, sy, c.k < minK * 2.2 ? Math.min(maxK, Math.max(c.k * 3, 0.62)) : minK); return; }
+      // image mode: configured wrong-tap hotspots → bubble at the tap point
+      if (S.hotspots) for (var hi = 0; hi < S.hotspots.length; hi++) {
+        var hs = S.hotspots[hi];
+        if (hs.view === curView && inBox(hs, w, 0)) { bubbleAt(sx, sy - 18, sy + 18, hs.say || (Math.random() < 0.75 ? '不是我啦～' : '找錯囉～')); wrong++; return; }
+      }
       // an animal under the finger?
       var hit = null;
       try {
@@ -631,13 +752,16 @@ window.DAYOF = window.DAYOF || {};
         if (ox > 0) c.tx = -ox * (0.5 + 0.5 * Math.sin(t * 0.05 + 1)); if (oy > 0) c.ty = -oy * (0.5 + 0.3 * Math.sin(t * 0.037 + 2)); dirty = true;
       }
       if (interactive && !hintShown && started && sec >= hintAfter && !done) { hintShown = true; hintBtn.classList.add('show'); }
+      if (interactive && !autoHinted && started && sec >= autoHintAfter && !done) { autoHinted = true; useHint(true); }
+      if (interactive && skipBtn && !skipShown && started && sec >= skipAfter && !done) { skipShown = true; skipBtn.classList.add('show'); }
       for (i = 0; i < S.anims.length; i++) { try { S.anims[i](t, dt); } catch (er) { console.error(er); S.anims.splice(i--, 1); } }
 
       // ambient life: random subset blinks / turns head; Kai breathes
       if (t >= nextPick) { pickAmbient(); nextPick = t + 7 + Math.random() * 3; }
       for (i = 0; i < amb.length; i++) stepAmb(amb[i], dt);
       if (kaiAmb && !done && S.kaiInfo && S.kaiInfo.view === curView) {
-        D.Chars.bodyXf(kaiAmb.g, 0, 1 + 0.013 * Math.sin(t * 1.9), 1 - 0.006 * Math.sin(t * 1.9)); stepAmb(kaiAmb, dt);
+        if (S.kaiInfo.img) { var bs = Math.sin(t * 1.9); S.kaiInfo.inner.setAttribute('transform', 'translate(0,' + (-0.012 * S.kaiInfo.h * Math.max(0, bs)).toFixed(2) + ') scale(' + (1 - 0.006 * bs).toFixed(4) + ',' + (1 + 0.014 * bs).toFixed(4) + ')'); }
+        else { D.Chars.bodyXf(kaiAmb.g, 0, 1 + 0.013 * Math.sin(t * 1.9), 1 - 0.006 * Math.sin(t * 1.9)); stepAmb(kaiAmb, dt); }
       }
       // little hops (wrong-tap animals, sister)
       for (i = hops.length - 1; i >= 0; i--) {
@@ -658,8 +782,15 @@ window.DAYOF = window.DAYOF || {};
         celebrate.ring.setAttribute('r', celebrate.R * (0.3 + 0.7 * eo)); celebrate.ring.setAttribute('stroke-width', 9 * (1 - f * 0.6)); celebrate.ring.setAttribute('stroke-opacity', 1 - f * 0.3);
         celebrate.ring2.setAttribute('r', celebrate.R * (0.5 + 0.9 * eo)); celebrate.ring2.setAttribute('stroke-opacity', 0.9 * (1 - f));
         var K = S.kaiInfo, kg = K.g, bounce = cu < 0.9 ? Math.abs(Math.sin(cu * 9)) * 12 * (1 - cu / 0.9) : 0, pop = 1 + 0.08 * Math.sin(Math.min(cu, 1) * Math.PI);
-        kg.setAttribute('transform', 'translate(' + K.x + ',' + (K.y - bounce).toFixed(1) + ') scale(' + ((K.flip ? -1 : 1) * K.s * pop).toFixed(3) + ',' + (K.s * pop).toFixed(3) + ')');
-        D.Chars.setArm(kg, 1, 148 + 24 * Math.sin(cu * 11));
+        if (K.img) {
+          // sprite has no wave pose: two happy hops + a side-to-side "wave" wiggle around the feet, then settle
+          var hop = cu < 1.3 ? Math.abs(Math.sin(cu * Math.PI / 0.65)) * K.h * 0.16 * (1 - cu / 1.6) : 0;
+          var wig = cu < 3.2 ? Math.sin(cu * 10) * 9 * Math.max(0, 1 - cu / 3.2) : 0;
+          K.inner.setAttribute('transform', 'translate(0,' + (-hop).toFixed(1) + ') rotate(' + wig.toFixed(2) + ') scale(' + pop.toFixed(3) + ')');
+        } else {
+          kg.setAttribute('transform', 'translate(' + K.x + ',' + (K.y - bounce).toFixed(1) + ') scale(' + ((K.flip ? -1 : 1) * K.s * pop).toFixed(3) + ',' + (K.s * pop).toFixed(3) + ')');
+          D.Chars.setArm(kg, 1, 148 + 24 * Math.sin(cu * 11));
+        }
         if (cu > 6) celebrate = null;
       }
       if (dirty) applyCam();
@@ -671,10 +802,12 @@ window.DAYOF = window.DAYOF || {};
     var handle = {
       root: root, destroy: destroy, solve: function () { if (S) found(true); }, solveSister: function () { if (S) foundSister(true); },
       getKai: function () { return S && S.kaiInfo ? { view: S.kaiInfo.view, x: S.kaiInfo.x, y: S.kaiInfo.y, s: S.kaiInfo.s } : null; },
+      getBonus: function () { return S && S.bonus ? S.bonus.map(function (b) { return { id: b.id, label: b.label, view: b.view, found: b.found, x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2 }; }) : []; },
+      solveBonus: function (id) { if (S && S.bonus) S.bonus.forEach(function (b) { if (!id || b.id === id) { if (b.view !== curView) showView(b.view); foundBonus(b); } }); },
       getSister: function () { return S && S.sisterInfo ? { view: S.sisterInfo.view, x: S.sisterInfo.x, y: S.sisterInfo.y, s: S.sisterInfo.s } : null; },
       start: function () { started = true; var ov = root.querySelector('.where-intro'); if (ov) ov.parentNode.removeChild(ov); kick(); },
       focus: function (x, y, k) { centerOn(x, y, k); applyCam(); }, flip: function () { flipView(); }, camera: function () { return cams[curView]; }, hint: function () { useHint(); },
-      scene: function () { return S; }, view: function () { return curView; }
+      scene: function () { return S; }, view: function () { return curView; }, mode: function () { return S ? (S.imageMode ? 'image' : 'procedural') : null; }
     };
     var io = null, ro = null;
 
@@ -702,17 +835,131 @@ window.DAYOF = window.DAYOF || {};
       S.useView('main');
     }
 
-    function setup() {
+    /* -------------- image mode build -------------- */
+    function buildImage(IM) {
+      var c = IM.cfg;
+      S.imageMode = true; root.classList.add('where-img');
+      S.kaiSpriteUrl = IM.kaiUrl || null;
+      Object.keys(IM.views).forEach(function (n) {
+        var v = S.view(n); v.bgImg = IM.views[n].img; v.bgUrl = IM.views[n].url; v.bgColor = c.bgColor || null;
+        E('image', { href: IM.views[n].url, x: 0, y: 0, width: S.W, height: S.H, preserveAspectRatio: 'xMidYMid slice', class: 'where-bgimg' }, v.layer.bg);
+      });
+      function vw_(name) { return name && IM.views[name] ? name : 'main'; }
+      function P(o) { o = o || {}; var h = o.h != null ? o.h : (o.scale != null ? o.scale : 0.08); return { view: vw_(o.view), x: (o.x != null ? o.x : 0.62) * S.W, y: (o.y != null ? o.y : 0.71) * S.H, h: h * S.H, flip: !!o.flip, rot: +o.rot || 0, vis: clamp(o.visible != null ? +o.visible : 1, 0.15, 1) }; }
+      // sprite with feet at (x,y); `visible` = fraction shown from the top (static clip on the outer group)
+      function sprite(q, url, img, cls) {
+        var ar = (img && img.naturalWidth / img.naturalHeight) || 0.5, w = q.h * ar;
+        var g = E('g', { class: cls, transform: 'translate(' + q.x.toFixed(1) + ',' + q.y.toFixed(1) + ')' + (q.rot ? ' rotate(' + q.rot + ')' : '') }, S.views[q.view].layer.mid);
+        if (q.vis < 0.999) {
+          var cid = S.uid('clip'), cp = E('clipPath', { id: cid, clipPathUnits: 'userSpaceOnUse' }, defs);
+          E('rect', { x: -w, y: -q.h * 1.4, width: w * 2, height: q.h * (0.4 + q.vis) }, cp);
+          g.setAttribute('clip-path', 'url(#' + cid + ')');
+        } else E('ellipse', { cx: 0, cy: -q.h * 0.01, rx: w * 0.32, ry: q.h * 0.03, fill: '#5B4A3C', 'fill-opacity': 0.12 }, g);
+        var inner = E('g', { class: 'spr-in' }, g), fl = E('g', q.flip ? { transform: 'scale(-1,1)' } : null, inner);
+        E('image', { href: url, x: -w / 2, y: -q.h, width: w, height: q.h, preserveAspectRatio: 'xMidYMax meet' }, fl);
+        // visible box (+30% padding each way) for hit-testing
+        var vh = q.h * q.vis, px = w * 0.3, py = vh * 0.3;
+        return { g: g, inner: inner, img: true, view: q.view, x: q.x, y: q.y, s: q.h / 100, w: w, h: q.h, flip: q.flip, x0: q.x - w / 2 - px, x1: q.x + w / 2 + px, y0: q.y - q.h - py, y1: q.y - q.h + vh + py };
+      }
+      if (interactive) {
+        var k = P(c.kai);
+        if (IM.kaiImg) S.kaiInfo = sprite(k, IM.kaiUrl, IM.kaiImg, 'kai kai-img');
+        else { S.useView(k.view); S.kai({ x: k.x, y: k.y, s: k.h / 98, flip: k.flip }); S.useView('main'); } // procedural Kai ≈ 98 units tall at s=1
+        S.bonus = [];
+        (c.bonus || []).forEach(function (b, i) {
+          if (!b) return; var id = b.id || ('b' + i), lab = b.label || id, B;
+          if (b.sprite) { var im = IM.bonusImg[id]; if (!im) return; B = sprite(P(b), imgUrl(b.sprite), im, 'bonus bonus-' + id); }
+          else if (b.w != null) { var v = vw_(b.view); B = { view: v, x0: b.x * S.W, y0: b.y * S.H, x1: (b.x + b.w) * S.W, y1: (b.y + b.h) * S.H }; var pw = (B.x1 - B.x0) * 0.15, ph = (B.y1 - B.y0) * 0.15; B.x0 -= pw; B.x1 += pw; B.y0 -= ph; B.y1 += ph; }
+          else return;
+          B.id = id; B.label = lab; B.found = !!(opts.bonusFound && opts.bonusFound[id]); S.bonus.push(B);
+        });
+        S.hotspots = (c.hotspots || []).map(function (h) { return { view: vw_(h.view), x0: h.x * S.W, y0: h.y * S.H, x1: (h.x + h.w) * S.W, y1: (h.y + h.h) * S.H, say: h.say }; });
+      }
+      // occluders: crops of the background redrawn ABOVE the sprites (fake foreground)
+      (c.occluders || []).forEach(function (o) {
+        var v = S.views[vw_(o.view)], ox = o.x * S.W, oy = o.y * S.H, ow = o.w * S.W, oh = o.h * S.H;
+        var ns = E('svg', { x: ox, y: oy, width: ow, height: oh, viewBox: ox + ' ' + oy + ' ' + ow + ' ' + oh, preserveAspectRatio: 'none', overflow: 'hidden', class: 'occl', 'pointer-events': 'none' }, v.layer.fg);
+        E('image', { href: v.bgUrl, x: 0, y: 0, width: S.W, height: S.H, preserveAspectRatio: 'xMidYMid slice' }, ns);
+      });
+      var am = c.ambient;
+      if (am && typeof am === 'object') { try { ambient(am.type, am); } catch (e) { console.error('[Where] ambient', e); } }
+      else if (typeof am === 'string') { try { ambient(am, c.ambientOpts || {}); } catch (e) { console.error('[Where] ambient', e); } }
+      S.initView = vw_(c.initView);
+    }
+    // light overlays on top of the raster art (fractions of the image). Cheap: a few dozen attr updates / frame.
+    function ambient(kind, o) {
+      if (!kind) return;
+      var v = S.view(o.view && S.views[o.view] ? o.view : 'main'), L = E('g', { class: 'amb-' + kind, 'pointer-events': 'none' }, v.layer.fg), Wd = S.W, Ht = S.H, i, j;
+      function px(p) { return [p[0] * Wd, p[1] * Ht]; }
+      if (kind === 'escalator') {
+        // quads: [{pts:[[tl],[tr],[br],[bl]], dir:'up'|'down'}] ; stripes move along tl→bl / tr→br
+        // or lanes: [{x0,y0 (bottom centre), x1,y1 (top centre), w (bottom width; top = w*topScale), dir}]
+        var quads = (o.quads || []).concat((o.lanes || []).map(function (l) {
+          var wb = (l.w || 0.2) / 2, wt = wb * (o.topScale || 0.55);
+          return { dir: l.dir, pts: [[l.x1 - wt, l.y1], [l.x1 + wt, l.y1], [l.x0 + wb, l.y0], [l.x0 - wb, l.y0]] };
+        }));
+        var n = o.n || 10, sp = o.speed || 0.18, col = o.color || '#FFF8E6', op = o.opacity == null ? 0.22 : o.opacity, lines = [];
+        quads.forEach(function (Q) {
+          var pts = (Q.pts || []).map(px); if (pts.length !== 4) return;
+          for (j = 0; j < n; j++) lines.push({ q: pts, up: Q.dir !== 'down', ph: j / n, el: E('line', { stroke: col, 'stroke-width': Math.max(2, Wd * 0.0025), 'stroke-linecap': 'round' }, L) });
+        });
+        S.anim(function (tt) {
+          for (var a = 0; a < lines.length; a++) {
+            var ln = lines[a], u = (ln.ph + tt * sp) % 1, f = ln.up ? 1 - u : u, q = ln.q;
+            var x1 = q[0][0] + (q[3][0] - q[0][0]) * f, y1 = q[0][1] + (q[3][1] - q[0][1]) * f, x2 = q[1][0] + (q[2][0] - q[1][0]) * f, y2 = q[1][1] + (q[2][1] - q[1][1]) * f;
+            ln.el.setAttribute('x1', x1.toFixed(1)); ln.el.setAttribute('y1', y1.toFixed(1)); ln.el.setAttribute('x2', x2.toFixed(1)); ln.el.setAttribute('y2', y2.toFixed(1));
+            ln.el.setAttribute('stroke-opacity', (op * Math.sin(Math.PI * u)).toFixed(3));
+          }
+        });
+      } else if (kind === 'fireworks') {
+        // points: [[x,y],...] sky positions ; r = burst radius (fraction of width) ; period seconds
+        // points: [[x,y],...] or bursts: [{x,y,r}]
+        var pts2 = (o.bursts ? o.bursts.map(function (q) { return [q.x, q.y, q.r]; }) : (o.points || [[0.3, 0.14], [0.68, 0.1], [0.5, 0.22]])), per = o.period || 3.4, cols = o.colors || CONF, bs = [];
+        pts2.forEach(function (p0, bi) {
+          var p = px(p0), R = (p0[2] || o.r || 0.07) * Wd;
+          var g = E('g', { transform: 'translate(' + p[0].toFixed(0) + ',' + p[1].toFixed(0) + ') scale(0)', opacity: 0 }, L), col = cols[bi % cols.length], ns = 14;
+          for (j = 0; j < ns; j++) { var a = j / ns * Math.PI * 2; E('line', { x1: Math.cos(a) * R * 0.25, y1: Math.sin(a) * R * 0.25, x2: Math.cos(a) * R, y2: Math.sin(a) * R, stroke: col, 'stroke-width': Math.max(2, R * 0.04), 'stroke-linecap': 'round' }, g); E('circle', { cx: Math.cos(a) * R * 1.08, cy: Math.sin(a) * R * 1.08, r: Math.max(2, R * 0.035), fill: col }, g); }
+          bs.push({ g: g, p: p, R: R, off: bi * per / pts2.length + bi * 0.37 });
+        });
+        S.anim(function (tt) {
+          for (var a = 0; a < bs.length; a++) {
+            var B = bs[a], u = ((tt + B.off) % per) / per, life = 0.42; // bloom in the first 42% of each cycle
+            if (u > life) { if (B.vis) { B.g.setAttribute('opacity', 0); B.vis = false; } continue; }
+            var f = u / life, sc = 1 - Math.pow(1 - f, 3);
+            B.g.setAttribute('transform', 'translate(' + B.p[0].toFixed(0) + ',' + (B.p[1] + f * B.R * 0.15).toFixed(0) + ') scale(' + sc.toFixed(3) + ')'); B.g.setAttribute('opacity', (f < 0.15 ? f / 0.15 : 1 - (f - 0.15) / 0.85).toFixed(3)); B.vis = true;
+          }
+        });
+      } else if (kind === 'moon') {
+        // rect: [x,y,w,h] reflection area ; n shimmer strokes
+        var rc = o.rect || [0.35, 0.6, 0.3, 0.12]; if (!Array.isArray(rc)) rc = [rc.x, rc.y, rc.w, rc.h];
+        var rx = rc[0] * Wd, ry = rc[1] * Ht, rw = rc[2] * Wd, rh = rc[3] * Ht, nn = o.n || 10, col2 = o.color || '#FFF6D8', rs = [];
+        for (j = 0; j < nn; j++) {
+          var yy = ry + rh * (j + 0.5) / nn, ww = rw * (0.35 + 0.5 * Math.sin(Math.PI * (j + 0.5) / nn));
+          rs.push({ y: yy, w: ww, ph: j * 1.7, el: E('line', { x1: 0, y1: yy, x2: 0, y2: yy, stroke: col2, 'stroke-width': Math.max(2, rh / nn * 0.35), 'stroke-linecap': 'round' }, L) });
+        }
+        S.anim(function (tt) {
+          for (var a = 0; a < rs.length; a++) {
+            var r0 = rs[a], cx = rx + rw / 2 + Math.sin(tt * 0.9 + r0.ph) * rw * 0.08, hw = r0.w / 2 * (0.75 + 0.25 * Math.sin(tt * 1.3 + r0.ph * 2));
+            r0.el.setAttribute('x1', (cx - hw).toFixed(1)); r0.el.setAttribute('x2', (cx + hw).toFixed(1)); r0.el.setAttribute('stroke-opacity', (0.18 + 0.22 * (0.5 + 0.5 * Math.sin(tt * 2.1 + r0.ph))).toFixed(3));
+          }
+        });
+      }
+    }
+
+    function setup(IM) {
       if (destroyed) return;
+      if (IM) { def = { W: IM.W, H: IM.H, bgColor: IM.cfg.bgColor || '#EFE6D4' }; root.style.background = def.bgColor; }
       S = new Builder(def, sceneId, svg, camG, defs, { seed: opts.seed || 0, lowfx: lowfx });
-      try { def.build(S); } catch (e) { console.error('[Where] scene build failed', sceneId, e); }
-      if (!S.kaiInfo) { try { S.useView('main'); S.kai({ x: S.W * 0.62, y: S.H * 0.55 }); } catch (e) { } }
-      if (interactive && !S.sisterInfo) { try { autoSister(); } catch (e) { console.error('[Where] sister', e); } }
+      if (IM) { try { buildImage(IM); } catch (e) { console.error('[Where] image scene build failed', sceneId, e); } }
+      else { try { def.build(S); } catch (e) { console.error('[Where] scene build failed', sceneId, e); } }
+      if (!S.kaiInfo && !(IM && !interactive)) { try { S.useView('main'); S.kai({ x: S.W * 0.62, y: S.H * 0.55 }); } catch (e) { } }
+      if (interactive && !S.sisterInfo && !IM) { try { autoSister(); } catch (e) { console.error('[Where] sister', e); } }
       S.useView('main');
       var kv = S.kaiInfo && S.kaiInfo.g;
       if (kv && !interactive && opts.hideKai !== false) kv.style.display = 'none';
       else if (kv) kaiAmb = mkAmb(kv);
       showView('main');
+      if (S.initView && S.initView !== 'main') showView(S.initView);
       if (interactive) {
         buildHud();
         if (!started) buildIntro();
@@ -727,6 +974,7 @@ window.DAYOF = window.DAYOF || {};
       document.addEventListener('visibilitychange', onVis);
       root.classList.add('ready');
       kick();
+      if (interactive) { var si = W.SCENES.indexOf(sceneId); if (si >= 0 && si + 1 < W.SCENES.length) later(function () { preloadScene(W.SCENES[si + 1]); }, 2500); }
     }
     function onResize() { if (measure()) kick(); }
     function onVis() { if (!document.hidden) kick(); }
@@ -743,16 +991,15 @@ window.DAYOF = window.DAYOF || {};
     if (interactive) { D.debug = D.debug || {}; D.debug.solveWhere = function () { return W.solveCurrent(); }; D.debug.solveSister = function () { return W.solveSisterCurrent(); }; }
 
     var ready = (D.Chars && D.Chars.ready) ? D.Chars.ready : Promise.resolve();
-    var go = function () { if (!destroyed) setup(); };
-    var settled = false; var tmo = setTimeout(function () { if (!settled) { settled = true; go(); } }, 1500);
-    ready.then(function () { if (!settled) { settled = true; clearTimeout(tmo); go(); } }, function () { if (!settled) { settled = true; clearTimeout(tmo); go(); } });
+    var probe = (opts.image === false) ? Promise.resolve(null) : probeImage(sceneId, interactive).catch(function (e) { console.error('[Where] image probe', e); return null; });
+    Promise.all([withTimeout(ready, 1500, null), probe]).then(function (r) { if (!destroyed) setup(r[1]); });
     return handle;
   }
 
   var W = D.Where = Object.assign(D.Where || { _scenes: {} }, {
     _scenes: prevScenes,
     SCENES: ['park', 'escalator', 'bridge', 'bookstore', 'office', 'fireworks', 'newyork'],
-    mount: mount,
+    mount: mount, sceneConfig: sceneCfg, preload: preloadScene, sprites: spriteUrls, _imgUrl: imgUrl,
     solveCurrent: function () { if (current) { current.solve(); return true; } return false; },
     solveSisterCurrent: function () { if (current) { current.solveSister(); return true; } return false; },
     current: function () { return current; }

@@ -1,0 +1,128 @@
+{
+ "id": "escalator",
+ "views": {
+  "main": "assets/scenes/s07-escalator.jpg"
+ },
+ "initView": "main",
+ "kai": {
+  "view": "main",
+  "x": 0.275,
+  "y": 0.775,
+  "h": 0.1,
+  "flip": false,
+  "rot": 0,
+  "visible": 1
+ },
+ "occluders": [],
+ "bonus": [
+  {
+   "id": "sister",
+   "label": "姊姊（袋熊）",
+   "sprite": "assets/scenes/wombat.png",
+   "view": "main",
+   "x": 0.6,
+   "y": 0.795,
+   "h": 0.05,
+   "flip": false,
+   "visible": 1
+  },
+  {
+   "id": "pick",
+   "label": "凱凱掉的吉他彈片",
+   "sprite": "assets/scenes/pick.png",
+   "view": "main",
+   "x": 0.46,
+   "y": 0.775,
+   "h": 0.02,
+   "rot": 20
+  },
+  {
+   "id": "item",
+   "label": "熊貓乘客",
+   "view": "main",
+   "x": 0.82,
+   "y": 0.585,
+   "w": 0.095,
+   "h": 0.15
+  }
+ ],
+ "hotspots": [
+  {
+   "view": "main",
+   "x": 0.417,
+   "y": 0.094,
+   "w": 0.051,
+   "h": 0.047,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.532,
+   "y": 0.094,
+   "w": 0.058,
+   "h": 0.038,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.551,
+   "y": 0.299,
+   "w": 0.069,
+   "h": 0.078,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.301,
+   "y": 0.317,
+   "w": 0.067,
+   "h": 0.078,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.738,
+   "y": 0.417,
+   "w": 0.069,
+   "h": 0.085,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.072,
+   "y": 0.768,
+   "w": 0.086,
+   "h": 0.117,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.92,
+   "y": 0.777,
+   "w": 0.075,
+   "h": 0.113,
+   "say": "不是我啦～"
+  }
+ ],
+ "ambient": {
+  "type": "escalator",
+  "lanes": [
+   {
+    "x0": 0.24,
+    "y0": 0.76,
+    "x1": 0.37,
+    "y1": 0.1,
+    "w": 0.28,
+    "dir": "up"
+   },
+   {
+    "x0": 0.745,
+    "y0": 0.77,
+    "x1": 0.62,
+    "y1": 0.1,
+    "w": 0.28,
+    "dir": "down"
+   }
+  ]
+ }
+}

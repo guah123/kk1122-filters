@@ -1,0 +1,92 @@
+{
+ "id": "bridge",
+ "views": {
+  "main": "assets/scenes/s17-bridge.jpg"
+ },
+ "initView": "main",
+ "kai": {
+  "view": "main",
+  "x": 0.4,
+  "y": 0.435,
+  "h": 0.085,
+  "flip": false,
+  "rot": 0,
+  "visible": 1
+ },
+ "occluders": [],
+ "bonus": [
+  {
+   "id": "sister",
+   "label": "姊姊（袋熊）",
+   "sprite": "assets/scenes/wombat.png",
+   "view": "main",
+   "x": 0.07,
+   "y": 0.45,
+   "h": 0.045,
+   "flip": false,
+   "visible": 1
+  },
+  {
+   "id": "pick",
+   "label": "凱凱掉的吉他彈片",
+   "sprite": "assets/scenes/pick.png",
+   "view": "main",
+   "x": 0.34,
+   "y": 0.47,
+   "h": 0.02,
+   "rot": 20
+  },
+  {
+   "id": "item",
+   "label": "棉花糖",
+   "view": "main",
+   "x": 0.385,
+   "y": 0.585,
+   "w": 0.115,
+   "h": 0.085
+  }
+ ],
+ "hotspots": [
+  {
+   "view": "main",
+   "x": 0.095,
+   "y": 0.385,
+   "w": 0.085,
+   "h": 0.2,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.005,
+   "y": 0.395,
+   "w": 0.1,
+   "h": 0.17,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.145,
+   "y": 0.085,
+   "w": 0.075,
+   "h": 0.11,
+   "say": "不是我啦～"
+  },
+  {
+   "view": "main",
+   "x": 0.025,
+   "y": 0.245,
+   "w": 0.07,
+   "h": 0.11,
+   "say": "不是我啦～"
+  }
+ ],
+ "ambient": {
+  "type": "moon",
+  "rect": {
+   "x": 0.54,
+   "y": 0.7,
+   "w": 0.27,
+   "h": 0.21
+  }
+ }
+}
