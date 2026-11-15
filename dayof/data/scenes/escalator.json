@@ -1,55 +1,45 @@
 {
-  "id": "escalator",
-  "views": {
-    "main": "assets/scenes/s07-escalator.jpg"
+ "id": "escalator",
+ "views": {
+  "main": "assets/scenes/s07-escalator.jpg"
+ },
+ "initView": "main",
+ "kai": {
+  "view": "main",
+  "x": 0.3,
+  "y": 0.94,
+  "h": 0.1,
+  "flip": false,
+  "rot": 0,
+  "visible": 1
+ },
+ "occluders": [],
+ "bonus": [],
+ "hotspots": [
+  {
+   "view": "main",
+   "x": 0.634,
+   "y": 0.334,
+   "w": 0.097,
+   "h": 0.082,
+   "say": "不是我啦～"
   },
-  "initView": "main",
-  "kai": {
-    "view": "main",
-    "x": 0.3,
-    "y": 0.94,
-    "h": 0.1,
-    "flip": false,
-    "rot": 0,
-    "visible": 1
+  {
+   "view": "main",
+   "x": 0.65,
+   "y": 0.391,
+   "w": 0.12,
+   "h": 0.139,
+   "say": "不是我啦～"
   },
-  "occluders": [],
-  "bonus": [
-    {
-      "id": "item",
-      "label": "夕陽城市",
-      "view": "main",
-      "x": 0.84,
-      "y": 0.3,
-      "w": 0.16,
-      "h": 0.22
-    }
-  ],
-  "hotspots": [
-    {
-      "view": "main",
-      "x": 0.289,
-      "y": 0.525,
-      "w": 0.087,
-      "h": 0.082,
-      "say": "不是我啦～"
-    },
-    {
-      "view": "main",
-      "x": 0.631,
-      "y": 0.326,
-      "w": 0.087,
-      "h": 0.061,
-      "say": "不是我啦～"
-    },
-    {
-      "view": "main",
-      "x": 0.683,
-      "y": 0.421,
-      "w": 0.069,
-      "h": 0.065,
-      "say": "不是我啦～"
-    }
-  ],
-  "ambient": null
+  {
+   "view": "main",
+   "x": 0.569,
+   "y": 0.483,
+   "w": 0.123,
+   "h": 0.125,
+   "say": "不是我啦～"
+  }
+ ],
+ "ambient": null
 }

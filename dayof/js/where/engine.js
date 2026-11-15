@@ -936,7 +936,7 @@ window.DAYOF = window.DAYOF || {};
         }
         (c.bonus || []).forEach(function (b, i) {
           if (!b || b.sprite || b.w == null || b.id === 'sister' || b.id === 'quokka') return; // sprite bonuses (pick) are gone
-          var B = padBox({ x: b.x, y: b.y, w: b.w, h: b.h }, vw_(b.view), 0.15); B.id = b.id || ('b' + i); B.label = b.label || B.id; S.bonus.push(B);
+          var B = padBox({ x: b.x, y: b.y, w: b.w, h: b.h }, vw_(b.view), 0); B.id = b.id || ('b' + i); B.label = b.label || B.id; S.bonus.push(B);
         });
         S.bonus.forEach(function (B) { B.found = !!(opts.bonusFound && opts.bonusFound[B.id]); });
         S.hotspots = (c.hotspots || []).map(function (h) { return { view: vw_(h.view), x0: h.x * S.W, y0: h.y * S.H, x1: (h.x + h.w) * S.W, y1: (h.y + h.h) * S.H, say: h.say }; });
