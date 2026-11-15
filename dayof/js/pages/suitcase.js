@@ -101,7 +101,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   var LABEL = {}; ITEMS.forEach(function (i) { LABEL[i.id] = i.label; });
 
   // slot centres inside the suitcase interior (viewBox 260x200)
-  var SLOTS = [[50, 110], [90, 110], [130, 110], [170, 110], [210, 110], [50, 132], [90, 132], [130, 132], [170, 132], [210, 132]];
+  var SLOTS = [[50, 114], [90, 114], [130, 114], [170, 114], [210, 114], [50, 132], [90, 132], [130, 132], [170, 132], [210, 132]];
   var ROT = [-7, 4, -3, 8, -5, 5, -8, 3, 7, -4];
 
   var DEFS = '<svg class="sc-defs" aria-hidden="true"><defs>' +
@@ -110,13 +110,6 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     '</defs></svg>';
 
   var CS = 'stroke="' + INK + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"';
-  var LID_OPEN = '<svg class="lay sc-lid" viewBox="0 0 260 200" aria-hidden="true"><g filter="url(#sc-rough)">' +
-    '<path d="M32 8 Q130 -2 228 8 L240 88 L20 88z" fill="#8F5E3C" ' + CS + '/>' +
-    '<path d="M42 16 Q130 9 218 16 L229 82 L31 82z" fill="#EFDDBC" stroke="' + INK + '" stroke-width="1.5"/>' +
-    '<path d="M60 18 V80 M90 17 V80 M120 16 V80 M150 16 V80 M180 17 V80 M210 18 V80" stroke="#DDC498" stroke-width="3" opacity=".6"/>' +
-    '<path d="M44 54 H216" stroke="#8A6545" stroke-width="5" stroke-linecap="round"/><path d="M44 54 H216" stroke="#C99668" stroke-width="2" stroke-dasharray="6 5"/>' +
-    '<rect x="108" y="28" width="44" height="18" rx="3" fill="#F6EFE2" stroke="' + INK + '" stroke-width="1.3"/><path d="M114 34 H146 M114 40 H138" stroke="' + INK + '" stroke-width="1.2"/>' +
-    '<path d="M32 8 Q130 -2 228 8 L240 88 L20 88z" fill="url(#sc-hatch)"/></g></svg>';
   var BACK = '<svg class="lay back" viewBox="0 0 260 200" aria-hidden="true"><g filter="url(#sc-rough)">' +
     '<path d="M22 86 H238 L252 152 H8z" fill="#E2CBA2" ' + CS + '/><path d="M22 86 H238 L241 104 H19z" fill="#B9996A" opacity=".55"/>' +
     '<path d="M22 86 H238 L252 152 H8z" fill="url(#sc-hatch)"/></g></svg>';
@@ -135,15 +128,33 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     '<path d="M20 160 Q130 154 240 160" stroke="#C99668" stroke-width="2" opacity=".6" fill="none"/>' +
     strap(58, [153, 41]) + strap(184, [153, 41]) + buckle(55, 164) + buckle(181, 164) +
     '<path d="M6 190 L6 178 L18 190z M254 190 L254 178 L242 190z" fill="#E5B94F" stroke="' + INK + '" stroke-width="1.6"/></g></svg>';
-  var LID_CLOSED = '<svg class="lay sc-lidc" viewBox="0 0 260 200" aria-hidden="true"><g filter="url(#sc-rough)">' +
-    '<path d="M100 82 Q100 54 130 54 Q160 54 160 82" fill="none" stroke="' + INK + '" stroke-width="9" stroke-linecap="round"/><path d="M100 82 Q100 54 130 54 Q160 54 160 82" fill="none" stroke="#6F4A30" stroke-width="5" stroke-linecap="round"/>' +
-    '<path d="M12 84 Q130 72 248 84 L252 150 H8z" fill="#A9744A" ' + CS + '/>' +
-    '<path d="M12 84 Q130 72 248 84 L252 150 H8z" fill="url(#sc-hatch)"/>' +
-    '<path d="M24 94 Q130 84 236 94 L238 140 H22z" fill="none" stroke="#F0DDB8" stroke-width="1.6" stroke-dasharray="5 4"/>' +
-    '<path d="M30 88 Q130 79 230 88" stroke="#D2A06E" stroke-width="3" opacity=".7" fill="none"/>' +
-    '<rect x="58" y="80" width="18" height="70" fill="#6F4A30" ' + CS + ' stroke-width="1.8"/><rect x="184" y="80" width="18" height="70" fill="#6F4A30" ' + CS + ' stroke-width="1.8"/>' +
-    buckle(55, 128) + buckle(181, 128) +
-    '<path d="M8 150 L8 134 L24 150z M252 150 L252 134 L236 150z" fill="#E5B94F" stroke="' + INK + '" stroke-width="1.6"/></g></svg>';
+  // Lid: one quad hinged at the BACK edge of the body (y=86). phi = opening angle (100 open .. 0 closed).
+  function lidSvg(phi, final) {
+    var rad = phi * Math.PI / 180;
+    var fy = 86 + 64 * Math.cos(rad) - 68 * Math.sin(rad);
+    var hw = 98 + 24 * (100 - phi) / 100;
+    function B(u, v) { var bx = 22 + 216 * u, fx = 130 - hw + 2 * hw * u; return [bx + (fx - bx) * v, 86 + (fy - 86) * v]; }
+    function Q(u0, v0, u1, v1) { return [B(u0, v0), B(u1, v0), B(u1, v1), B(u0, v1)].map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' '); }
+    function poly(pts, fill, sw, stroke, extra) { return '<polygon points="' + pts + '" fill="' + fill + '" stroke="' + (stroke || INK) + '" stroke-width="' + sw + '" stroke-linejoin="round" ' + (extra || '') + '/>'; }
+    function ln(u0, v0, u1, v1, col, w, extra) { var a = B(u0, v0), b = B(u1, v1); return '<path d="M' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + ' L' + b[0].toFixed(1) + ' ' + b[1].toFixed(1) + '" stroke="' + col + '" stroke-width="' + w + '" stroke-linecap="round" fill="none" ' + (extra || '') + '/>'; }
+    var o = '';
+    if (final) o += '<path d="M100 88 Q100 56 130 56 Q160 56 160 88" fill="none" stroke="' + INK + '" stroke-width="9" stroke-linecap="round"/><path d="M100 88 Q100 56 130 56 Q160 56 160 88" fill="none" stroke="#6F4A30" stroke-width="5" stroke-linecap="round"/>';
+    if (phi > 55) { // inside face (lining) visible
+      o += poly(Q(0, 0, 1, 1), '#8F5E3C', 2.2) + poly(Q(.06, .07, .94, .92), '#EFDDBC', 1.5);
+      [.2, .35, .5, .65, .8].forEach(function (u) { o += ln(u, .1, u, .9, '#DDC498', 3, 'opacity=".6"'); });
+      o += ln(.08, .6, .92, .6, '#8A6545', 5) + ln(.08, .6, .92, .6, '#C99668', 2, 'stroke-dasharray="6 5"');
+      o += poly(Q(.4, .15, .6, .38), '#F6EFE2', 1.3);
+      o += poly(Q(0, 0, 1, 1), 'url(#sc-hatch)', 0, 'none');
+    } else {       // outside face (leather, straps, buckles)
+      o += poly(Q(0, 0, 1, 1), '#A9744A', 2.2) + poly(Q(0, 0, 1, 1), 'url(#sc-hatch)', 0, 'none');
+      o += poly(Q(.07, .1, .93, .9), 'none', 1.6, '#F0DDB8', 'stroke-dasharray="5 4"');
+      o += poly(Q(.205, 0, .279, 1), '#6F4A30', 1.8) + poly(Q(.721, 0, .795, 1), '#6F4A30', 1.8);
+      [.2325, .7585].forEach(function (uc) {
+        o += '<g class="latch">' + poly(Q(uc - .06, .62, uc + .06, .88), '#E5B94F', 1.8) + poly(Q(uc - .02, .68, uc + .02, .8), '#6F4A30', 0) + '</g>';
+      });
+    }
+    return '<g filter="url(#sc-rough)">' + o + '</g>';
+  }
 
   var ROCKET = '<svg class="sc-rocket" viewBox="0 0 34 46"><g ' + ST + '><path d="M17 2 Q27 12 25 30 H9 Q7 12 17 2z" fill="#FBF7EF"/><circle cx="17" cy="16" r="4" fill="#9DBFD8"/><path d="M9 24 L2 34 L9 32z M25 24 L32 34 L25 32z" fill="#C65D4C"/><path d="M12 30 Q17 44 22 30z" fill="#F2C66D"/></g></svg>';
   var STAR = '<svg class="sc-star" viewBox="0 0 24 24"><path d="M12 1 L15 9 L23 9.5 L17 14.5 L19 23 L12 18 L5 23 L7 14.5 L1 9.5 L9 9z" fill="#F2C66D" stroke="' + INK + '" stroke-width="1.5" stroke-linejoin="round"/></svg>';
@@ -154,7 +165,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var saved = state.suitcase && state.suitcase.closed ? state.suitcase : null;
       var slotOf = {};               // id -> slot index (packed)
       var closed = false, closing = false, zeroAsked = false, dragging = null, lastDragEnd = 0;
-      var timers = [], ghosts = [];
+      var timers = [], ghosts = [], raf = 0;
       function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
 
       // ---- DOM
@@ -167,7 +178,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         }).join('') + '</div>';
       }
       html += col('l', LEFT) + col('r', RIGHT);
-      html += '<div class="sc-case" role="button" aria-label="行李箱"><div class="shadow"></div>' + LID_OPEN + BACK + '<div class="sc-slots"></div>' + FRONT + LID_CLOSED + '</div>';
+      html += '<div class="sc-case" role="button" aria-label="行李箱"><div class="shadow"></div>' + BACK + '<div class="sc-slots"></div>' + FRONT + '<svg class="lay sc-lid" viewBox="0 0 260 200" aria-hidden="true"></svg></div>';
       html += '<div class="sc-under"><div class="sc-msg"></div><div class="sc-actions"><button class="btn sc-fallbackbtn" type="button">繼續看看</button></div></div>';
       stage.innerHTML = html;
       container.appendChild(stage);
@@ -175,6 +186,9 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var $case = stage.querySelector('.sc-case'), $slots = stage.querySelector('.sc-slots');
       var $msg = stage.querySelector('.sc-msg'), $hint = stage.querySelector('.sc-hint'), $btn = stage.querySelector('.sc-actions .btn');
       var $under = stage.querySelector('.sc-under');
+      var $lid = stage.querySelector('.sc-lid');
+      function drawLid(phi, final) { $lid.innerHTML = lidSvg(phi, final); }
+      drawLid(100, false);
       var trayEl = {}; [].forEach.call(stage.querySelectorAll('.sc-item'), function (el) { trayEl[el.getAttribute('data-id')] = el; });
 
       function layout() {
@@ -192,7 +206,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var p = slotCss(i);
         el.style.left = p.l + '%'; el.style.top = p.t + '%'; el.style.zIndex = i + 1;
         el.style.rotate = ROT[i] + 'deg';
-        el.innerHTML = ART[id];
+        el.innerHTML = ART[id]; el.setAttribute('draggable', 'false');
         el.addEventListener('pointerdown', function (e) { startDrag(e, id, true, el); });
         $slots.appendChild(el);
         return el;
@@ -208,18 +222,27 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       }
       var LIFT = 30;
       function ghostPlace(g, x, y, s) { g.style.transform = 'translate(' + (x - 38) + 'px,' + (y - 38 - LIFT) + 'px) scale(' + s + ')'; }
+      var capture = null; // tap tracker for the suitcase
+      function abortDrag() {
+        var d = dragging; if (!d) return;
+        dragging = null; $case.classList.remove('over');
+        if (d.cleanup) d.cleanup();
+        if (d.ghost) { if (d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost); }
+        if (d.fromPacked) { var pe = packedEl(d.id); if (pe) pe.style.opacity = ''; } else if (trayEl[d.id]) trayEl[d.id].classList.remove('gone');
+      }
       function startDrag(e, id, fromPacked, src) {
-        if (closed || closing || dragging) return;
+        if (closed || closing) return;
         if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (dragging) abortDrag();   // stale drag (lost pointerup on iOS) must never block new drags
         e.preventDefault();
-        var d = dragging = { id: id, fromPacked: fromPacked, pid: e.pointerId, sx: e.clientX, sy: e.clientY, moved: false, ghost: null, src: src };
+        var d = dragging = { id: id, fromPacked: fromPacked, pid: e.pointerId, sx: e.clientX, sy: e.clientY, moved: false, ghost: null, src: src, done: false };
         try { src.setPointerCapture(e.pointerId); } catch (err) { }
         function mv(ev) {
-          if (ev.pointerId !== d.pid) return;
+          if (ev.pointerId !== d.pid || d.done) return;
           var x = ev.clientX, y = ev.clientY;
           if (!d.moved) {
             if (Math.abs(x - d.sx) + Math.abs(y - d.sy) < 7) return;
-            d.moved = true;
+            d.moved = true; if (capture) capture.blocked = true;
             var g = document.createElement('div'); g.className = 'sc-ghost'; g.innerHTML = ART[id];
             document.body.appendChild(g); ghosts.push(g); d.ghost = g;
             if (fromPacked) src.style.opacity = '0'; else trayEl[id].classList.add('gone');
@@ -228,16 +251,20 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
           $case.classList.toggle('over', overCase(x, y) || overCase(x, y - LIFT));
         }
         function up(ev) {
-          if (ev.pointerId !== d.pid) return;
-          src.removeEventListener('pointermove', mv); src.removeEventListener('pointerup', up); src.removeEventListener('pointercancel', up);
-          try { src.releasePointerCapture(d.pid); } catch (err) { }
+          if (ev.pointerId !== d.pid || d.done) return;
+          d.done = true; d.cleanup();
           dragging = null; $case.classList.remove('over');
           if (!d.moved) { if (!fromPacked) { trayEl[id].classList.add('wiggle'); later(function () { trayEl[id].classList.remove('wiggle'); }, 500); } return; }
-          lastDragEnd = Date.now();
-          var x = ev.clientX, y = ev.clientY, ok = ev.type === 'pointerup' && (overCase(x, y) || overCase(x, y - LIFT));
+          var x = ev.clientX, y = ev.clientY, ok = ev.type !== 'pointercancel' && (overCase(x, y) || overCase(x, y - LIFT));
           if (ok) dropIn(d, x, y); else dropOut(d);
         }
+        d.cleanup = function () {
+          src.removeEventListener('pointermove', mv); src.removeEventListener('pointerup', up); src.removeEventListener('pointercancel', up);
+          window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+          try { src.releasePointerCapture(d.pid); } catch (err) { }
+        };
         src.addEventListener('pointermove', mv); src.addEventListener('pointerup', up); src.addEventListener('pointercancel', up);
+        window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
       }
       function endGhost(g) { later(function () { if (g.parentNode) g.parentNode.removeChild(g); }, 300); }
       function dropIn(d, x, y) {
@@ -263,17 +290,36 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       ITEMS.forEach(function (it) {
         var el = trayEl[it.id];
         el.addEventListener('pointerdown', function (e) { startDrag(e, it.id, false, el); });
+        el.addEventListener('touchstart', function (e) { e.preventDefault(); }, { passive: false });
+        [].forEach.call(el.querySelectorAll('svg'), function (v) { v.setAttribute('draggable', 'false'); v.setAttribute('focusable', 'false'); });
       });
+      // block page scroll / rubber-band while this step is mounted (iOS)
+      function stopTouch(e) { if (e.cancelable) e.preventDefault(); }
+      stage.addEventListener('touchmove', stopTouch, { passive: false });
+      container.addEventListener('touchmove', stopTouch, { passive: false });
+      container.style.touchAction = 'none';
+      var prevOB = [document.documentElement.style.overscrollBehavior, document.body.style.overscrollBehavior];
+      document.documentElement.style.overscrollBehavior = 'none'; document.body.style.overscrollBehavior = 'none';
 
       function updateMsg() { if (!closed && !closing) $msg.textContent = ''; }
 
       // ---- closing
-      $case.addEventListener('click', function () {
-        if (closed || closing || Date.now() - lastDragEnd < 400) return;
+      function onCaseTap() {
+        if (closed || closing) return;
         var n = packedIds().length;
         if (n === 0 && !zeroAsked) { zeroAsked = true; $msg.textContent = '什麼都不帶嗎？再點一次就關上囉'; return; }
         closeCase(true);
+      }
+      var lastTap = 0, lastPD = 0;
+      $case.addEventListener('pointerdown', function (e) { lastPD = Date.now(); capture = { x: e.clientX, y: e.clientY, t: Date.now(), blocked: false, pid: e.pointerId }; });
+      $case.addEventListener('pointerup', function (e) {
+        var c = capture; capture = null;
+        if (!c || c.blocked || c.pid !== e.pointerId) return;
+        if (Math.abs(e.clientX - c.x) + Math.abs(e.clientY - c.y) > 14 || Date.now() - c.t > 900) return;
+        lastTap = Date.now(); onCaseTap();
       });
+      $case.addEventListener('pointercancel', function () { capture = null; });
+      $case.addEventListener('click', function () { if (Date.now() - lastPD < 1500) return; if (Date.now() - lastTap > 700) { lastTap = Date.now(); onCaseTap(); } });
 
       function puff() {
         var box = document.createElement('div'); box.className = 'sc-puff'; $case.parentNode.appendChild(box);
@@ -304,17 +350,20 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var ids = packedIds();
         state.suitcase = { packed: ids, closed: true, at: Date.now() };
         try { ctx.save(); } catch (e) { }
-        if (!animated) { $case.classList.add('closed'); finishClosed(false); return; }
-        var lid = stage.querySelector('.sc-lid'), lidc = stage.querySelector('.sc-lidc');
-        if (lid.animate) {
-          lid.animate([{ transform: 'scaleY(1)' }, { transform: 'scaleY(0.02)' }], { duration: 260, easing: 'ease-in', fill: 'forwards' });
-          later(function () {
-            lidc.animate([{ transform: 'scaleY(0.02)' }, { transform: 'scaleY(1.06)', offset: .7 }, { transform: 'scaleY(1)' }], { duration: 320, easing: 'ease-out', fill: 'forwards' });
-          }, 250);
+        if (!animated) { $case.classList.add('closed'); drawLid(0, true); $slots.style.opacity = '0'; finishClosed(false); return; }
+        var t0 = null, DUR = 520, hid = false;
+        function step(ts) {
+          if (t0 === null) t0 = ts;
+          var t = Math.min(1, (ts - t0) / DUR), e = t * t * (1.6 - 0.6 * t);   // gravity: slow start, quick finish
+          var phi = 100 * (1 - e);
+          drawLid(phi, false);
+          if (phi < 30 && !hid) { hid = true; $slots.style.opacity = '0'; }
+          if (t < 1) { raf = requestAnimationFrame(step); return; }
+          drawLid(0, true); $case.classList.add('closed'); $slots.style.opacity = '0';
+          $case.classList.add('click'); $case.classList.add('bounce'); puff();
+          later(function () { finishClosed(true); }, 330);
         }
-        later(function () { $case.classList.add('closed'); }, 260);
-        later(function () { $case.classList.add('click'); $case.classList.add('bounce'); puff(); }, 590);
-        later(function () { finishClosed(true); }, 900);
+        raf = requestAnimationFrame(step);
       }
 
       $btn.addEventListener('click', function () { if (closed) ctx.next(); });
@@ -322,16 +371,16 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       // ---- restore
       if (saved) {
         (saved.packed || []).forEach(function (id) { if (ART[id] && !(id in slotOf)) { var i = freeSlot(); slotOf[id] = i; addPacked(id, i); trayEl[id].classList.add('gone'); } });
-        closing = false; $case.classList.add('closed');
-        var lid0 = stage.querySelector('.sc-lid'), lidc0 = stage.querySelector('.sc-lidc');
+        closing = false; $case.classList.add('closed'); drawLid(0, true); $slots.style.opacity = '0';
         finishClosed(false);
       }
 
       return function cleanup() {
-        window.removeEventListener('resize', layout);
+        window.removeEventListener('resize', layout); if (dragging && dragging.cleanup) dragging.cleanup();
         timers.forEach(clearTimeout);
         ghosts.forEach(function (g) { if (g.parentNode) g.parentNode.removeChild(g); });
-        dragging = null;
+        dragging = null; cancelAnimationFrame(raf);
+        document.documentElement.style.overscrollBehavior = prevOB[0]; document.body.style.overscrollBehavior = prevOB[1];
       };
     }
   });
