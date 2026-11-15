@@ -5,7 +5,7 @@ DAYOF.registerPage('landing', {
   render: function (container, ctx) {
     var resume = !!(ctx.step && ctx.step.resume);
     container.innerHTML =
-      '<div class="dx-bg" role="img" aria-label="《看看》主視覺：灑滿陽光的房間"></div>' +
+      '<div class="dx-bg" role="img" aria-label="《看看》主視覺：魚眼視角的房間、窗外城市與書櫃"></div>' +
       '<div class="dx-sun"></div>' +
       '<div class="lp-body">' +
         '<p class="lp-sub lp-in d1">Kai 的生日音樂會 <b>·</b> 2026.11.22</p>' +

@@ -35,7 +35,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     ':where(.btn[disabled]){opacity:.45;cursor:default}',
     ':where(.page-fallback){display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;box-sizing:border-box;text-align:center;color:var(--ink-soft,#7A6A5A)}',
     ':where(.page-fallback input){width:100%;max-width:300px;height:44px;border-radius:12px;border:1px solid var(--wood,#C9A27A);padding:0 12px;font-size:16px;box-sizing:border-box}',
-    ':where(.popup-bg){position:absolute;inset:0;background:url(assets/main-visual.jpg) 30% center/cover no-repeat;filter:saturate(.9)}',
+    ':where(.popup-bg){position:absolute;inset:0;background:url(assets/key-visual.jpg) 30% center/cover no-repeat;filter:saturate(.9)}',
     ':where(.popup-bg)::after{content:"";position:absolute;inset:0;background:rgba(40,30,20,.45)}',
     ':where(.popup-host){position:absolute;inset:0;z-index:1}',
     '#app > .page > .restart-link{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 4px);z-index:60;display:flex;justify-content:center;pointer-events:none}',
