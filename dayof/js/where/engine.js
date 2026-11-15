@@ -283,10 +283,10 @@ window.DAYOF = window.DAYOF || {};
     opts = opts || {};
     var interactive = opts.interactive !== false;
     var cfg = (window.DAYOF_CONFIG || {});
-    // difficulty timeline (Kai 02:06): hint button 15s → auto-pulse 30s → skip button 45s (seconds of active search)
-    var hintAfter = opts.hintAfterSec != null ? opts.hintAfterSec : Math.min(cfg.HINT_AFTER_SEC || 15, 15);
-    var autoHintAfter = opts.autoHintSec != null ? opts.autoHintSec : (cfg.AUTO_HINT_SEC || 30);
-    var skipAfter = opts.skipAfterSec != null ? opts.skipAfterSec : (cfg.SKIP_AFTER_SEC || 45);
+    // (Kai 02:11) 30s: hint button + auto quarter-zoom hint; 45s: auto circle on Kai; 60s: skip button
+    var hintAfter = opts.hintAfterSec != null ? opts.hintAfterSec : (cfg.HINT_AFTER_SEC || 30);
+    var autoHintAfter = opts.autoHintSec != null ? opts.autoHintSec : (cfg.AUTO_HINT_SEC || 45);
+    var skipAfter = opts.skipAfterSec != null ? opts.skipAfterSec : (cfg.SKIP_AFTER_SEC || 60);
     var autoHinted = false, skipShown = false, skipBtn = null, bonusUi = null;
     var def = D.Where._scenes[sceneId] || (D.Where._scenes['__fallback'] = D.Where._scenes['__fallback'] || FALLBACK);
     var destroyed = false, S = null;
@@ -391,6 +391,11 @@ window.DAYOF = window.DAYOF || {};
       nextPick = 0; clearAmbient();
       if (cams[name]) { clampCam(cams[name]); dirty = true; applyCam(); }
     }
+    // kai.foundOnView: arriving at Kai's view counts as finding him (~0.8s after the flip)
+    function viewFound() {
+      var K = S && S.kaiInfo; if (!K || !K.foundOnView || done || curView !== K.view) return;
+      later(function () { if (!destroyed && !done && curView === K.view) found(); }, 800);
+    }
     function flipView() {
       if (locked || !started) return;
       var names = Object.keys(S.views); var next = names[(names.indexOf(curView) + 1) % names.length];
@@ -401,10 +406,11 @@ window.DAYOF = window.DAYOF || {};
           if (destroyed) return;
           showView(next);
           var b = stage.animate([{ transform: 'perspective(900px) rotateY(-88deg)' }, { transform: 'perspective(900px) rotateY(0deg)' }], { duration: 260, easing: 'ease-out' });
-          b.onfinish = function () { try { a.cancel(); } catch (e) { } };
+          b.onfinish = function () { try { a.cancel(); } catch (e) { } viewFound(); };
         };
-      } catch (e) { showView(next); }
+      } catch (e) { showView(next); viewFound(); }
       if (flipBtn) flipBtn.classList.remove('pulse');
+      if (bubbleEl && bubbleEl.parentNode) bubbleEl.parentNode.removeChild(bubbleEl);
     }
 
     /* -------------- effects -------------- */
@@ -463,7 +469,8 @@ window.DAYOF = window.DAYOF || {};
       var g0 = E('g', { class: 'found-fx', 'pointer-events': 'none' }, layer);
       var ring = E('circle', { cx: cx, cy: cy, r: 10, fill: 'none', stroke: '#F2C66D', 'stroke-width': 8, 'stroke-opacity': 0.95 }, g0);
       var ring2 = E('circle', { cx: cx, cy: cy, r: 10, fill: 'rgba(255,248,225,.25)', stroke: '#C2674E', 'stroke-width': 3, 'stroke-opacity': 0.8, 'stroke-dasharray': '10 8' }, g0);
-      if (K.img) { K.g.removeAttribute('clip-path'); layer.appendChild(K.g); if (skipBtn) skipBtn.classList.remove('show'); } // sprite: brought to front, hops/waves via its inner group (frame loop)
+      if (K.painted) { /* nothing to move */ }
+      else if (K.img) { K.g.removeAttribute('clip-path'); layer.appendChild(K.g); if (skipBtn) skipBtn.classList.remove('show'); } // sprite: brought to front, hops/waves via its inner group (frame loop)
       else {
         // Kai steps out of the crowd and waves (redrawn with the wave pose, no item)
         var ng = D.Chars.draw('mouse', { x: K.x, y: K.y, s: K.s, flip: K.flip, pose: 'wave', rnd: Math.random, outfit: K.outfit, kai: true });
@@ -473,7 +480,7 @@ window.DAYOF = window.DAYOF || {};
       }
       burst(cx, cy - 30, K.view, { stars: 18, conf: 54 });
       celebrate = { g: g0, ring: ring, ring2: ring2, cx: cx, cy: cy, t0: t, R: Math.max(70, (K.x1 - K.x0) * 1.2) };
-      tweenTo(cx, cy, Math.max(cams[curView].k, Math.min(maxK, 170 / (100 * K.s))), 0.8);
+      tweenTo(cx, cy, K.painted ? cams[curView].k : Math.max(cams[curView].k, Math.min(maxK, 170 / (100 * K.s))), 0.8);
       celebrate.banner = banner('找到凱凱了！', 2300, 'main');
       later(function () { locked = false; }, 2100);
       later(function () {
@@ -522,25 +529,41 @@ window.DAYOF = window.DAYOF || {};
       b.addEventListener('click', function (e) { e.stopPropagation(); el.classList.toggle('open'); });
       updBonusUi(false);
     }
-    function useHint(auto) {
+    // level 1 = zoom to the image quarter that holds Kai + pulse its border; level 2 = pulse a circle on Kai.
+    // Scenes where Kai is found by switching views (kai.foundOnView) → both levels point at the 換鏡頭 button.
+    var hintLevel = 0;
+    function flipNudge(msg) {
+      if (flipBtn) {
+        flipBtn.classList.add('pulse');
+        var rr = flipBtn.getBoundingClientRect(), rb = root.getBoundingClientRect();
+        bubbleAt((rr.left + rr.right) / 2 - rb.left, rr.top - rb.top - 6, rr.bottom - rb.top + 6, msg || '試試換鏡頭？');
+        clearTimeout(bubbleT); var be = bubbleEl; bubbleT = setTimeout(function () { if (be && be.parentNode) be.parentNode.removeChild(be); }, 3200);
+      } else toast(msg || '試試換鏡頭？', 3000);
+    }
+    function useHint(auto, level) {
       if (done || !S.kaiInfo || !started) return;
       var K = S.kaiInfo; if (!auto) hints++;
-      if (K.view !== curView) {
-        if (flipBtn) flipBtn.classList.add('pulse');
-        toast('他好像不在這個畫面…試試「更換前後鏡頭」', 3200); return;
-      }
-      var cx = (K.x0 + K.x1) / 2, cy = (K.y0 + K.y1) / 2;
-      var ang = S.rng() * Math.PI * 2, off = (60 + S.rng() * 50) * (S.imageMode ? S.W / 2000 : 1);
-      var hx = cx + Math.cos(ang) * off, hy = cy + Math.sin(ang) * off;
+      level = level || (hintLevel >= 1 ? 2 : 1); hintLevel = Math.max(hintLevel, level);
+      if (K.foundOnView || K.view !== curView) { flipNudge(K.foundOnView ? '試試換鏡頭？' : '他不在這個畫面…試試換鏡頭？'); return; }
       if (hintObj && hintObj.g.parentNode) hintObj.g.parentNode.removeChild(hintObj.g);
       var g = E('g', { class: 'hint-fx', 'pointer-events': 'none' }, S.views[K.view].layer.top);
-      var R = S.imageMode ? clamp(115 / cams[curView].k, S.W * 0.08, S.W * 0.22) : clamp(115 / cams[curView].k, 130, 480);
-      E('circle', { cx: hx, cy: hy, r: R, fill: 'rgba(255,240,200,.16)', stroke: '#E3B873', 'stroke-width': 5 / Math.max(0.4, Math.min(1, cams[curView].k * 2)), 'stroke-opacity': 0.8, 'stroke-dasharray': '16 12' }, g);
-      var c2 = E('circle', { cx: hx, cy: hy, r: R, fill: 'none', stroke: '#F2C66D', 'stroke-width': 3, 'stroke-opacity': 0.6 }, g);
-      hintObj = { g: g, c2: c2, hx: hx, hy: hy, R: R, t0: t };
-      var cm = cams[curView], sx = hx * cm.k + cm.tx, sy = hy * cm.k + cm.ty;
-      if (sx < 40 || sx > vw - 40 || sy < 60 || sy > vh - 60 || cm.k < minK * 1.6) tweenTo(hx, hy, Math.max(cm.k, Math.min(maxK, 0.75)), 0.8);
-      toast(auto ? '幫你圈出來了～凱凱就在圈圈裡' : 'Kai 大概在這個圈圈附近', 2400);
+      var cx = (K.x0 + K.x1) / 2, cy = (K.y0 + K.y1) / 2, cm = cams[curView];
+      if (level === 1) {
+        var qx = cx < S.W / 2 ? 0 : S.W / 2, qy = cy < S.H / 2 ? 0 : S.H / 2, qw = S.W / 2, qh = S.H / 2, sw = Math.max(3, S.W * 0.006);
+        E('rect', { x: qx + sw / 2, y: qy + sw / 2, width: qw - sw, height: qh - sw, fill: 'rgba(255,240,200,.08)', stroke: '#E3B873', 'stroke-width': sw, 'stroke-opacity': 0.75, 'stroke-dasharray': (sw * 4) + ' ' + (sw * 3) }, g);
+        var r2 = E('rect', { x: qx + sw / 2, y: qy + sw / 2, width: qw - sw, height: qh - sw, fill: 'none', stroke: '#F2C66D', 'stroke-width': sw * 1.6, 'stroke-opacity': 0.6 }, g);
+        hintObj = { g: g, rect: r2, sw: sw, t0: t, life: 12 };
+        tweenTo(qx + qw / 2, qy + qh / 2, Math.min(maxK, Math.min(vw / qw, vh / qh) * 0.98), 0.9);
+        toast(auto ? '凱凱就在這一塊裡面喔～' : '凱凱在這四分之一裡', 2600);
+      } else {
+        var R = Math.max((K.x1 - K.x0), (K.y1 - K.y0)) * 0.75;
+        E('circle', { cx: cx, cy: cy, r: R, fill: 'rgba(255,240,200,.16)', stroke: '#E3B873', 'stroke-width': Math.max(3, R * 0.06), 'stroke-opacity': 0.85, 'stroke-dasharray': (R * 0.2) + ' ' + (R * 0.14) }, g);
+        var c2 = E('circle', { cx: cx, cy: cy, r: R, fill: 'none', stroke: '#F2C66D', 'stroke-width': Math.max(3, R * 0.05), 'stroke-opacity': 0.6 }, g);
+        hintObj = { g: g, c2: c2, R: R, t0: t, life: 10 };
+        var sx = cx * cm.k + cm.tx, sy = cy * cm.k + cm.ty;
+        if (sx < 40 || sx > vw - 40 || sy < 60 || sy > vh - 60 || cm.k < minK * 1.6) tweenTo(cx, cy, Math.max(cm.k, Math.min(maxK, minK * 2.4)), 0.8);
+        toast(auto ? '凱凱就在圈圈裡！點他一下' : '凱凱就在圈圈裡', 2600);
+      }
     }
 
     /* -------------- minimap -------------- */
@@ -600,7 +623,7 @@ window.DAYOF = window.DAYOF || {};
       hintBtn = H('button', 'where-btn where-hint', hud, '<span class="ico">' + MAG + '</span><span class="lbl">提示</span>');
       hintBtn.type = 'button'; hintBtn.setAttribute('aria-label', '提示');
       hintBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
-      hintBtn.addEventListener('click', function (e) { e.stopPropagation(); useHint(); });
+      hintBtn.addEventListener('click', function (e) { e.stopPropagation(); useHint(false); });
       if (typeof opts.onSkip === 'function') {
         skipBtn = H('button', 'where-btn where-skip', hud, '直接看下一首 ›'); skipBtn.type = 'button';
         skipBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
@@ -751,8 +774,8 @@ window.DAYOF = window.DAYOF || {};
         var ox = S.W * c.k - vw, oy = S.H * c.k - vh;
         if (ox > 0) c.tx = -ox * (0.5 + 0.5 * Math.sin(t * 0.05 + 1)); if (oy > 0) c.ty = -oy * (0.5 + 0.3 * Math.sin(t * 0.037 + 2)); dirty = true;
       }
-      if (interactive && !hintShown && started && sec >= hintAfter && !done) { hintShown = true; hintBtn.classList.add('show'); }
-      if (interactive && !autoHinted && started && sec >= autoHintAfter && !done) { autoHinted = true; useHint(true); }
+      if (interactive && !hintShown && started && sec >= hintAfter && !done) { hintShown = true; hintBtn.classList.add('show'); if (hintLevel < 1) useHint(true, 1); }
+      if (interactive && !autoHinted && started && sec >= autoHintAfter && !done) { autoHinted = true; useHint(true, 2); }
       if (interactive && skipBtn && !skipShown && started && sec >= skipAfter && !done) { skipShown = true; skipBtn.classList.add('show'); }
       for (i = 0; i < S.anims.length; i++) { try { S.anims[i](t, dt); } catch (er) { console.error(er); S.anims.splice(i--, 1); } }
 
@@ -773,8 +796,10 @@ window.DAYOF = window.DAYOF || {};
       // the sister peeks now and then (small bounce)
       if (S.sisterInfo && !sisterFound && t >= sisNext && S.sisterInfo.view === curView) { hops.push({ g: S.sisterInfo.inner, t0: t, big: false, sis: true }); sisNext = t + 5 + Math.random() * 5; }
       if (hintObj) {
-        var hu2 = t - hintObj.t0, pulse = 1 + Math.sin(hu2 * 3.2) * 0.04; hintObj.c2.setAttribute('r', hintObj.R * pulse); hintObj.c2.setAttribute('stroke-opacity', 0.35 + 0.3 * Math.sin(hu2 * 3.2));
-        if (hu2 > 8) { if (hintObj.g.parentNode) hintObj.g.parentNode.removeChild(hintObj.g); hintObj = null; }
+        var hu2 = t - hintObj.t0, pulse = 1 + Math.sin(hu2 * 3.2) * 0.04;
+        if (hintObj.c2) { hintObj.c2.setAttribute('r', hintObj.R * pulse); hintObj.c2.setAttribute('stroke-opacity', 0.35 + 0.3 * Math.sin(hu2 * 3.2)); }
+        else { hintObj.rect.setAttribute('stroke-width', (hintObj.sw * (1.2 + 0.9 * (0.5 + 0.5 * Math.sin(hu2 * 3.6)))).toFixed(2)); hintObj.rect.setAttribute('stroke-opacity', (0.3 + 0.5 * (0.5 + 0.5 * Math.sin(hu2 * 3.6))).toFixed(2)); }
+        if (hu2 > (hintObj.life || 8)) { if (hintObj.g.parentNode) hintObj.g.parentNode.removeChild(hintObj.g); hintObj = null; }
       }
       for (i = fx.length - 1; i >= 0; i--) { var F = fx[i]; if (!F.update(t - F.t0)) { if (F.g.parentNode) F.g.parentNode.removeChild(F.g); fx.splice(i, 1); } }
       if (celebrate) {
@@ -782,7 +807,8 @@ window.DAYOF = window.DAYOF || {};
         celebrate.ring.setAttribute('r', celebrate.R * (0.3 + 0.7 * eo)); celebrate.ring.setAttribute('stroke-width', 9 * (1 - f * 0.6)); celebrate.ring.setAttribute('stroke-opacity', 1 - f * 0.3);
         celebrate.ring2.setAttribute('r', celebrate.R * (0.5 + 0.9 * eo)); celebrate.ring2.setAttribute('stroke-opacity', 0.9 * (1 - f));
         var K = S.kaiInfo, kg = K.g, bounce = cu < 0.9 ? Math.abs(Math.sin(cu * 9)) * 12 * (1 - cu / 0.9) : 0, pop = 1 + 0.08 * Math.sin(Math.min(cu, 1) * Math.PI);
-        if (K.img) {
+        if (K.painted) { /* painted into the background: ring + confetti only */ }
+        else if (K.img) {
           // sprite has no wave pose: two happy hops + a side-to-side "wave" wiggle around the feet, then settle
           var hop = cu < 1.3 ? Math.abs(Math.sin(cu * Math.PI / 0.65)) * K.h * 0.16 * (1 - cu / 1.6) : 0;
           var wig = cu < 3.2 ? Math.sin(cu * 10) * 9 * Math.max(0, 1 - cu / 3.2) : 0;
@@ -862,8 +888,12 @@ window.DAYOF = window.DAYOF || {};
         return { g: g, inner: inner, img: true, view: q.view, x: q.x, y: q.y, s: q.h / 100, w: w, h: q.h, flip: q.flip, x0: q.x - w / 2 - px, x1: q.x + w / 2 + px, y0: q.y - q.h - py, y1: q.y - q.h + vh + py };
       }
       if (interactive) {
-        var k = P(c.kai);
-        if (IM.kaiImg) S.kaiInfo = sprite(k, IM.kaiUrl, IM.kaiImg, 'kai kai-img');
+        var k = P(c.kai), ck = c.kai || {};
+        if (ck.painted && ck.rect) {
+          // Kai is painted into the background: hit rect (+30%), no sprite
+          var R0 = ck.rect, rx0 = R0.x * S.W, ry0 = R0.y * S.H, rw0 = R0.w * S.W, rh0 = R0.h * S.H;
+          S.kaiInfo = { painted: true, foundOnView: !!ck.foundOnView, view: k.view, x: rx0 + rw0 / 2, y: ry0 + rh0, s: rh0 / 100, w: rw0, h: rh0, x0: rx0 - rw0 * 0.3, x1: rx0 + rw0 * 1.3, y0: ry0 - rh0 * 0.3, y1: ry0 + rh0 * 1.3 };
+        } else if (IM.kaiImg) S.kaiInfo = sprite(k, IM.kaiUrl, IM.kaiImg, 'kai kai-img');
         else { S.useView(k.view); S.kai({ x: k.x, y: k.y, s: k.h / 98, flip: k.flip }); S.useView('main'); } // procedural Kai ≈ 98 units tall at s=1
         S.bonus = [];
         (c.bonus || []).forEach(function (b, i) {

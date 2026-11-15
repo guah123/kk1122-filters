@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>場景座標工具</title>
+<style>
+  :root{--bg:#F6EFE2;--ink:#4A3C30;--line:#C9A27A}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,"PingFang TC","Noto Sans TC",sans-serif}
+  header{position:sticky;top:0;z-index:3;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;background:#FBF7EF;border-bottom:1px solid var(--line)}
+  select,button,label{font:inherit}
+  #wrap{position:relative;margin:12px auto;max-width:min(100vw - 24px,900px);user-select:none;-webkit-user-select:none;touch-action:none}
+  #img{display:block;width:100%;height:auto}
+  #ov{position:absolute;inset:0;width:100%;height:100%}
+  #out{margin:0 12px 12px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:8px;white-space:pre-wrap;word-break:break-all;font:12px/1.5 ui-monospace,Menlo,monospace;min-height:3em}
+  .tip{font-size:12px;color:#7A6A5A;padding:0 12px}
+</style>
+</head>
+<body>
+<header>
+  <select id="scene"></select>
+  <select id="view"></select>
+  <select id="mode">
+    <option value="sprite">凱凱/貼圖：從頭頂拖到腳底 → x,y,h</option>
+    <option value="rect">框：拖一個框 → x,y,w,h（hotspot / occluder / item）</option>
+    <option value="point">點：點一下 → x,y</option>
+  </select>
+  <label><input type="checkbox" id="show" checked> 顯示目前設定</label>
+  <button id="copy" type="button">複製</button>
+</header>
+<p class="tip">座標 = 背景圖寬/高的比例（0~1）。貼圖模式：在圖上從凱凱「頭頂」拖到「腳底」，得到腳底中心 x,y 與高度 h。紅=凱凱、橘=彩蛋、藍=hotspot、綠=occluder。結果貼回 data/scenes/&lt;id&gt;.json。</p>
+<div id="wrap"><img id="img" alt=""><svg id="ov" viewBox="0 0 1 1" preserveAspectRatio="none"></svg></div>
+<pre id="out"></pre>
+<script>
+(function () {
+  'use strict';
+  var IDS = ['park', 'escalator', 'bridge', 'bookstore', 'office', 'fireworks', 'newyork'];
+  var BASE = '../';
+  var $ = function (id) { return document.getElementById(id); };
+  var sceneSel = $('scene'), viewSel = $('view'), img = $('img'), ov = $('ov'), out = $('out'), cfg = null, drag = null;
+  IDS.forEach(function (id) { var o = document.createElement('option'); o.value = o.textContent = id; sceneSel.appendChild(o); });
+  var q = /[?&]scene=(\w+)/.exec(location.search); if (q) sceneSel.value = q[1];
+  function f(v) { return Math.round(v * 1000) / 1000; }
+  function NS(tag, a, p) { var e = document.createElementNS('http://www.w3.org/2000/svg', tag); for (var k in a) e.setAttribute(k, a[k]); (p || ov).appendChild(e); return e; }
+  function rectEl(x, y, w, h, col, dash) { return NS('rect', { x: x, y: y, width: w, height: h, fill: col, 'fill-opacity': 0.15, stroke: col, 'stroke-width': 0.003, 'stroke-dasharray': dash || '' }); }
+  function loadScene() {
+    fetch(BASE + 'data/scenes/' + sceneSel.value + '.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (c) {
+      cfg = c; viewSel.innerHTML = '';
+      var views = (c && c.views) || { main: 'assets/scenes/?' };
+      Object.keys(views).forEach(function (v) { var o = document.createElement('option'); o.value = v; o.textContent = v + ' — ' + views[v]; viewSel.appendChild(o); });
+      loadView();
+    });
+  }
+  function loadView() {
+    var src = cfg && cfg.views && cfg.views[viewSel.value];
+    out.textContent = src ? '' : '找不到 data/scenes/' + sceneSel.value + '.json 或 views';
+    if (src) img.src = BASE + src;
+    draw();
+  }
+  function draw(tmp) {
+    ov.innerHTML = '';
+    var r = img.naturalWidth ? img.naturalHeight / img.naturalWidth : 4 / 3;
+    if ($('show').checked && cfg) {
+      var v = viewSel.value;
+      function spr(o, col) {
+        if (!o || (o.view || 'main') !== v || o.w != null) return;
+        var h = o.h || 0.05, w = h * 0.5 * r; // aspect unknown here: rough box
+        rectEl(o.x - w / 2, o.y - h, w, h * (o.visible || 1), col);
+        NS('circle', { cx: o.x, cy: o.y, r: 0.006, fill: col });
+      }
+      spr(cfg.kai, '#D23B2A');
+      (cfg.bonus || []).forEach(function (b) { if ((b.view || 'main') !== v) return; if (b.w != null) rectEl(b.x, b.y, b.w, b.h, '#E39B2B', '0.01 0.006'); else spr(b, '#E39B2B'); });
+      (cfg.hotspots || []).forEach(function (h) { if ((h.view || 'main') === v) rectEl(h.x, h.y, h.w, h.h, '#3B6FD2'); });
+      (cfg.occluders || []).forEach(function (h) { if ((h.view || 'main') === v) rectEl(h.x, h.y, h.w, h.h, '#2E9E5B'); });
+    }
+    if (tmp) rectEl(tmp.x, tmp.y, tmp.w, tmp.h, '#000', '0.008 0.006');
+  }
+  function frac(e) { var b = img.getBoundingClientRect(); return { x: Math.min(1, Math.max(0, (e.clientX - b.left) / b.width)), y: Math.min(1, Math.max(0, (e.clientY - b.top) / b.height)) }; }
+  var wrap = $('wrap');
+  wrap.addEventListener('pointerdown', function (e) { e.preventDefault(); drag = frac(e); try { wrap.setPointerCapture(e.pointerId); } catch (er) { } });
+  wrap.addEventListener('pointermove', function (e) { if (!drag) return; var p = frac(e); draw({ x: Math.min(drag.x, p.x), y: Math.min(drag.y, p.y), w: Math.abs(p.x - drag.x), h: Math.abs(p.y - drag.y) }); });
+  wrap.addEventListener('pointerup', function (e) {
+    if (!drag) return; var p = frac(e), a = drag, m = $('mode').value, o; drag = null;
+    var moved = Math.hypot(p.x - a.x, p.y - a.y) > 0.005;
+    if (m === 'point' || !moved) o = { view: viewSel.value, x: f(p.x), y: f(p.y) };
+    else if (m === 'rect') o = { view: viewSel.value, x: f(Math.min(a.x, p.x)), y: f(Math.min(a.y, p.y)), w: f(Math.abs(p.x - a.x)), h: f(Math.abs(p.y - a.y)) };
+    else { var top = Math.min(a.y, p.y), feet = Math.max(a.y, p.y), fx = a.y > p.y ? a.x : p.x; o = { view: viewSel.value, x: f(fx), y: f(feet), h: f(feet - top) }; }
+    out.textContent = JSON.stringify(o);
+    draw(o.w != null ? o : null);
+    if (o.h != null && o.w == null) { NS('line', { x1: o.x, y1: o.y - o.h, x2: o.x, y2: o.y, stroke: '#000', 'stroke-width': 0.004 }); }
+  });
+  $('copy').addEventListener('click', function () { try { navigator.clipboard.writeText(out.textContent); } catch (e) { } });
+  $('show').addEventListener('change', function () { draw(); });
+  img.addEventListener('load', function () { draw(); });
+  sceneSel.addEventListener('change', loadScene); viewSel.addEventListener('change', loadView);
+  loadScene();
+})();
+</script>
+</body>
+</html>

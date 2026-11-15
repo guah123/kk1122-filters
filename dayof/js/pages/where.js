@@ -100,7 +100,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         handle = DAYOF.Where.mount(area, step.scene, {
           interactive: true, onFound: onFound, onSister: onSister, onBonus: onBonus, bonusFound: bonusFound, intro: !already,
           onSkip: already ? null : onSkip,
-          hintAfterSec: Math.min(C.HINT_AFTER_SEC || 15, 15), autoHintSec: C.AUTO_HINT_SEC || 30, skipAfterSec: C.SKIP_AFTER_SEC || 45
+          hintAfterSec: C.HINT_AFTER_SEC || 30, autoHintSec: C.AUTO_HINT_SEC || 45, skipAfterSec: C.SKIP_AFTER_SEC || 60
         });
       } else {
         el('p', null, area, '場景載入中…').style.cssText = 'padding:40px;text-align:center';

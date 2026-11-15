@@ -41,7 +41,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   var dataP = null;
   function loadData() {
     if (!dataP) {
-      dataP = fetch('data/lyrics.json', { cache: 'no-cache' })
+      dataP = fetch('data/lyrics.json?v=' + Date.now(), { cache: 'no-store' })
         .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .catch(function (e) { console.warn('[lyrics] load failed', e); dataP = null; return { songs: [] }; });
     }
@@ -150,6 +150,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         if (!alive) return;
         var song = findSong(data, row);
         var lyr = cleanText(song && song.lyrics);
+        if (/[\u3040-\u30ff]/.test(lyr)) lyr = lyr.split('\n').filter(function (l) { return !/^[a-z][a-z \-,.'?!~…()]*$/.test(l); }).join('\n').replace(/\n{3,}/g, '\n\n');
         var tr = cleanText(song && song.translation);
         var artist = song && song.artist && song.artist !== 'Kai' ? String(song.artist) : '';
         if (artist) { var ar = head.querySelector('.lyr-artist'); ar.textContent = '原唱：' + artist; ar.hidden = false; }
@@ -170,7 +171,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
             console.warn('[lyrics] translation not line-aligned for', row.song);
             var t = document.createElement('p'); t.className = 'lyr-trans'; t.textContent = tr; paper.appendChild(t);
           }
-          if (tr) { tbtn.hidden = false; setTr(!!st.lyrTr[n]); }
+          var foreign = song && song.lang ? !/^(zh|tw)/i.test(song.lang) : !/[\u4e00-\u9fff]/.test(lyr.replace(/[\u3040-\u30ff]/g, '') ) || /[\u3040-\u30ff]/.test(lyr);
+          if (tr && foreign) { tbtn.hidden = false; setTr(!!st.lyrTr[n]); } else { setTr(false); }
         } else {
           var e = document.createElement('div'); e.className = 'lyr-empty'; e.textContent = '（歌詞待補）'; paper.appendChild(e);
         }
