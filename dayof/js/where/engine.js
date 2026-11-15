@@ -179,7 +179,7 @@ window.DAYOF = window.DAYOF || {};
       S.kaiInfo = { g: g, view: S.curName, flip: !!o.flip, outfit: o.outfit || D.Chars.kaiOutfit(), x: o.x || 0, y: o.y || 0, s: s, x0: (o.x || 0) - 30 * s, x1: (o.x || 0) + 30 * s, y0: (o.y || 0) - 98 * s, y1: (o.y || 0) + 3 * s };
       return g;
     };
-    // 姊姊 (small wombat sticker) — optional extra find. opts: {x,y,s=1,flip,parent}
+    // 姊姊 (small quokka sticker) — optional extra find. opts: {x,y,s=1,flip,parent}
     S.sister = function (o) {
       o = o || {};
       if (S.sisterInfo && S.sisterInfo.g.parentNode) S.sisterInfo.g.parentNode.removeChild(S.sisterInfo.g);
@@ -263,8 +263,8 @@ window.DAYOF = window.DAYOF || {};
       });
     });
   }
-  /* data/scenes/hitboxes.json — painted Kai / wombat boxes per scene (tolerant of shape; re-fetched per page load).
-     keys: scene id (park) or image stem (s05-park, s19-moumoon-selfie[.jpg]); values {kai:box, wombat|sister:box, view?}
+  /* data/scenes/hitboxes.json — painted Kai / quokka boxes per scene (tolerant of shape; re-fetched per page load).
+     keys: scene id (park) or image stem (s05-park, s19-moumoon-selfie[.jpg]); values {kai:box, quokka|sister:box, view?}
      box: [x,y,w,h] | {x,y,w,h} (top-left) | {cx,cy,w,h} (centre) | {x0,y0,x1,y1} | {left,top,width,height}; >1.5 → pixels */
   function hitboxes() {
     if (IMG.off || typeof fetch !== 'function') return Promise.resolve(null);
@@ -303,7 +303,7 @@ window.DAYOF = window.DAYOF || {};
     cand.forEach(function (c0) {
       var e = c0.e; if (!e || typeof e !== 'object') return;
       var ev = c0.view || (e.view && views[e.view] ? e.view : null);
-      [['kai', ['kai', 'Kai', 'mouse']], ['sister', ['wombat', 'sister', 'Wombat']]].forEach(function (pair) {
+      [['kai', ['kai', 'Kai', 'mouse']], ['sister', ['quokka', 'Quokka', 'sister', '姊姊', 'wombat', 'Wombat']]].forEach(function (pair) {
         if (out[pair[0]]) return;
         for (var i = 0; i < pair[1].length; i++) {
           var raw = e[pair[1][i]]; if (!raw) continue;
@@ -552,7 +552,7 @@ window.DAYOF = window.DAYOF || {};
       if (typeof opts.onSister === 'function') { try { opts.onSister({ sec: Math.round(sec), hints: hints }); } catch (e) { console.error(e); } }
     }
 
-    // secret find: a little surprise AT the spot (twinkling stars; wombat also gets a soft heart). No text, no count.
+    // secret find: a little surprise AT the spot (twinkling stars; quokka also gets a soft heart). No text, no count.
     function foundBonus(B) {
       if (!B || B.found) return;
       B.found = true;
@@ -659,7 +659,7 @@ window.DAYOF = window.DAYOF || {};
     function buildHud() {
       var right = H('div', 'where-hud-r', hud);
       if (Object.keys(S.views).length > 1) {
-        flipBtn = H('button', 'where-btn where-flip', right, '<span class="ico">' + icon('flipcam', ICON_FLIP) + '</span><span class="lbl">更換前後鏡頭</span>');
+        flipBtn = H('button', 'where-btn where-flip', right, '<span class="ico">' + icon('flipcam', ICON_FLIP) + '</span>'); flipBtn.setAttribute('aria-label', '更換前後鏡頭'); flipBtn.title = '更換前後鏡頭';
         flipBtn.type = 'button'; flipBtn.addEventListener('click', function (e) { e.stopPropagation(); flipView(); });
         flipBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
       }
@@ -913,7 +913,7 @@ window.DAYOF = window.DAYOF || {};
       });
       function vw_(name) { return name && IM.views[name] ? name : 'main'; }
       if (interactive) {
-        // NO sprites on the scene (Kai and the wombat are painted into the art). Kai box: hitboxes.json →
+        // NO sprites on the scene (Kai and the quokka are painted into the art). Kai box: hitboxes.json →
         // scene json kai.rect → derived from kai x/y/h (sprite-sized box). Hit = box + 30% padding.
         var ck = c.kai || {}, HB = IM.hits || {}, KAR = 158 / 320, WAR = 216 / 320;
         function fromXYH(o, ar) { var h = o.h != null ? o.h : (o.scale || 0.08), vis = clamp(o.visible != null ? +o.visible : 1, 0.15, 1), w = h * ar * S.H / S.W; return { x: (o.x != null ? o.x : 0.62) - w / 2, y: (o.y != null ? o.y : 0.71) - h, w: w, h: h * vis }; }
@@ -926,16 +926,16 @@ window.DAYOF = window.DAYOF || {};
         S.kaiInfo = padBox(kbox, kv, 0.3);
         // Kai not in the opening view (bookstore selfie) → flipping to his view finds him
         S.kaiInfo.foundOnView = ck.foundOnView != null ? !!ck.foundOnView : kv !== vw_(c.initView);
-        // secrets (no UI): sister/wombat + painted scene items; recorded silently via onBonus
+        // secrets (no UI): sister/quokka + painted scene items; recorded silently via onBonus
         S.bonus = [];
-        var sb = (c.bonus || []).filter(function (b) { return b && (b.id === 'sister' || b.id === 'wombat'); })[0];
+        var sb = (c.bonus || []).filter(function (b) { return b && (b.id === 'sister' || b.id === 'quokka'); })[0];
         if (HB.sister || sb) {
           var sv = HB.sister ? vw_(HB.sister.view || (sb && sb.view)) : vw_(sb.view);
           var sbox = HB.sister ? HB.sister.box : (sb.w != null && !sb.sprite ? normBox(sb, S.W, S.H) : fromXYH(sb, WAR));
           var SB = padBox(sbox, sv, 0.3); SB.id = 'sister'; SB.label = (sb && sb.label) || '姊姊'; S.bonus.push(SB);
         }
         (c.bonus || []).forEach(function (b, i) {
-          if (!b || b.sprite || b.w == null || b.id === 'sister' || b.id === 'wombat') return; // sprite bonuses (pick) are gone
+          if (!b || b.sprite || b.w == null || b.id === 'sister' || b.id === 'quokka') return; // sprite bonuses (pick) are gone
           var B = padBox({ x: b.x, y: b.y, w: b.w, h: b.h }, vw_(b.view), 0.15); B.id = b.id || ('b' + i); B.label = b.label || B.id; S.bonus.push(B);
         });
         S.bonus.forEach(function (B) { B.found = !!(opts.bonusFound && opts.bonusFound[B.id]); });

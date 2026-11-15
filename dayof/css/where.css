@@ -23,7 +23,7 @@
 .where-btn .ico{display:inline-flex;width:24px;height:24px}
 .where-btn .ico svg{width:100%;height:100%}
 .where-btn .lbl{font-size:13px;letter-spacing:.04em;white-space:nowrap}
-.where-flip{height:46px;padding:0 16px 0 12px}
+.where-flip{width:46px;height:46px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}.where-flip .lbl{display:none}
 .where-zoom{width:42px;height:42px;font-size:24px;line-height:1;padding:0;font-weight:300}
 .where-hint{position:absolute;left:max(10px,env(safe-area-inset-left));bottom:max(110px,env(safe-area-inset-bottom));height:46px;padding:0 16px 0 12px;opacity:0;transform:translateY(12px) scale(.9);pointer-events:none;transition:opacity .5s,transform .5s}
 .where-hint.show{opacity:1;transform:none;pointer-events:auto;animation:wherePulse 2.6s ease-in-out 1s infinite}
