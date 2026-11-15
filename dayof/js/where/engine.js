@@ -914,7 +914,7 @@ window.DAYOF = window.DAYOF || {};
       function vw_(name) { return name && IM.views[name] ? name : 'main'; }
       if (interactive) {
         // NO sprites on the scene (Kai and the quokka are painted into the art). Kai box: hitboxes.json →
-        // scene json kai.rect → derived from kai x/y/h (sprite-sized box). Hit = box + 30% padding.
+        // scene json kai.rect → derived from kai x/y/h (sprite-sized box). Hit = box + 15% padding (v7).
         var ck = c.kai || {}, HB = IM.hits || {}, KAR = 158 / 320, WAR = 216 / 320;
         function fromXYH(o, ar) { var h = o.h != null ? o.h : (o.scale || 0.08), vis = clamp(o.visible != null ? +o.visible : 1, 0.15, 1), w = h * ar * S.H / S.W; return { x: (o.x != null ? o.x : 0.62) - w / 2, y: (o.y != null ? o.y : 0.71) - h, w: w, h: h * vis }; }
         function padBox(bx, view, pad) {
@@ -923,7 +923,7 @@ window.DAYOF = window.DAYOF || {};
         }
         var kv = HB.kai ? vw_(HB.kai.view || ck.view) : vw_(ck.view);
         var kbox = HB.kai ? HB.kai.box : (ck.rect ? normBox(ck.rect, S.W, S.H) : fromXYH(ck, KAR));
-        S.kaiInfo = padBox(kbox, kv, 0.3);
+        S.kaiInfo = padBox(kbox, kv, 0.15);
         // Kai not in the opening view (bookstore selfie) → flipping to his view finds him
         S.kaiInfo.foundOnView = ck.foundOnView != null ? !!ck.foundOnView : kv !== vw_(c.initView);
         // secrets (no UI): sister/quokka + painted scene items; recorded silently via onBonus
@@ -932,7 +932,7 @@ window.DAYOF = window.DAYOF || {};
         if (HB.sister || sb) {
           var sv = HB.sister ? vw_(HB.sister.view || (sb && sb.view)) : vw_(sb.view);
           var sbox = HB.sister ? HB.sister.box : (sb.w != null && !sb.sprite ? normBox(sb, S.W, S.H) : fromXYH(sb, WAR));
-          var SB = padBox(sbox, sv, 0.3); SB.id = 'sister'; SB.label = (sb && sb.label) || '姊姊'; S.bonus.push(SB);
+          var SB = padBox(sbox, sv, 0.15); SB.id = 'sister'; SB.label = (sb && sb.label) || '姊姊'; S.bonus.push(SB);
         }
         (c.bonus || []).forEach(function (b, i) {
           if (!b || b.sprite || b.w == null || b.id === 'sister' || b.id === 'quokka') return; // sprite bonuses (pick) are gone
