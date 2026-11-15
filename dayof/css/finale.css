@@ -90,37 +90,38 @@
 .eg-layer.on { opacity: 1; }
 .eg-layer.first { opacity: 1; transition: none; }
 .eg-ph { position: absolute; inset: 0; }
-.page-egg .fn-walker { z-index: 6; }
+.page-egg .fn-walker { z-index: 100; pointer-events: none; }
+.eg-actor { position: absolute; inset: 0; overflow: hidden; z-index: 100; pointer-events: none; }
 .eg-vignette { position: absolute; inset: 0; z-index: 4; pointer-events: none;
   background: linear-gradient(180deg, rgba(255,255,255,.0) 70%, rgba(40,30,20,.10) 100%); }
 
-/* standout buttons under the filter stack */
-.eg-pop { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+/* standout buttons under the filter stack: same 48px size as filter .round-btn, distinct by colour */
+.eg-pop { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .eg-pop button.eg-bigbtn {
-  width: 62px; height: 62px; border-radius: 50%; border: 3px solid #fff; padding: 0; cursor: pointer;
+  width: 48px; height: 48px; border-radius: 50%; border: 2px solid #fff; padding: 0; cursor: pointer;
   display: flex; align-items: center; justify-content: center; color: #fff;
-  box-shadow: 0 8px 18px rgba(30,20,10,.38), 0 0 0 1px rgba(0,0,0,.08);
-  -webkit-tap-highlight-color: transparent; animation: eg-pulse 2.6s ease-in-out infinite;
+  box-shadow: 0 3px 10px rgba(74,60,48,.28);
+  -webkit-tap-highlight-color: transparent;
 }
 .eg-pop button.eg-bigbtn:active { transform: scale(.94); }
-.eg-pop button.eg-bigbtn svg { width: 36px; height: 36px; display: block; }
-.eg-pop button.eg-bigbtn .ico { display: flex; width: 38px; height: 38px; align-items: center; justify-content: center; }
-.eg-pop button.eg-bigbtn svg { width: 38px !important; height: 38px !important; }
+.eg-pop button.eg-bigbtn .ico { display: flex; width: 28px; height: 28px; align-items: center; justify-content: center; }
+.eg-pop button.eg-bigbtn svg { width: 28px !important; height: 28px !important; display: block; }
 .eg-line button.eg-bigbtn { background: #06C755; }
-.eg-coffee button.eg-bigbtn { background: #B5733A; animation-delay: 1.3s; }
-@keyframes eg-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.07); } }
-.eg-pop .eg-cap { font: 700 11px/1.15 var(--font, sans-serif); color: #fff; background: rgba(74,60,48,.82); padding: 3px 8px; border-radius: 9px; text-align: center; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.eg-coffee button.eg-bigbtn { background: #B5733A; }
+.eg-restart button.eg-bigbtn { background: #5E86A8; }
+.eg-pop .eg-cap { font: 600 10px/1.2 var(--font, sans-serif); color: var(--ink, #4A3C30); background: rgba(255,255,255,.7); padding: 1px 6px; border-radius: 8px; text-align: center; white-space: nowrap; }
 .eg-bubble {
-  position: absolute; right: calc(100% + 6px); top: 4px; white-space: nowrap; z-index: 2;
-  font: 700 15px/1 var(--font, sans-serif); color: var(--ink, #4A3C30); background: #fff; padding: 9px 12px; border-radius: 14px;
-  box-shadow: 0 4px 12px rgba(30,20,10,.28); border: 2px solid #06C755; pointer-events: none;
+  position: absolute; right: calc(100% + 8px); top: 7px; white-space: nowrap; z-index: 2;
+  font: 700 12px/1 var(--font, sans-serif); color: var(--ink, #4A3C30); background: #fff; padding: 6px 9px; border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(30,20,10,.25); border: 1.5px solid #06C755; pointer-events: none;
 }
-.eg-bubble::after { content: ""; position: absolute; right: -8px; top: 16px; width: 12px; height: 12px; background: #fff; border-right: 2px solid #06C755; border-top: 2px solid #06C755; transform: rotate(45deg); }
+.eg-bubble::after { content: ""; position: absolute; right: -6px; top: 9px; width: 8px; height: 8px; background: #fff; border-right: 1.5px solid #06C755; border-top: 1.5px solid #06C755; transform: rotate(45deg); }
 
 /* coffee modal content */
 .coffee-modal { text-align: center; color: var(--ink, #4A3C30); max-height: 82vh; max-height: 82dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .coffee-modal h3 { margin: 4px 0 10px; font: 700 20px/1.3 var(--font, sans-serif); }
-.coffee-modal .cm-qr { display: block; margin: 0 auto; max-width: 100%; max-height: 44vh; max-height: 44dvh; width: auto; height: auto; border-radius: 14px; box-shadow: 0 4px 14px rgba(74,60,48,.2); cursor: pointer; }
+.coffee-modal .cm-qrlink { display: block; width: 240px; max-width: 70%; margin: 0 auto; -webkit-tap-highlight-color: transparent; }
+.coffee-modal .cm-qr { display: block; width: 100%; height: auto; border-radius: 14px; box-shadow: 0 4px 14px rgba(74,60,48,.2); cursor: pointer; }
 .coffee-modal .cm-acct { margin: 12px 0 4px; font: 600 14px/1.5 var(--font, sans-serif); -webkit-user-select: text; user-select: text; word-break: break-all; }
 .coffee-modal .cm-hint { margin: 0 0 12px; font: 400 12.5px/1.6 var(--font, sans-serif); color: var(--ink-soft, #7A6A5A); }
 .coffee-modal .cm-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -132,6 +133,3 @@
 .fn-modal { position: relative; background: var(--paper, #FBF7EF); border-radius: 18px; padding: 22px 18px 18px; width: 100%; max-width: 360px; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
 .fn-modal .fn-x { position: absolute; top: 8px; right: 10px; width: 36px; height: 36px; border: 0; background: transparent; font-size: 26px; line-height: 1; color: var(--ink, #4A3C30); cursor: pointer; }
 
-@media (prefers-reduced-motion: reduce) {
-  .eg-pop button.eg-bigbtn { animation: none; }
-}

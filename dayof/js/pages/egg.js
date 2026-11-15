@@ -33,16 +33,16 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var cfg = ctx.config || window.DAYOF_CONFIG || {};
     var box = el('div', 'coffee-modal');
     box.appendChild(el('h3', null, 'Buy Kai a Coffee'));
-    var img = new Image(); img.src = 'assets/ctbc-qr.jpg'; img.alt = '中信付款碼'; img.className = 'cm-qr'; img.draggable = false;
-    // real <img> (no wrapping link) so iOS long-press offers 儲存影像; tap opens the transfer page
-    img.addEventListener('click', function () { openUrl(cfg.CTBC_URL); });
-    box.appendChild(img);
+    var img = new Image(); img.src = 'assets/ctbc-qr-crop.png'; img.alt = '中信付款碼'; img.className = 'cm-qr'; img.draggable = false;
+    // plain <img> wrapped in a link: tap opens the CTBC transfer page, long-press still offers 儲存影像
+    var qa = el('a', 'cm-qrlink'); qa.href = cfg.CTBC_URL || '#'; qa.target = '_blank'; qa.rel = 'noopener';
+    qa.appendChild(img); box.appendChild(qa);
     box.appendChild(el('div', 'cm-acct', cfg.CTBC_ACCOUNT || ''));
     box.appendChild(el('p', 'cm-hint', '長按圖片可以下載／點圖片直接打開中信轉帳'));
     var act = el('div', 'cm-actions');
     var go = el('button', 'cm-btn', '打開中信轉帳'); go.type = 'button';
     go.addEventListener('click', function () { openUrl(cfg.CTBC_URL); });
-    var dl = el('a', 'cm-dl', '下載付款碼'); dl.href = 'assets/ctbc-qr.jpg'; dl.setAttribute('download', 'kai-coffee-ctbc-qr.jpg');
+    var dl = el('a', 'cm-dl', '下載付款碼'); dl.href = 'assets/ctbc-qr-crop.png'; dl.setAttribute('download', 'kai-coffee-ctbc-qr.png');
     act.appendChild(go); act.appendChild(dl); box.appendChild(act);
 
     if (ctx.modal) { try { return ctx.modal(box, { closeX: true }); } catch (e) {} }
@@ -57,8 +57,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var cfg = ctx.config || window.DAYOF_CONFIG || {};
     var page = container; page.classList.add('page-egg');
     var bg = el('div', 'eg-bg'), actor = el('div', 'eg-actor');
-    actor.style.cssText = 'position:absolute;inset:0;overflow:hidden;z-index:6;pointer-events:none';
-    page.appendChild(bg); page.appendChild(el('div', 'eg-vignette')); page.appendChild(actor);
+        page.appendChild(bg); page.appendChild(el('div', 'eg-vignette')); page.appendChild(actor);
 
     var cleaned = false, rafId = 0, timers = [], layers = [];
     function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
@@ -134,14 +133,23 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     cofBox.appendChild(cofBtn);
     var cap = el('span', 'eg-cap'); cap.innerHTML = 'Buy Kai<br>a Coffee'; cofBox.appendChild(cap);
 
+    var SVG_RESTART = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 24a12 12 0 1 0 4-9"/><path d="M11 8v8h8"/></svg>';
+    var rsBox = el('div', 'eg-pop eg-restart');
+    var rsBtn = el('button', 'eg-bigbtn'); rsBtn.type = 'button'; rsBtn.setAttribute('aria-label', '從頭開始');
+    rsBtn.appendChild(iconNode('restart', SVG_RESTART));
+    rsBtn.addEventListener('click', function () {
+      if (DAYOF.app && DAYOF.app.restartKeepProgress) DAYOF.app.restartKeepProgress(); else if (ctx.goto) ctx.goto(1);
+    });
+    rsBox.appendChild(rsBtn); rsBox.appendChild(el('span', 'eg-cap', '從頭開始'));
+
     var stack = null;
     if (DAYOF.FilterStack && DAYOF.FilterStack.mount) {
-      try { stack = DAYOF.FilterStack.mount(page, ctx, { extra: [lineBox, cofBox] }); } catch (e) { stack = null; }
+      try { stack = DAYOF.FilterStack.mount(page, ctx, { extra: [lineBox, cofBox, rsBox] }); } catch (e) { stack = null; }
     }
     if (!stack) {
       var own = el('div', 'filter-stack');
       own.style.cssText = 'position:absolute;top:12px;right:12px;z-index:50;display:flex;flex-direction:column;align-items:center;gap:12px';
-      own.appendChild(lineBox); own.appendChild(cofBox); page.appendChild(own); stack = { el: own };
+      own.appendChild(lineBox); own.appendChild(cofBox); own.appendChild(rsBox); page.appendChild(own); stack = { el: own };
     }
     // the stack sits above the walker/bg
     if (stack.el) stack.el.style.zIndex = '50';
