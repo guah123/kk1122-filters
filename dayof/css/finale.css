@@ -120,8 +120,7 @@
 /* coffee modal content */
 .coffee-modal { text-align: center; color: var(--ink, #4A3C30); max-height: 82vh; max-height: 82dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .coffee-modal h3 { margin: 4px 0 10px; font: 700 20px/1.3 var(--font, sans-serif); }
-.coffee-modal .cm-qrlink { display: block; width: 240px; max-width: 70%; margin: 0 auto; -webkit-tap-highlight-color: transparent; }
-.coffee-modal .cm-qr { display: block; width: 100%; height: auto; border-radius: 14px; box-shadow: 0 4px 14px rgba(74,60,48,.2); cursor: pointer; }
+.coffee-modal .cm-qr { display: block; width: 240px; max-width: 70%; margin: 0 auto; height: auto; border-radius: 14px; box-shadow: 0 4px 14px rgba(74,60,48,.2); cursor: pointer; }
 .coffee-modal .cm-acct { margin: 12px 0 4px; font: 600 14px/1.5 var(--font, sans-serif); -webkit-user-select: text; user-select: text; word-break: break-all; }
 .coffee-modal .cm-hint { margin: 0 0 12px; font: 400 12.5px/1.6 var(--font, sans-serif); color: var(--ink-soft, #7A6A5A); }
 .coffee-modal .cm-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -133,3 +132,9 @@
 .fn-modal { position: relative; background: var(--paper, #FBF7EF); border-radius: 18px; padding: 22px 18px 18px; width: 100%; max-width: 360px; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
 .fn-modal .fn-x { position: absolute; top: 8px; right: 10px; width: 36px; height: 36px; border: 0; background: transparent; font-size: 26px; line-height: 1; color: var(--ink, #4A3C30); cursor: pointer; }
 
+
+.coffee-modal .cm-zoom { display: inline-block; margin: 8px 0 0; font: 500 12.5px/1.4 var(--font, sans-serif); color: var(--sky-deep, #5E86A8); text-decoration: underline; }
+.cm-lightbox { position: fixed; inset: 0; z-index: 9500; background: rgba(40,30,20,.6); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px; box-sizing: border-box; }
+.cm-lightbox .cm-big { display: block; width: 90vw; max-width: 480px; max-height: 72vh; max-height: 72dvh; object-fit: contain; background: #fff; border-radius: 14px; padding: 6px; box-sizing: border-box; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+.cm-lightbox .cm-lbhint { color: #fff; font: 500 14px/1.5 var(--font, sans-serif); text-align: center; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.cm-lightbox .cm-lbx { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); right: 12px; width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(255,255,255,.85); color: var(--ink, #4A3C30); font-size: 24px; line-height: 40px; padding: 0; cursor: pointer; }

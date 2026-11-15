@@ -31,17 +31,33 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
 
   function openCoffeeModal(ctx) {
     var cfg = ctx.config || window.DAYOF_CONFIG || {};
+    var lb = null;
+    function closeLightbox() { if (lb && lb.parentNode) lb.parentNode.removeChild(lb); lb = null; }
+    function openLightbox() {
+      closeLightbox();
+      lb = el('div', 'cm-lightbox');
+      var big = new Image(); big.src = 'assets/ctbc-qr-crop.png'; big.alt = '中信付款碼（放大）'; big.className = 'cm-big'; big.draggable = false;
+      var x = el('button', 'cm-lbx', '\u00d7'); x.type = 'button'; x.setAttribute('aria-label', '關閉');
+      x.addEventListener('click', function (e) { e.stopPropagation(); closeLightbox(); });
+      lb.addEventListener('click', function (e) { if (e.target !== big) closeLightbox(); });
+      lb.appendChild(x); lb.appendChild(big); lb.appendChild(el('div', 'cm-lbhint', '長按儲存 QR code，用銀行 App 掃描'));
+      document.body.appendChild(lb);
+    }
     var box = el('div', 'coffee-modal');
     box.appendChild(el('h3', null, 'Buy Kai a Coffee'));
     var img = new Image(); img.src = 'assets/ctbc-qr-crop.png'; img.alt = '中信付款碼'; img.className = 'cm-qr'; img.draggable = false;
-    // plain <img> wrapped in a link: tap opens the CTBC transfer page, long-press still offers 儲存影像
-    var qa = el('a', 'cm-qrlink'); qa.href = cfg.CTBC_URL || '#'; qa.target = '_blank'; qa.rel = 'noopener';
-    qa.appendChild(img); box.appendChild(qa);
+    var link = function () { return cfg.COFFEE_LINK || cfg.CTBC_URL || ''; };
+    // plain <img> + click handler (no <a> wrapper, no touch/contextmenu hijack) so iOS long-press save still works
+    img.addEventListener('click', function () { if (cfg.COFFEE_LINK) openUrl(cfg.COFFEE_LINK); else openLightbox(); });
+    box.appendChild(img);
+    var zoom = el('a', 'cm-zoom', '放大 QR code'); zoom.href = '#'; zoom.setAttribute('role', 'button');
+    zoom.addEventListener('click', function (e) { e.preventDefault(); openLightbox(); });
+    box.appendChild(zoom);
     box.appendChild(el('div', 'cm-acct', cfg.CTBC_ACCOUNT || ''));
     box.appendChild(el('p', 'cm-hint', '長按圖片可以下載／點圖片直接打開中信轉帳'));
     var act = el('div', 'cm-actions');
     var go = el('button', 'cm-btn', '打開中信轉帳'); go.type = 'button';
-    go.addEventListener('click', function () { openUrl(cfg.CTBC_URL); });
+    go.addEventListener('click', function () { openUrl(link()); });
     var dl = el('a', 'cm-dl', '下載付款碼'); dl.href = 'assets/ctbc-qr-crop.png'; dl.setAttribute('download', 'kai-coffee-ctbc-qr.png');
     act.appendChild(go); act.appendChild(dl); box.appendChild(act);
 
