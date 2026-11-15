@@ -50,9 +50,152 @@
     return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
   }
 
+  /* ---------- 濾鏡水彩點陣素材（美術畫好丟進 assets/filters/ 就生效，不用改程式） ----------
+   * DAYOF.FilterArt.get(name) → 已載入的 HTMLImageElement，或 null（檔案不存在／尚未載入 → 濾鏡用原本的向量畫法）。
+   * 若有 assets/filters/manifest.json（["otona-sky.png", ...] 或 {files:[...]}），只載入清單內的檔，避免逐一試抓產生 404；
+   * 沒有清單就逐一試抓（失敗靜默）。除錯：網址加 ?filterArtBase=<資料夾網址/> 改從別處讀。 */
+  var ART_FILES = [
+    'paper-grain.jpg', 'vignette-wet.png',
+    'otona-sky.png', 'otona-stars.png', 'otona-meteor.png', 'otona-rooftop.png', 'otona-critters.png',
+    'hareru-clouds.jpg', 'hareru-wipe-brush.png', 'hareru-sunlight.png', 'hareru-sun.png',
+    'remember-hill.png', 'remember-house.png', 'remember-smoke.png', 'remember-runner-a.png', 'remember-runner-b.png',
+    'rain-strokes.png', 'rain-drop-1.png', 'rain-drop-2.png', 'rain-drop-3.png', 'rain-drop-4.png', 'rain-mist.png', 'rain-puddle.png', 'rain-umbrella-walkers.png',
+    'fisheye-frame.png', 'fisheye-bubble.png',
+  ];
+  var artImgs = {}, artPromise = null;
+  function artBase() {
+    try { var q = new URLSearchParams(location.search).get('filterArtBase'); if (q) return q.replace(/\/?$/, '/'); } catch (e) { /* ignore */ }
+    return ROOT + 'assets/filters/';
+  }
+  function loadImg(url) {
+    return new Promise(function (res) {
+      var im = new Image(); im.decoding = 'async';
+      im.onload = function () { res(im.naturalWidth ? im : null); };
+      im.onerror = function () { res(null); };
+      im.src = url;
+    });
+  }
+  DAYOF.FilterArt = {
+    FILES: ART_FILES,
+    get: function (name) { return artImgs[name] || null; },
+    has: function (name) { return !!artImgs[name]; },
+    /* 第一次開相機時呼叫；最多等 3 秒（慢網路時先用向量版，之後載到的圖在濾鏡下次 resize／取用時生效） */
+    preload: function () {
+      if (artPromise) return artPromise;
+      var base = artBase();
+      var all = fetch(base + 'manifest.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+        .then(function (m) {
+          var list = m ? (Array.isArray(m) ? m : (m.files || [])) : ART_FILES;
+          list = list.filter(function (n) { return ART_FILES.indexOf(n) >= 0; });
+          return Promise.all(list.map(function (n) { return loadImg(base + n).then(function (im) { if (im) artImgs[n] = im; }); }));
+        });
+      artPromise = Promise.race([all, new Promise(function (r) { setTimeout(r, 3000); })]);
+      return artPromise;
+    },
+  };
+
+  /* ---------- 共用紙紋＋濕畫暈邊（取代 KK.paper；所有濾鏡最後一步都會呼叫，錄影／拍照一起輸出） ----------
+   * 紙紋：assets/filters/paper-grain.jpg（soft-light）或程式產生的可平鋪紙紋（multiply 約 14%）。
+   * 暈邊：assets/filters/vignette-wet.png 或程式產生的暖色不規則水漬暈邊（預畫一次，每幀只 drawImage）。 */
+  function installPaper(KK) {
+    if (KK._dayofPaper) return;
+    KK._dayofPaper = true;
+    var P = KK.PAL;
+    var grain = null, vigKey = '', vigC = null;
+    function periodicNoise(n, cells, seed) {
+      var r = KK.rng(seed), v = new Float32Array(cells * cells), out = new Float32Array(n * n), i, x, y;
+      for (i = 0; i < v.length; i++) v[i] = r();
+      for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
+        var fx = x / n * cells, fy = y / n * cells, xi = Math.floor(fx), yi = Math.floor(fy), tx = fx - xi, ty = fy - yi;
+        tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+        var x0 = xi % cells, x1 = (xi + 1) % cells, y0 = yi % cells, y1 = (yi + 1) % cells;
+        var a = v[y0 * cells + x0] + (v[y0 * cells + x1] - v[y0 * cells + x0]) * tx;
+        var b = v[y1 * cells + x0] + (v[y1 * cells + x1] - v[y1 * cells + x0]) * tx;
+        out[y * n + x] = a + (b - a) * ty;
+      }
+      return out;
+    }
+    function makeGrain() {
+      var n = 256, c = KK.canvas(n, n), g = c.getContext('2d'), img = g.createImageData(n, n), d = img.data;
+      var o1 = periodicNoise(n, 8, 11), o2 = periodicNoise(n, 32, 23), o3 = periodicNoise(n, 128, 37), r = KK.rng(5);
+      for (var i = 0; i < n * n; i++) {
+        var v = o1[i] * 0.25 + o2[i] * 0.35 + o3[i] * 0.4;          // 冷壓紙的起伏
+        var l = 255 - Math.max(0, (v - 0.35)) * 120 - r() * 18;      // 偏亮（multiply 用）
+        d[i * 4] = l; d[i * 4 + 1] = l * 0.985; d[i * 4 + 2] = l * 0.95; d[i * 4 + 3] = 255;
+      }
+      g.putImageData(img, 0, 0);
+      // 淡淡纖維
+      g.strokeStyle = 'rgba(150,120,90,0.18)'; g.lineWidth = 0.7;
+      for (var k = 0; k < 40; k++) {
+        var x = r() * n, y = r() * n, a = r() * Math.PI, L = 6 + r() * 18;
+        for (var ox = -n; ox <= n; ox += n) for (var oy = -n; oy <= n; oy += n) {
+          g.beginPath(); g.moveTo(x + ox, y + oy); g.quadraticCurveTo(x + ox + Math.cos(a) * L * 0.5 + 2, y + oy + Math.sin(a) * L * 0.5, x + ox + Math.cos(a) * L, y + oy + Math.sin(a) * L); g.stroke();
+        }
+      }
+      return c;
+    }
+    function makeVignette(W, H) {
+      var w = Math.max(2, Math.round(W / 3)), h = Math.max(2, Math.round(H / 3)), c = KK.canvas(w, h), g = c.getContext('2d');
+      var cx = w / 2, cy = h / 2, R = Math.hypot(cx, cy), u = Math.min(w, h);
+      var gr = g.createRadialGradient(cx, cy, R * 0.55, cx, cy, R * 1.02);
+      gr.addColorStop(0, KK.rgba(P.cream, 0));
+      gr.addColorStop(0.6, KK.rgba(KK.mix(P.cream, P.apricot, 0.35), 0.22));
+      gr.addColorStop(1, KK.rgba(KK.mix(P.page, P.apricot, 0.4), 0.55));
+      g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      // 邊緣不規則水漬（顏料堆積的淡赭色塊）
+      var r = KK.rng(919);
+      for (var i = 0; i < 70; i++) {
+        var side = i % 4, t = r();
+        var x = side === 0 ? t * w : side === 1 ? w - r() * u * 0.08 : side === 2 ? t * w : r() * u * 0.08;
+        var y = side === 0 ? r() * u * 0.08 : side === 1 ? t * h : side === 2 ? h - r() * u * 0.08 : t * h;
+        var col = r() < 0.5 ? KK.mix(P.page, P.apricot, 0.3) : KK.mix(P.cream, P.ochre, 0.25);
+        KK.drawSprite(g, KK.glow(col, 128, 0.15), x, y, u * (0.12 + r() * 0.22), 0.16 + r() * 0.16);
+      }
+      // 水漬邊線（乾掉的顏料圈，極淡）
+      g.strokeStyle = KK.rgba(KK.mix(P.apricot, P.brick, 0.3), 0.14); g.lineWidth = Math.max(1, u * 0.004);
+      var pts = [], N = 48, m = u * 0.055;
+      for (var j = 0; j < N; j++) {
+        var a = j / N * KK.TAU, ca = Math.cos(a), sa = Math.sin(a);
+        var k = Math.min((w / 2 - m) / Math.abs(ca || 1e-6), (h / 2 - m) / Math.abs(sa || 1e-6));
+        k *= 1 - 0.03 * r();
+        pts.push([cx + ca * k, cy + sa * k]);
+      }
+      KK.smoothPath(g, pts, true, 0, 0, 0); g.stroke();
+      return c;
+    }
+    KK.paper = function (ctx, S, opt) {
+      opt = opt || {};
+      var art = DAYOF.FilterArt;
+      var pg = art.get('paper-grain.jpg');
+      var gA = opt.grain == null ? 0.5 : opt.grain;
+      if (gA > 0) {
+        ctx.save();
+        var b = KK.boil(S.t || 0);
+        ctx.translate(b * 61, b * 37);                      // 跟著手繪節奏輕微跳動
+        if (pg) { ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 0.55; ctx.fillStyle = ctx.createPattern(pg, 'repeat'); }
+        else { if (!grain) grain = makeGrain(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.85; ctx.fillStyle = ctx.createPattern(grain, 'repeat'); }
+        ctx.fillRect(-200, -200, S.w + 400, S.h + 400);
+        ctx.restore();
+      }
+      var vA = Math.max(0.3, opt.vignette == null ? 0.5 : opt.vignette);
+      var vw = art.get('vignette-wet.png');
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, vA * 1.6);
+      if (vw) ctx.drawImage(vw, 0, 0, S.w, S.h);
+      else {
+        var key = S.w + 'x' + S.h;
+        if (vigKey !== key) { vigC = makeVignette(S.w, S.h); vigKey = key; }
+        ctx.drawImage(vigC, 0, 0, S.w, S.h);
+      }
+      ctx.restore();
+    };
+    KK.art = function (n) { return DAYOF.FilterArt.get(n); };
+  }
+
   /* ---------- KK 動態載入 ---------- */
   var kkPromise = null;
   function runPlugins() {
+    try { installPaper(window.KK); } catch (e) { /* ignore */ }
     (DAYOF.kkPlugins || []).forEach(function (f) { try { f(window.KK); } catch (e) { (window.KK_LOAD_ERRORS = window.KK_LOAD_ERRORS || []).push('plugin:' + e); } });
   }
   function loadKK() {
@@ -234,7 +377,7 @@
       showStatus('<p class="cam-loading">相機啟動中…</p>');
       C.error = null;
       try {
-        await loadKK();
+        await Promise.all([loadKK(), DAYOF.FilterArt.preload()]);
         if (C.closed) return;
         buildStage();
         await startCam();

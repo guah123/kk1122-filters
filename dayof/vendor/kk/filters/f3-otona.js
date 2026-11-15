@@ -16,6 +16,8 @@
 (function () {
   'use strict';
   const KK = window.KK, P = KK.PAL, TAU = KK.TAU;
+  /* DAYOF：水彩點陣素材掛點（assets/filters/otona-*.png；沒有檔案就用原本向量畫法） */
+  const ART = (n) => (KK.art ? KK.art(n) : null);
 
   // 流星共同方向：往左下（斜率約 0.48）
   const DIR_X = -0.9, DIR_Y = 0.436;
@@ -299,6 +301,14 @@
         const d = L * k;
         const hx = x0 + dx * d, hy = y0 + dy * d;
         const tl = Math.min(Lt * (1 - 0.45 * KK.smooth(0.7, 1, k)), d);
+        const mi = ART('otona-meteor.png');
+        if (mi) {                                   // 點陣流星：頭在右 → 旋轉到行進方向，長度＝尾長＋頭
+          const len = Math.max(tl, u * 0.06) + u * 0.04 * hs, th = Math.max(len * 0.25, wid * 5);
+          g.save(); g.translate(hx, hy); g.rotate(Math.atan2(dy, dx));
+          g.globalAlpha = env; g.drawImage(mi, -len + u * 0.02 * hs, -th / 2, len, th);
+          g.restore(); g.globalAlpha = 1;
+          return;
+        }
         g.lineCap = 'butt';
         for (let i = 0; i < TAIL_N; i++) {
           const f = i / TAIL_N;
@@ -376,11 +386,14 @@
           const t = S.t, ph = S.phase, u = S.u, w = S.w, h = S.h;
           const bi = KK.boil(t);
 
-          // 1) 夜空
-          g.drawImage(st.sky, 0, 0);
+          // 1) 夜空（點陣：otona-sky.png 貼齊頂端，透明度 0.8）
+          const aSky = ART('otona-sky.png'), aStars = ART('otona-stars.png');
+          if (aSky) { g.globalAlpha = 0.8; g.drawImage(aSky, 0, 0, w, w * aSky.naturalHeight / aSky.naturalWidth); g.globalAlpha = 1; }
+          else g.drawImage(st.sky, 0, 0);
+          if (aStars) { g.globalAlpha = 0.78 + 0.22 * Math.sin(ph * TAU * 3); g.drawImage(aStars, 0, 0, w, w * aStars.naturalHeight / aStars.naturalWidth); g.globalAlpha = 1; }
 
           // 2) 星星
-          for (let i = 0; i < st.stars.length; i++) {
+          for (let i = 0; i < (aStars ? 0 : st.stars.length); i++) {
             const s = st.stars[i];
             const tw = 0.55 + 0.45 * Math.sin(ph * TAU * s.n + s.ph);
             const al = s.vis * tw;
@@ -465,13 +478,22 @@
           }
 
           // 5) 抬頭看天的小動物（Kai 牽著小袋熊）：站在頂樓女兒牆後，先畫、再蓋上頂樓剪影（下半身被牆擋住）；流星雨時（5.8–7.4s）開心揮手、小跳
-          if (S.critter) {
+          const aRoof = ART('otona-rooftop.png'), aCrit = ART('otona-critters.png');
+          const roofH = aRoof ? w * aRoof.naturalHeight / aRoof.naturalWidth : 0;
+          if (aRoof) {                                // 點陣頂樓＋抬頭許願的人（人類）
+            g.drawImage(aRoof, 0, h - roofH, w, roofH);
+            if (aCrit) {
+              const cs2 = w * 0.3, cheer = KK.smooth(5.7, 6.0, t) * (1 - KK.smooth(7.1, 7.5, t));
+              const hop = cheer * Math.abs(Math.sin(t * TAU * 1.5)) * cs2 * 0.03 + Math.sin(ph * TAU * 2) * cs2 * 0.006;
+              g.drawImage(aCrit, w * 0.57 - cs2 / 2, h - roofH * 0.62 - cs2 - hop, cs2, cs2);
+            }
+          } else if (S.critter) {
             const cs = u * 0.05;
             const cheer = KK.smooth(5.7, 6.0, t) * (1 - KK.smooth(7.1, 7.5, t));
             const hop = cheer * Math.abs(Math.sin(t * TAU * 1.5)) * cs * 0.08;
             KK.Critter.draw(g, st.critX, h - st.par + cs * 0.3 - hop, cs, { pose: cheer > 0.5 ? 'wave' : 'lookup', facing: 1, alpha: 0.85, tone: 0.5, t });
           }
-          g.drawImage(st.roof[bi], 0, h - st.rh);
+          if (!aRoof) g.drawImage(st.roof[bi], 0, h - st.rh);
 
           KK.paper(g, S, { grain: 0.4, vignette: 0.5 });
         },
