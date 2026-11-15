@@ -86,6 +86,38 @@ window.DAYOF = window.DAYOF || {};
         return r;
       });
     },
+    /* 魚眼濾鏡影片：背景上傳到後台（action 'video'）。只在分享單已叫出之後呼叫；永不 throw、不提示使用者。
+     * > VIDEO_MAX_BYTES 直接略過；舊版後台回 bad_action → 靜默放棄；其他失敗只重試一次。 */
+    VIDEO_MAX_BYTES: 10 * 1024 * 1024,
+    uploadVideo: function (blob, filter, email) {
+      var dbg = function (m) { try { console.debug('[dayof] video upload: ' + m); } catch (e) {} };
+      try {
+        if (!email && DAYOF.app && DAYOF.app.state) { var st = DAYOF.app.state(); email = st && st.email; }
+        email = String(email || '').trim().toLowerCase();
+        if (!api.enabled || isTestEmail(email)) return Promise.resolve({ ok: false, skipped: 'offline' });
+        if (!blob || !blob.size) return Promise.resolve({ ok: false, skipped: 'empty' });
+        if (blob.size > api.VIDEO_MAX_BYTES) { dbg('skip, ' + blob.size + ' bytes > cap'); return Promise.resolve({ ok: false, skipped: 'too_large' }); }
+      } catch (e) { return Promise.resolve({ ok: false, skipped: 'error' }); }
+      var mime = String(blob.type || '').indexOf('mp4') >= 0 ? 'video/mp4' : 'video/webm';
+      var read = new Promise(function (res, rej) {
+        var fr = new FileReader();
+        fr.onload = function () { res(String(fr.result || '').replace(/^data:[^,]*,/, 'data:' + mime + ';base64,')); };
+        fr.onerror = function () { rej(fr.error); };
+        fr.readAsDataURL(blob);
+      });
+      var send = function (dataUrl, attempt) {
+        return post('video', { email: email, dataUrl: dataUrl, filter: String(filter || 'fish') }).then(function (r) {
+          if (r && r.ok) { dbg('ok'); return r; }
+          var err = (r && r.error) || 'unknown';
+          if (attempt < 1 && !/^(bad_action|bad_video|video_too_large|body_too_large|video_limit|bad_email)$/.test(err)) {
+            return new Promise(function (res) { setTimeout(res, 20000); }).then(function () { return send(dataUrl, attempt + 1); });
+          }
+          dbg('gave up: ' + err);
+          return r;
+        });
+      };
+      return read.then(function (d) { return send(d, 0); }).catch(function (e) { dbg('failed: ' + ((e && e.message) || e)); return { ok: false, error: 'read_failed' }; });
+    },
     pendingPhoto: function (email) { return lsGet(PHOTO_KEY + String(email || '').toLowerCase()); },
     clearPendingPhoto: function (email) { lsDel(PHOTO_KEY + String(email || '').toLowerCase()); }
   };

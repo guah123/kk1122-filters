@@ -489,6 +489,11 @@
       if (C.rec === hd) C.rec = null;
       C.lastResult = r;
       C.recorded++;
+      /* 魚眼濾鏡影片：分享單已在 autoSave 叫出後，才在背景上傳給 Kai（失敗靜默，不影響存相簿） */
+      if (filter === 'fish' && r && r.blob && r.blob.size && DAYOF.api && DAYOF.api.uploadVideo) {
+        var upBlob = r.blob;
+        setTimeout(function () { try { DAYOF.api.uploadVideo(upBlob, filter); } catch (e) { /* ignore */ } }, 400);
+      }
       var s = r.save || {};
       var msg = s.msg || '';
       if (r.stopKind === 'limit') msg = '已達 10 分鐘，已自動停止並存檔。' + (s.triggered ? msg : '');

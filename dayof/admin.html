@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>看看 後台</title>
-<link rel="stylesheet" href="css/base.css?v=261116p">
-<script src="config.js?v=261116p"></script>
+<link rel="stylesheet" href="css/base.css?v=261116q">
+<script src="config.js?v=261116q"></script>
 <style>
   :root{--fresh:#FFF1C9}
   html,body{height:auto;min-height:100%}
@@ -57,6 +57,26 @@
   table.adm-t{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
   .adm-t th,.adm-t td{text-align:left;padding:6px 4px;border-bottom:1px solid rgba(138,101,69,.12);vertical-align:top}
   .adm-t th{color:var(--ink-soft);font-weight:600}
+  .adm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+  @media (min-width:560px){.adm-grid{grid-template-columns:repeat(4,1fr)}}
+  .adm-tile{appearance:none;border:0;padding:0;background:#fff;border-radius:12px;overflow:hidden;cursor:pointer;text-align:left;color:inherit;
+    box-shadow:0 2px 8px rgba(74,60,48,.12);transition:box-shadow 1.2s ease,background 1.2s ease;display:flex;flex-direction:column}
+  .adm-tile.fresh{background:var(--fresh);box-shadow:0 0 0 3px var(--sun)}
+  .adm-thumb{position:relative;width:100%;aspect-ratio:1/1;background:linear-gradient(135deg,#EFE3CC,#DCC7A6);display:flex;align-items:center;justify-content:center;color:var(--wood-dark);font-size:12px}
+  .adm-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .adm-play{position:absolute;right:6px;bottom:6px;width:28px;height:28px;border-radius:50%;background:rgba(40,30,20,.6);display:flex;align-items:center;justify-content:center}
+  .adm-play::after{content:"";border-left:10px solid #fff;border-top:7px solid transparent;border-bottom:7px solid transparent;margin-left:3px}
+  .adm-cap{padding:5px 7px 7px;font-size:11px;line-height:1.4;color:var(--ink-soft);min-width:0}
+  .adm-cap b,.adm-cap span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .adm-cap b{color:var(--ink);font-size:12px}
+  .adm-sec{scroll-margin-top:120px}
+  .adm-lb{position:fixed;inset:0;z-index:30;background:rgba(40,30,20,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(56px + var(--safe-top)) 12px calc(20px + var(--safe-bottom))}
+  .adm-lb-x{position:absolute;top:calc(10px + var(--safe-top));right:12px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.85);font-size:24px;line-height:44px;color:var(--ink);cursor:pointer}
+  .adm-lb-body{max-width:100%;max-height:100%;flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+  .adm-lb-body img,.adm-lb-body video{max-width:100%;max-height:72vh;border-radius:10px;background:#000}
+  .adm-lb-msg{color:#fff;font-size:15px;text-align:center}
+  .adm-lb-foot{color:#F6EFE2;font-size:13px;margin-top:10px;text-align:center}
+  .adm-lb-foot a{color:#fff;font-weight:600}
 </style>
 </head>
 <body class="paper-bg">
@@ -116,6 +136,7 @@
     { id: 'yes13', no: 13, kind: 'yes' },
     { id: 'q15', no: 15, kind: 'qa' },
     { id: 'q21', no: 21, kind: 'qa' },
+    { id: 'media', no: 29, kind: 'media' },
     { id: 'q31', no: 31, kind: 'qa' },
     { id: 'people', no: '進度', kind: 'people' }
   ];
@@ -127,6 +148,8 @@
   var timer = null;
   var inflight = false;
   var collapsed = loadCollapsed();
+  var thumbs = {};          // id -> {st:'loading'|'ok'|'none'|'err', url, tries}
+  var thumbQueue = [], thumbActive = 0, THUMB_CONC = 3;
 
   // ---------- utils ----------
   function esc(s) {
@@ -266,6 +289,24 @@
       }).join('');
       return { count: (y.count || 0) + ' 人', html: head + rows };
     }
+    if (sec.kind === 'media') {
+      if (!data || !Array.isArray(data.media)) return { count: '', html: '<div class="adm-empty">後台更新後會顯示照片</div>' };
+      var med = data.media;
+      var note = data.mediaError ? '<div class="adm-empty">雲端資料夾暫時讀不到，稍後會再試</div>' : '';
+      if (!med.length) return { count: '0 個', html: note + '<div class="adm-empty">還沒有照片或影片</div>' };
+      var np = med.filter(function (m) { return m.kind !== 'video'; }).length;
+      return {
+        count: np + ' 張照片・' + (med.length - np) + ' 段影片',
+        html: note + '<div class="adm-grid">' + med.map(function (m) {
+          var k = itemKey('media', { emailMasked: m.emailMasked, nickname: m.nickname, at: m.id });
+          var th = thumbs[m.id];
+          var inner = th && th.st === 'ok' ? '<img alt="" src="' + esc(th.url) + '">' : '<span>' + (th && th.st === 'loading' ? '讀取中…' : (m.kind === 'video' ? '影片' : '照片')) + '</span>';
+          return '<button type="button" class="adm-tile' + (fresh(k) ? ' fresh' : '') + '" data-mid="' + esc(m.id) + '" aria-label="打開' + (m.kind === 'video' ? '影片' : '照片') + '">' +
+            '<div class="adm-thumb">' + inner + (m.kind === 'video' ? '<span class="adm-play"></span>' : '') + '</div>' +
+            '<div class="adm-cap"><b>' + esc(m.nickname || '（沒有暱稱）') + '</b><span>' + esc(m.emailMasked) + '</span><span>' + esc(short(m.at)) + '</span></div></button>';
+        }).join('') + '</div>'
+      };
+    }
     var ps = (data && data.participants) || [];
     if (!ps.length) return { count: '0 人', html: '<div class="adm-empty">還沒有人</div>' };
     return {
@@ -282,6 +323,7 @@
   }
   function sectionTitle(sec) {
     if (sec.kind === 'people') return '每個人的進度';
+    if (sec.kind === 'media') return '魚眼照片／影片';
     return qText(sec.id);
   }
   function buildSkeleton() {
@@ -322,10 +364,100 @@
     });
     if (data) seen = nextSeen;
     window.scrollTo(x, y);
+    loadThumbs();
     setTimeout(function () {
       document.querySelectorAll('.adm-item.fresh').forEach(function (n) { n.classList.remove('fresh'); });
     }, 4000);
   }
+
+  // ---------- media gallery ----------
+  function getJson(params) {
+    var q = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
+    var url = BACKEND + (BACKEND.indexOf('?') >= 0 ? '&' : '?') + q + '&key=' + encodeURIComponent(key) + '&t=' + Date.now();
+    return fetch(url, { method: 'GET', cache: 'no-store', redirect: 'follow', credentials: 'omit' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  }
+  function setTile(id) {
+    var el = document.querySelector('.adm-tile[data-mid="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"] .adm-thumb');
+    if (!el) return;
+    var th = thumbs[id]; var span = el.querySelector('span:not(.adm-play)');
+    if (th && th.st === 'ok') {
+      if (!el.querySelector('img')) { var im = new Image(); im.alt = ''; im.src = th.url; el.insertBefore(im, el.firstChild); }
+      if (span) span.remove();
+    } else if (span) {
+      var m = ((data && data.media) || []).filter(function (x) { return x.id === id; })[0];
+      span.textContent = th && th.st === 'loading' ? '讀取中…' : (m && m.kind === 'video' ? '影片' : '照片');
+    }
+  }
+  function pumpThumbs() {
+    while (thumbActive < THUMB_CONC && thumbQueue.length) {
+      (function (id) {
+        thumbActive++;
+        getJson({ action: 'thumb', id: id }).then(function (j) {
+          var th = thumbs[id];
+          if (j && j.ok && j.dataUrl) { th.st = 'ok'; th.url = j.dataUrl; }
+          else if (j && j.error === 'forbidden') { th.st = 'err'; }
+          else th.st = j && j.ok ? 'none' : 'err';
+        }, function () { thumbs[id].st = 'err'; }).then(function () { thumbActive--; setTile(id); pumpThumbs(); });
+      })(thumbQueue.shift());
+    }
+  }
+  function loadThumbs() {
+    if (!data || !Array.isArray(data.media) || !key) return;
+    data.media.forEach(function (m) {
+      var th = thumbs[m.id] || (thumbs[m.id] = { st: 'new', tries: 0 });
+      if (th.st === 'ok' || th.st === 'loading') return;
+      if (th.tries >= 4) return;            // video without Drive preview: keep the placeholder
+      th.tries++; th.st = 'loading'; thumbQueue.push(m.id); setTile(m.id);
+    });
+    pumpThumbs();
+  }
+  var lb = null;
+  function closeLb() {
+    if (!lb) return;
+    if (lb.blobUrl) { try { URL.revokeObjectURL(lb.blobUrl); } catch (e) {} }
+    var v = lb.el.querySelector('video'); if (v) { try { v.pause(); } catch (e) {} }
+    lb.el.remove(); lb = null;
+  }
+  function openMedia(id) {
+    closeLb();
+    var m = ((data && data.media) || []).filter(function (x) { return x.id === id; })[0] || { kind: 'photo' };
+    var el = document.createElement('div');
+    el.className = 'adm-lb'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+    el.innerHTML = '<button type="button" class="adm-lb-x" aria-label="關閉">×</button><div class="adm-lb-body"><div class="adm-lb-msg">讀取中…</div></div>' +
+      '<div class="adm-lb-foot">' + esc(m.nickname || '') + ' ' + esc(m.emailMasked || '') + ' ' + esc(short(m.at)) + '</div>';
+    document.body.appendChild(el);
+    var me = lb = { el: el, blobUrl: '' };
+    el.querySelector('.adm-lb-x').addEventListener('click', closeLb);
+    el.addEventListener('click', function (ev) { if (ev.target === el) closeLb(); });
+    var body = el.querySelector('.adm-lb-body'), foot = el.querySelector('.adm-lb-foot');
+    var link = function (url) {
+      if (!url || !/^https:\/\/drive\.google\.com\//.test(url)) return;
+      var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = '在 Google 雲端開啟';
+      foot.appendChild(document.createElement('br')); foot.appendChild(a);
+    };
+    getJson({ action: 'media', id: id }).then(function (j) {
+      if (lb !== me) return;
+      if (!j || !j.ok) { body.innerHTML = '<div class="adm-lb-msg">' + (j && j.error === 'forbidden' ? '金鑰錯誤' : '打不開這個檔案') + '</div>'; return; }
+      link(j.viewUrl);
+      if (!j.dataUrl) { body.innerHTML = '<div class="adm-lb-msg">檔案比較大，請按下方「在 Google 雲端開啟」</div>'; return; }
+      return fetch(j.dataUrl).then(function (r) { return r.blob(); }).then(function (b) {
+        if (lb !== me) return;
+        me.blobUrl = URL.createObjectURL(b);
+        body.innerHTML = '';
+        if (j.kind === 'video') {
+          var v = document.createElement('video'); v.controls = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.autoplay = true; v.src = me.blobUrl; body.appendChild(v);
+        } else {
+          var im = new Image(); im.alt = '照片'; im.src = me.blobUrl; body.appendChild(im);
+        }
+      });
+    }).catch(function () { if (lb === me) body.innerHTML = '<div class="adm-lb-msg">連線失敗，請再試一次</div>'; });
+  }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target && ev.target.closest ? ev.target.closest('.adm-tile') : null;
+    if (t) openMedia(t.getAttribute('data-mid'));
+  });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') closeLb(); });
 
   // ---------- copy ----------
   function sectionPlain(sec) {
@@ -347,6 +479,11 @@
       var y = Q.yes13 || { items: [] };
       out.push('#13 ' + qText('yes13'), 'Yes：' + (y.count || 0) + ' 人，No 一共逃跑 ' + (y.totalNoDodges || 0) + ' 次', '');
       (y.items || []).forEach(function (it) { out.push(who(it) + '：追著 No 跑了 ' + (it.noDodges || 0) + ' 次'); });
+    } else if (sec.kind === 'media') {
+      out.push('#29 魚眼照片／影片', '');
+      (data.media || []).forEach(function (m) {
+        out.push(who(m) + ' ' + (m.kind === 'video' ? '影片' : '照片') + ' https://drive.google.com/file/d/' + m.id + '/view');
+      });
     } else {
       out.push('每個人的進度', '');
       (data.participants || []).forEach(function (p) {
