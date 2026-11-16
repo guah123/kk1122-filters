@@ -95,7 +95,7 @@
   };
 
   /* ---------- 共用紙紋＋濕畫暈邊（取代 KK.paper；所有濾鏡最後一步都會呼叫，錄影／拍照一起輸出） ----------
-   * 紙紋：assets/filters/paper-grain.jpg（soft-light）或程式產生的可平鋪紙紋（multiply 約 14%）。
+   * 紙紋：assets/filters/paper-grain.jpg（soft-light）或程式產生的可平鋪淺色紙紋（multiply 約 14%，隨 opt.grain 縮放）。
    * 暈邊：assets/filters/vignette-wet.png 或程式產生的暖色不規則水漬暈邊（預畫一次，每幀只 drawImage）。 */
   function installPaper(KK) {
     if (KK._dayofPaper) return;
@@ -120,13 +120,13 @@
       var o1 = periodicNoise(n, 8, 11), o2 = periodicNoise(n, 32, 23), o3 = periodicNoise(n, 128, 37), r = KK.rng(5);
       for (var i = 0; i < n * n; i++) {
         var v = o1[i] * 0.25 + o2[i] * 0.35 + o3[i] * 0.4;          // 冷壓紙的起伏
-        var l = 255 - Math.max(0, (v - 0.35)) * 120 - r() * 18;      // 偏亮（multiply 用）
-        d[i * 4] = l; d[i * 4 + 1] = l * 0.985; d[i * 4 + 2] = l * 0.95; d[i * 4 + 3] = 255;
+        var l = 255 - Math.max(0, (v - 0.35)) * 38 - r() * 6;        // 很亮、低對比（multiply 用；只留紙齒，不是髒污）
+        d[i * 4] = l; d[i * 4 + 1] = l * 0.994; d[i * 4 + 2] = l * 0.975; d[i * 4 + 3] = 255;
       }
       g.putImageData(img, 0, 0);
       // 淡淡纖維
-      g.strokeStyle = 'rgba(150,120,90,0.18)'; g.lineWidth = 0.7;
-      for (var k = 0; k < 40; k++) {
+      g.strokeStyle = 'rgba(190,165,135,0.06)'; g.lineWidth = 0.6;
+      for (var k = 0; k < 24; k++) {
         var x = r() * n, y = r() * n, a = r() * Math.PI, L = 6 + r() * 18;
         for (var ox = -n; ox <= n; ox += n) for (var oy = -n; oy <= n; oy += n) {
           g.beginPath(); g.moveTo(x + ox, y + oy); g.quadraticCurveTo(x + ox + Math.cos(a) * L * 0.5 + 2, y + oy + Math.sin(a) * L * 0.5, x + ox + Math.cos(a) * L, y + oy + Math.sin(a) * L); g.stroke();
@@ -138,21 +138,22 @@
       var w = Math.max(2, Math.round(W / 3)), h = Math.max(2, Math.round(H / 3)), c = KK.canvas(w, h), g = c.getContext('2d');
       var cx = w / 2, cy = h / 2, R = Math.hypot(cx, cy), u = Math.min(w, h);
       var gr = g.createRadialGradient(cx, cy, R * 0.55, cx, cy, R * 1.02);
-      gr.addColorStop(0, KK.rgba(P.cream, 0));
-      gr.addColorStop(0.6, KK.rgba(KK.mix(P.cream, P.apricot, 0.35), 0.22));
-      gr.addColorStop(1, KK.rgba(KK.mix(P.page, P.apricot, 0.4), 0.55));
+      var warm = KK.mix(P.page, P.apricot, 0.4);
+      gr.addColorStop(0, KK.rgba(warm, 0));
+      gr.addColorStop(0.75, KK.rgba(warm, 0));                       // 中段完全透明，不罩畫面
+      gr.addColorStop(1, KK.rgba(warm, 0.24));                       // 只有邊緣一圈柔暖
       g.fillStyle = gr; g.fillRect(0, 0, w, h);
       // 邊緣不規則水漬（顏料堆積的淡赭色塊）
       var r = KK.rng(919);
-      for (var i = 0; i < 70; i++) {
+      for (var i = 0; i < 24; i++) {
         var side = i % 4, t = r();
         var x = side === 0 ? t * w : side === 1 ? w - r() * u * 0.08 : side === 2 ? t * w : r() * u * 0.08;
         var y = side === 0 ? r() * u * 0.08 : side === 1 ? t * h : side === 2 ? h - r() * u * 0.08 : t * h;
         var col = r() < 0.5 ? KK.mix(P.page, P.apricot, 0.3) : KK.mix(P.cream, P.ochre, 0.25);
-        KK.drawSprite(g, KK.glow(col, 128, 0.15), x, y, u * (0.12 + r() * 0.22), 0.16 + r() * 0.16);
+        KK.drawSprite(g, KK.glow(col, 128, 0.15), x, y, u * (0.10 + r() * 0.16), 0.05 + r() * 0.05);
       }
       // 水漬邊線（乾掉的顏料圈，極淡）
-      g.strokeStyle = KK.rgba(KK.mix(P.apricot, P.brick, 0.3), 0.14); g.lineWidth = Math.max(1, u * 0.004);
+      g.strokeStyle = KK.rgba(KK.mix(P.apricot, P.brick, 0.3), 0.07); g.lineWidth = Math.max(1, u * 0.004);
       var pts = [], N = 48, m = u * 0.055;
       for (var j = 0; j < N; j++) {
         var a = j / N * KK.TAU, ca = Math.cos(a), sa = Math.sin(a);
@@ -173,14 +174,14 @@
         var b = KK.boil(S.t || 0);
         ctx.translate(b * 61, b * 37);                      // 跟著手繪節奏輕微跳動
         if (pg) { ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 0.55; ctx.fillStyle = ctx.createPattern(pg, 'repeat'); }
-        else { if (!grain) grain = makeGrain(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.65; ctx.fillStyle = ctx.createPattern(grain, 'repeat'); }
+        else { if (!grain) grain = makeGrain(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = Math.min(0.3, 0.14 * (gA / 0.5)); ctx.fillStyle = ctx.createPattern(grain, 'repeat'); }
         ctx.fillRect(-200, -200, S.w + 400, S.h + 400);
         ctx.restore();
       }
-      var vA = Math.max(0.3, opt.vignette == null ? 0.5 : opt.vignette);
+      var vA = Math.max(0, opt.vignette == null ? 0.5 : opt.vignette);
       var vw = art.get('vignette-wet.png');
       ctx.save();
-      ctx.globalAlpha = Math.min(1, vA * 1.6);
+      ctx.globalAlpha = Math.min(1, vA * 1.0);
       if (vw) ctx.drawImage(vw, 0, 0, S.w, S.h);
       else {
         var key = S.w + 'x' + S.h;

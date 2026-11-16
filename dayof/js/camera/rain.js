@@ -50,18 +50,18 @@
         function makeFog(Cw, Ch, U) {
           var t = KK.canvas(Cw, Ch), g = t.getContext('2d');
           var gr = g.createLinearGradient(0, 0, 0, Ch);
-          gr.addColorStop(0, KK.rgba(KK.mix(P.cream, P.mist, 0.35), 0.78));
-          gr.addColorStop(0.6, KK.rgba(KK.mix(P.cream, P.mist, 0.2), 0.66));
-          gr.addColorStop(1, KK.rgba(KK.mix(P.cream, P.page, 0.4), 0.58));
+          gr.addColorStop(0, KK.rgba(KK.mix(P.cream, P.mist, 0.35), 0.18));
+          gr.addColorStop(0.6, KK.rgba(KK.mix(P.cream, P.mist, 0.2), 0.12));
+          gr.addColorStop(1, KK.rgba(KK.mix(P.cream, P.page, 0.4), 0.08));
           g.fillStyle = gr; g.fillRect(0, 0, Cw, Ch);
           var r = KK.rng(1616);
           // 霧的濃淡斑（柔邊光點疊）
-          for (var i = 0; i < 46; i++) {
+          for (var i = 0; i < 20; i++) {
             var sz = U * (0.25 + r() * 0.5);
-            KK.drawSprite(g, KK.glow(r() < 0.5 ? P.cream : P.mist, 128), r() * Cw, r() * Ch, sz, 0.12 + r() * 0.12);
+            KK.drawSprite(g, KK.glow(r() < 0.5 ? P.cream : P.mist, 128), r() * Cw, r() * Ch, sz, 0.04 + r() * 0.04);
           }
           // 細小凝結點
-          for (var j = 0; j < 900; j++) {
+          for (var j = 0; j < 0; j++) {  // 髒點已移除（保持畫面乾淨）
             g.fillStyle = KK.rgba(r() < 0.6 ? P.cream : P.slate, 0.18 + r() * 0.25);
             var d = Math.max(0.6, U * (0.002 + r() * 0.004));
             g.fillRect(r() * Cw, r() * Ch, d, d);
@@ -232,7 +232,7 @@
             var cg = st.cg, Cw = st.C.width, Ch = st.C.height;
 
             // 0. 暖米色薄罩（雨天的柔光）
-            g.fillStyle = KK.rgba(KK.mix(P.cream, P.apricot, 0.25), 0.12);
+            g.fillStyle = KK.rgba(KK.mix(P.cream, P.apricot, 0.25), 0.06);
             g.fillRect(0, 0, w, h);
 
             // 1. 靜態薄霧（不能抹；只有水珠滑落處留下清痕）
