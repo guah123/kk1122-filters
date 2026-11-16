@@ -6,89 +6,14 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   'use strict';
   var INK = '#4A3C30';
   var ST = 'stroke="' + INK + '" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"';
-  function P(d, fill, extra) { return '<path d="' + d + '" fill="' + fill + '" ' + ST + ' ' + (extra || '') + '/>'; }
-  function R(x, y, w, h, rx, fill, extra) { return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + rx + '" fill="' + fill + '" ' + ST + ' ' + (extra || '') + '/>'; }
-  function C(x, y, r, fill, extra) { return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + fill + '" ' + ST + ' ' + (extra || '') + '/>'; }
-  function L(d, color, w, extra) { return '<path d="' + d + '" fill="none" stroke="' + (color || INK) + '" stroke-width="' + (w || 1.2) + '" stroke-linecap="round" ' + (extra || '') + '/>'; }
-  function H(d, extra) { return '<path d="' + d + '" fill="url(#sc-hatch)" stroke="none" ' + (extra || '') + '/>'; }
-  function svg(inner) { return '<svg viewBox="0 0 64 64" aria-hidden="true"><g filter="url(#sc-rough)">' + inner + '</g></svg>'; }
-
-  var leaf = 'M0 0 C-14 -2 -17 -14 -9 -21 C-5 -25 -1 -23 0 -19 C1 -23 5 -25 9 -21 C17 -14 14 -2 0 0z';
-  function leafG(tr) {
-    return '<g transform="' + tr + '">' + P(leaf, '#8FA37A') + H(leaf) +
-      L('M-13 -8 L-5 -9 M-12 -15 L-5 -13 M13 -8 L5 -9 M12 -15 L5 -13', '#F6EFE2', 1.5) + L('M0 0 L0 -19', '#5F7550', 1) + '</g>';
-  }
-
-  var ART = {
-    switch: svg(
-      R(18, 13, 28, 38, 3, '#55504A') + R(21, 16, 22, 32, 1.5, '#BFDCEB', 'stroke-width="1"') +
-      C(36, 24, 3.2, '#F2C66D', 'stroke-width="1"') + P('M21 48 L21 38 Q27 31 32 38 Q37 33 43 40 L43 48z', '#A9BC93', 'stroke-width="1"') +
-      P('M8 19 Q8 13 14 13 H18 V51 H14 Q8 51 8 45z', '#79B6D6') + H('M8 19 Q8 13 14 13 H18 V51 H14 Q8 51 8 45z') +
-      P('M56 19 Q56 13 50 13 H46 V51 H50 Q56 51 56 45z', '#E98874') + H('M56 19 Q56 13 50 13 H46 V51 H50 Q56 51 56 45z') +
-      C(13, 25, 3.4, '#3D352D') + C(51, 38, 3.4, '#3D352D') +
-      C(51, 22, 1.5, '#FBF7EF', 'stroke-width="1"') + C(51, 28, 1.5, '#FBF7EF', 'stroke-width="1"') + C(48.2, 25, 1.5, '#FBF7EF', 'stroke-width="1"') + C(53.8, 25, 1.5, '#FBF7EF', 'stroke-width="1"') +
-      R(11, 41, 4, 1.8, 0.8, '#FBF7EF', 'stroke-width="1"')),
-    headphones: svg(
-      '<path d="M13 40 C10 6 54 6 51 40" fill="none" stroke="' + INK + '" stroke-width="7" stroke-linecap="round"/>' +
-      '<path d="M13 40 C10 6 54 6 51 40" fill="none" stroke="#C9A27A" stroke-width="4" stroke-linecap="round"/>' +
-      L('M20 14 Q32 8 44 14', '#F6EFE2', 1, 'opacity=".7"') +
-      R(7, 33, 15, 22, 6.5, '#5E86A8') + R(19, 36, 6, 16, 3, '#F6EFE2') + H('M7 33 H22 V55 H7z') +
-      R(42, 33, 15, 22, 6.5, '#5E86A8') + R(39, 36, 6, 16, 3, '#F6EFE2') + H('M42 33 H57 V55 H42z')),
-    book: svg('<g transform="rotate(-6 32 32)">' +
-      R(48, 10, 5, 44, 1, '#F6EFE2') + L('M49.5 14 V52 M51 14 V52', '#C9B28A', .8) +
-      R(14, 8, 34, 48, 2, '#8B5A3A') + H('M14 8 H48 V56 H14z') + R(14, 8, 6, 48, 2, '#6E4128') +
-      R(24, 16, 20, 13, 1.5, '#E9D5B0', 'stroke-width="1.2"') + L('M27 21 H41 M27 25 H37', INK, 1) +
-      L('M24 40 H44 M24 44 H44', '#D6B084', 1.2) +
-      P('M38 56 V63 L41 60 L44 63 V56z', '#C65D4C', 'stroke-width="1.3"') + '</g>'),
-    monstera: svg(
-      L('M32 42 Q22 34 22 30 M32 42 Q42 32 44 24 M32 42 V22', '#6B8556', 2) +
-      leafG('translate(32 41) rotate(-38) scale(1.05)') + leafG('translate(32 41) rotate(34) scale(1.05)') + leafG('translate(32 41) rotate(-2) scale(1.2)') +
-      P('M19 46 H45 L41 61 Q40 62 38 62 H26 Q24 62 23 61z', '#C8754F') + H('M19 46 H45 L41 61 H23z') +
-      R(17, 41, 30, 6, 2.5, '#D98960') + L('M20 44 H44', '#F0B58F', 1, 'opacity=".7"')),
-    guitar: svg('<g transform="rotate(32 32 32) translate(0 1)">' +
-      R(29, 4, 6, 30, 1.5, '#8A6545') + R(27.5, -1, 9, 8, 2, '#5A3B25') + C(30, 3, .9, '#E9D5B0', 'stroke-width=".5"') + C(34, 3, .9, '#E9D5B0', 'stroke-width=".5"') +
-      L('M29 12 H35 M29 18 H35 M29 24 H35', '#E9D5B0', .8) +
-      P('M32 30 C24 30 20 35 22 40 C16 42 14 50 18 55 C23 62 41 62 46 55 C50 50 48 42 42 40 C44 35 40 30 32 30z', '#D9A25F') +
-      H('M32 30 C24 30 20 35 22 40 C16 42 14 50 18 55 C23 62 41 62 46 55 C50 50 48 42 42 40 C44 35 40 30 32 30z') +
-      C(32, 46, 5, '#3D352D') + R(26.5, 54, 11, 3, 1, '#5A3B25', 'stroke-width="1"') +
-      L('M31 8 V54 M33 8 V54', '#F6EFE2', .7) + '</g>'),
-    chips: svg(
-      '<ellipse cx="25" cy="8" rx="6" ry="3" fill="#F2D58A" ' + ST + ' stroke-width="1.2" transform="rotate(-20 25 8)"/><ellipse cx="38" cy="7" rx="6" ry="3" fill="#F2D58A" ' + ST + ' stroke-width="1.2" transform="rotate(15 38 7)"/>' +
-      P('M16 12 H48 L52 52 Q52 56 48 56 H16 Q12 56 12 52z', '#F2C66D') + H('M16 12 H48 L52 52 Q52 56 48 56 H16 Q12 56 12 52z') +
-      P('M13.5 27 Q22 21 32 27 T50.5 27 V41 Q42 47 32 41 T13.5 41z', '#D9604C') +
-      C(32, 34, 7, '#FBF7EF') + '<ellipse cx="32" cy="34" rx="4.2" ry="3" fill="#F2D58A" ' + ST + ' stroke-width="1" transform="rotate(-25 32 34)"/>' +
-      R(11, 8, 42, 6, 1, '#E9B94F') + L('M15 8 V14 M19 8 V14 M23 8 V14 M27 8 V14 M31 8 V14 M35 8 V14 M39 8 V14 M43 8 V14 M47 8 V14 M51 8 V14', INK, .8) +
-      R(11, 54, 42, 5, 1, '#E9B94F') + L('M15 54 V59 M19 54 V59 M23 54 V59 M27 54 V59 M31 54 V59 M35 54 V59 M39 54 V59 M43 54 V59 M47 54 V59 M51 54 V59', INK, .8)),
-    football: svg(
-      '<ellipse cx="33" cy="57" rx="17" ry="3.5" fill="#8FA37A" opacity=".5"/>' +
-      C(32, 32, 23, '#FBF7EF') + H('M32 9 A23 23 0 1 1 31.9 9z') +
-      P('M32 25 L38.7 29.9 L36.1 37.6 L27.9 37.6 L25.3 29.9z', '#4A3C30') +
-      L('M32 25 V15 M38.7 29.9 L47 26 M36.1 37.6 L42 46 M27.9 37.6 L22 46 M25.3 29.9 L17 26') +
-      P('M27 11.5 L37 11.5 L35 17 L29 17z', '#4A3C30', 'stroke-width="1"') +
-      P('M47 24 L53 29 L50 36 L46 32z', '#4A3C30', 'stroke-width="1"') + P('M17 24 L11 29 L14 36 L18 32z', '#4A3C30', 'stroke-width="1"') +
-      P('M40 46 L47 45 L47 51 L42 53z', '#4A3C30', 'stroke-width="1"') + P('M24 46 L17 45 L17 51 L22 53z', '#4A3C30', 'stroke-width="1"')),
-    photoframe: svg(
-      P('M10 58 L32 48 L54 58', 'none', 'stroke-width="1.4"') +
-      R(8, 6, 48, 48, 3, '#A87B4F') + H('M8 6 H56 V54 H8z') + R(13, 11, 38, 38, 1.5, '#F6EFE2', 'stroke-width="1.2"') +
-      R(16, 14, 32, 32, 1, '#BFDCEB', 'stroke-width="1"') + C(41, 21, 3.6, '#F2C66D', 'stroke-width="1"') +
-      R(16, 40, 32, 6, 0, '#A9BC93', 'stroke-width="1"') +
-      C(24, 27, 3, '#E9C9A5', 'stroke-width="1.1"') + P('M19 41 Q19 32 24 32 Q29 32 29 41z', '#5E86A8', 'stroke-width="1.1"') +
-      C(33.5, 27.5, 2.9, '#E9C9A5', 'stroke-width="1.1"') + P('M29 41 Q29 32.5 33.5 32.5 Q38 32.5 38 41z', '#E7A9A0', 'stroke-width="1.1"') +
-      C(41.5, 32.5, 2.2, '#E9C9A5', 'stroke-width="1"') + P('M38 41 Q38 36 41.5 36 Q45 36 45 41z', '#F2C66D', 'stroke-width="1"')),
-    cigarettes: svg(
-      L('M27 5 Q22 1 26 -3', '#B8AFA2', 1.2, 'opacity=".8"') +
-      R(24, 8, 4.5, 16, 1, '#FBF7EF') + R(24, 8, 4.5, 4.5, 1, '#E39A52', 'stroke-width="1.2"') + R(31, 11, 4.5, 13, 1, '#FBF7EF') + R(31, 11, 4.5, 4, 1, '#E39A52', 'stroke-width="1.2"') +
-      P('M44 20 L51 17 V55 L44 58z', '#E0CFAE') + H('M44 20 L51 17 V55 L44 58z') +
-      R(14, 20, 30, 38, 2, '#FBF7EF') + H('M14 20 H44 V58 H14z') + L('M14 26 H44') +
-      R(14, 34, 30, 10, 0, '#C65D4C', 'stroke-width="1.3"') + P('M29 36 L30.2 38.8 L33 39 L30.8 40.8 L31.5 43.5 L29 42 L26.5 43.5 L27.2 40.8 L25 39 L27.8 38.8z', '#F2C66D', 'stroke-width=".8"') +
-      L('M18 50 H40', '#B8AFA2', 1)),
-    dress: svg(
-      P('M21 12 L24 12 Q28 19 32 12 L35 12 L37 28 Q46 36 50 58 L6 58 Q10 36 19 28z', '#E7A9A0') + H('M21 12 L24 12 Q28 19 32 12 L35 12 L37 28 Q46 36 50 58 L6 58 Q10 36 19 28z') +
-      P('M19 28 L37 28 L37.5 32.5 Q28 35.5 18.5 32.5z', '#5E86A8') +
-      C(18, 46, 1.3, '#FBF7EF', 'stroke-width=".6"') + C(28, 43, 1.3, '#FBF7EF', 'stroke-width=".6"') + C(37, 48, 1.3, '#FBF7EF', 'stroke-width=".6"') + C(24, 53, 1.3, '#FBF7EF', 'stroke-width=".6"') + C(34, 55, 1.3, '#FBF7EF', 'stroke-width=".6"') + C(13, 54, 1.3, '#FBF7EF', 'stroke-width=".6"') + C(43, 54, 1.3, '#FBF7EF', 'stroke-width=".6"') +
-      P('M41 22 Q41 6 49 6 Q57 6 57 22z', '#F0D8A0') + '<ellipse cx="49" cy="22" rx="14.5" ry="5" fill="#E9C98F" ' + ST + '/>' +
-      P('M41.5 18 Q49 21.5 56.5 18 L57 21.5 Q49 25 41 21.5z', '#5E86A8', 'stroke-width="1.2"') + L('M44 12 Q49 9 54 12', '#FBF7EF', 1, 'opacity=".7"'))
-  };
+  // Jimmy-Liao-style item sprites (RGBA, trimmed). Internal ids unchanged: 'photoframe' → familyphoto.png.
+  // (the former inline-SVG drawings were replaced in v=261116y)
+  var SPRITE = { switch: 'switch', headphones: 'headphones', book: 'book', monstera: 'monstera', guitar: 'guitar', chips: 'chips',
+    football: 'football', photoframe: 'familyphoto', cigarettes: 'cigarettes', dress: 'dress' };
+  var ART = {};
+  Object.keys(SPRITE).forEach(function (id) {
+    ART[id] = '<img class="sc-spr" src="assets/suitcase/' + SPRITE[id] + '.png" alt="" draggable="false" decoding="async">';
+  });
 
   var ITEMS = [
     { id: 'switch', label: 'Switch' }, { id: 'headphones', label: '全罩耳機' }, { id: 'book', label: '咖啡色書皮的書' },
@@ -99,10 +24,10 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   // scattered layout (design px on a 390×844 screen; JS maps them onto the real stage). [cx, cy, rotate°, size]
   // bands: header ≤130 · top scatter 132–340 · suitcase 350–494 (sides x≤100 / ≥290) · message ~510 · bottom scatter 536–716
   var POS = {
-    switch: [67, 190, -6, 0.95], headphones: [196, 184, 7, 1.04], book: [325, 196, -4, 0.92],
-    monstera: [116, 290, 5, 1.08], guitar: [272, 293, -9, 1.1],
+    switch: [67, 190, -6, 0.95], headphones: [194, 184, 7, 1.0], book: [326, 190, -4, 0.9],
+    monstera: [116, 290, 5, 1.08], guitar: [280, 297, -6, 0.92],
     chips: [61, 410, 3, 0.94], football: [329, 436, -3, 0.96],
-    photoframe: [86, 588, -5, 1], cigarettes: [304, 598, 9, 0.9], dress: [196, 668, -3, 1.04]
+    photoframe: [86, 588, -5, 1], cigarettes: [302, 596, 8, 0.8], dress: [196, 668, -3, 1.04]
   };
   var DESIGN = { W: 390, H: 844, TOP: 130, BOTTOM: 124, CASE_Y: 422, CASE_W: 172 };
   var LABEL = {}; ITEMS.forEach(function (i) { LABEL[i.id] = i.label; });
@@ -191,6 +116,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
 
       var $case = stage.querySelector('.sc-case'), $slots = stage.querySelector('.sc-slots');
       var $msg = stage.querySelector('.sc-msg'), $hint = stage.querySelector('.sc-hint'), $btn = stage.querySelector('.sc-actions .btn');
+      if (DAYOF.eyesButton) DAYOF.eyesButton($btn);
       var $under = stage.querySelector('.sc-under');
       var $lid = stage.querySelector('.sc-lid');
       function drawLid(phi, final) { $lid.innerHTML = lidSvg(phi, final); }
@@ -222,6 +148,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         el.style.left = p.l + '%'; el.style.top = p.t + '%'; el.style.zIndex = i + 1;
         el.style.rotate = ROT[i] + 'deg';
         el.innerHTML = ART[id]; el.setAttribute('draggable', 'false');
+        el.addEventListener('touchstart', function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false });
+        el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
         el.addEventListener('pointerdown', function (e) { startDrag(e, id, true, el); });
         $slots.appendChild(el);
         return el;
@@ -306,7 +234,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var el = trayEl[it.id];
         el.addEventListener('pointerdown', function (e) { startDrag(e, it.id, false, el); });
         el.addEventListener('touchstart', function (e) { e.preventDefault(); }, { passive: false });
-        [].forEach.call(el.querySelectorAll('svg'), function (v) { v.setAttribute('draggable', 'false'); v.setAttribute('focusable', 'false'); });
+        el.setAttribute('draggable', 'false');
+        [].forEach.call(el.querySelectorAll('svg, img'), function (v) { v.setAttribute('draggable', 'false'); v.setAttribute('focusable', 'false'); });
         el.addEventListener('dragstart', function (e) { e.preventDefault(); });
         el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
       });
@@ -385,11 +314,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
 
       $btn.addEventListener('click', function () { if (closed) ctx.next(); });
 
-      // ---- filter buttons (helmet is unlocked at 10) — top-right of the stage, above the scattered items
+      // (v=261116y) no filter stack on step 11 — Kai: filter buttons only on lyrics pages
       var stack = null;
-      if ((ctx.step && ctx.step.n || 11) >= 10 && DAYOF.FilterStack && DAYOF.FilterStack.mount) {
-        try { stack = DAYOF.FilterStack.mount(stage, ctx, { labels: false }); } catch (e) { console.error(e); }
-      }
 
       // ---- restore
       if (saved) {
@@ -454,6 +380,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       '<div class="sc-under"><div class="sc-msg"></div><div class="sc-actions"><button class="btn sc-fallbackbtn" type="button">繼續看看</button></div></div>';
     var $bg = stage.querySelector('.scs-bg'), $layer = stage.querySelector('.scs-layer');
     var $hint = stage.querySelector('.sc-hint'), $msg = stage.querySelector('.sc-msg'), $btn = stage.querySelector('.sc-actions .btn'), $under = stage.querySelector('.sc-under');
+    if (DAYOF.eyesButton) DAYOF.eyesButton($btn);
     var $img = stage.querySelector('.scs-img');
     $bg.style.backgroundImage = 'url("' + (cfg.empty || cfg.bg) + '")';   // blurred backdrop fills the bands around the width-fit painting
     $img.style.backgroundImage = 'url("' + cfg.bg + '")';
@@ -671,8 +598,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     }
     $btn.addEventListener('click', function () { if (closed) ctx.next(); });
 
-    var stack = null;
-    if (DAYOF.FilterStack && DAYOF.FilterStack.mount) { try { stack = DAYOF.FilterStack.mount(stage, ctx, { labels: false }); } catch (e) { console.error(e); } }
+    var stack = null;   // (v=261116y) no filter stack on step 11
 
     window.addEventListener('resize', layout); layout(); later(layout, 60);
     if (saved) { (saved.packed || []).forEach(function (id) { if (cfg.items[id]) addPacked(id); }); closeCase(false); }

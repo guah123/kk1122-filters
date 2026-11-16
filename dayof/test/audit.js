@@ -25,7 +25,7 @@ const out = {}; const log = (k, v) => { out[k] = v; console.log(k, JSON.stringif
         const txt = document.body.innerText; return { coverW: vb && Math.round(vb.width) >= 390, coverH: vb && Math.round(vb.bottom) >= Math.round(hb.bottom) - 1, sprites, has彩蛋: /彩蛋/.test(txt), minimap: !!document.querySelector('[class*=minimap]'), zoom: document.querySelectorAll('.where-zoom').length, sky: !!document.querySelector('.amb-sky'), flipText: ((document.querySelector('.where-flip') || {}).textContent || '').trim(), flipAria: (document.querySelector('.where-flip') || { getAttribute: () => null }).getAttribute('aria-label') }; }); }
     log('scenes', r);
     await p.goto(U('?step=19&test=1')); await p.waitForSelector('.where-intro-btn'); await p.click('.where-intro-btn'); await sleep(700); await p.click('.where-flip'); await sleep(3500);
-    log('bookstoreFlipFound', await p.evaluate(() => /找到凱凱/.test(document.body.innerText) && /繼續看看/.test(document.body.innerText))); }
+    log('bookstoreFlipFound', await p.evaluate(() => /找到凱凱/.test(document.body.innerText) && (/繼續看看/.test(document.body.innerText) || !!document.querySelector('[aria-label="繼續看看"]')))); }
   // 11 new-filter pulse
   { const p = await page(); await p.goto(U('?step=16&test=1')); await sleep(900);
     log('pulse16', await p.evaluate(() => [...document.querySelectorAll('.round-btn')].map(b => (b.getAttribute('aria-label') || b.textContent).trim() + ':' + b.classList.contains('is-new')))); }

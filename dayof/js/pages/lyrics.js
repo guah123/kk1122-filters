@@ -17,12 +17,13 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     '.page-lyrics .lyr-artist{font:400 13px/1.4 var(--font,system-ui);color:var(--ink-soft,#7A6A5A);margin:6px 0 0}',
     '.page-lyrics .lyr-tbtn{font:600 12px/1 var(--font,system-ui);color:var(--sky-deep,#5E86A8);background:rgba(255,255,255,.7);border:1.5px solid var(--sky,#9DBFD8);border-radius:999px;padding:7px 12px;cursor:pointer;white-space:nowrap}',
     '.page-lyrics .lyr-tbtn[aria-pressed="true"]{background:var(--sky-deep,#5E86A8);border-color:var(--sky-deep,#5E86A8);color:#fff}',
-    '.page-lyrics .lyr-text{font-family:var(--font-serif,serif);font-size:17px;line-height:1.9;color:var(--ink,#4A3C30);letter-spacing:.02em;margin:0;text-align:left;word-break:break-word}',
+    '.page-lyrics .lyr-text{font-family:var(--font-serif,serif);font-size:17px;line-height:1.9;color:var(--ink,#4A3C30);letter-spacing:.02em;margin:0;text-align:left;overflow-wrap:break-word}',
     '.page-lyrics .lyr-stanza{margin:0 0 1.4em}',
     '.page-lyrics .lyr-stanza:last-child{margin-bottom:0}',
-    '.page-lyrics .lyr-line{margin:0 0 .4em;line-height:1.55}',
+    '.page-lyrics .lyr-line{margin:0 0 .4em;line-height:1.55;text-wrap:balance;line-break:strict;overflow-wrap:normal}',
     '.page-lyrics.lat .lyr-line{padding-left:1.2em;text-indent:-1.2em}',
-    '.page-lyrics .lyr-tl{display:none;font-family:var(--font,system-ui);font-size:14px;line-height:1.6;color:var(--sky-deep,#5E86A8);margin:-.1em 0 .7em;padding-left:1.2em;letter-spacing:.01em}',
+    '.page-lyrics .lyr-ph{display:inline-block;text-indent:0;max-width:100%;overflow-wrap:anywhere}',
+    '.page-lyrics .lyr-tl{display:none;font-family:var(--font,system-ui);font-size:14px;line-height:1.6;color:var(--sky-deep,#5E86A8);margin:-.1em 0 .7em;padding-left:1.2em;text-wrap:balance;line-break:strict;letter-spacing:.01em}',
     '.page-lyrics.show-tr .lyr-tl{display:block}',
     '.page-lyrics .lyr-trans{white-space:pre-line;font-family:var(--font,system-ui);font-size:14px;line-height:1.9;color:var(--ink-soft,#7A6A5A);margin:22px 0 0;padding-top:16px;border-top:1px dashed rgba(138,101,69,.3);display:none}',
     '.page-lyrics.show-tr .lyr-trans{display:block}',
@@ -84,6 +85,28 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     lines = lines.join('\n').replace(/\n[ \t]+\n/g, '\n\n').split('\n');
     return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
+  /* 舊版瀏覽器不支援 text-wrap:balance 時：把行尾 4 字黏成一塊（word joiner），避免孤字換行 */
+  var CAN_BALANCE = !!(window.CSS && CSS.supports && CSS.supports('text-wrap', 'balance'));
+  function glue(l) {
+    if (CAN_BALANCE || l.length < 8) return l;
+    var m = /^([\s\S]*?)([^\s]{4})$/.exec(l); if (!m || /\s$/.test(m[1]) === false && /[A-Za-z]$/.test(m[1]) && /^[A-Za-z]/.test(m[2])) return l;
+    return m[1] + m[2].split('').join('\u2060');
+  }
+  /* 含中日文的行：依 、，, 與空格切成「詞組」，每組不可拆（inline-block），只在詞組之間換行；單組超寬才硬拆 */
+  function fill(el, text) {
+    if (!/[\u3040-\u30ff\u4e00-\u9fff]/.test(text)) { el.textContent = glue(text); return; }
+    var parts = text.match(/[^\s、，,]+[、，,]?|\s+/g) || [text];
+    if (parts.length < 2) { el.textContent = text; return; }
+    var np = parts.filter(function (t) { return !/^\s+$/.test(t); }).length;
+    if (np > 1 && parts[parts.length - 1].replace(/[、，,]/g, '').length <= 3 && !/^\s+$/.test(parts[parts.length - 1])) {   // 尾組太短：與前一組黏成一塊
+      var last = parts.pop(), sep = parts.pop();
+      if (/^\s+$/.test(sep)) { var prev = parts.pop(); parts.push(prev + '\u00a0' + last); } else { parts.push(sep + last); }
+    }
+    parts.forEach(function (t) {
+      if (/^\s+$/.test(t)) { el.appendChild(document.createTextNode(' ')); return; }
+      var sp = document.createElement('span'); sp.className = 'lyr-ph'; sp.textContent = t; el.appendChild(sp);
+    });
+  }
   function stanzas(s) { return s ? s.split(/\n\n/).map(function (b) { return b.split('\n'); }) : []; }
   function sameShape(a, b) {
     if (a.length !== b.length) return false;
@@ -121,6 +144,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var foot = document.createElement('div'); foot.className = 'lyr-foot';
       var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn lyr-next locked';
       btn.textContent = row.btn || '繼續看看'; btn.disabled = true;
+      if (btn.textContent === '繼續看看' && DAYOF.eyesButton) DAYOF.eyesButton(btn);
       foot.appendChild(btn);
       scroll.appendChild(paper); scroll.appendChild(foot);
       var hint = document.createElement('div'); hint.className = 'lyr-scrollhint gone'; hint.textContent = '往下捲動 ↓';
@@ -164,6 +188,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         if (/[\u3040-\u30ff]/.test(lyr)) lyr = lyr.split('\n').filter(function (l) { return !/^[a-z][a-z \-,.'?!~…()]*$/.test(l); }).join('\n').replace(/\n{3,}/g, '\n\n');
         var tr = cleanText(song && song.translation);
         var artist = song && song.artist && song.artist.trim() ? String(song.artist) : '';
+        if (/^\s*kai\s*$/i.test(artist || '')) artist = ''; // Kai's own originals: no singer line (Kai, y)
         if (artist) { var ar = head.querySelector('.lyr-artist'); ar.textContent = '原唱：' + artist; ar.hidden = false; }
         paper.innerHTML = '';
         if (lyr) {
@@ -172,8 +197,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
           S.forEach(function (lines, i) {
             var sd = document.createElement('div'); sd.className = 'lyr-stanza';
             lines.forEach(function (l, j) {
-              var ld = document.createElement('p'); ld.className = 'lyr-line'; ld.textContent = l; sd.appendChild(ld);
-              if (aligned && T[i][j]) { var td = document.createElement('p'); td.className = 'lyr-tl'; td.textContent = T[i][j]; sd.appendChild(td); }
+              var ld = document.createElement('p'); ld.className = 'lyr-line'; fill(ld, l); sd.appendChild(ld);
+              if (aligned && T[i][j]) { var td = document.createElement('p'); td.className = 'lyr-tl'; fill(td, T[i][j]); sd.appendChild(td); }
             });
             box.appendChild(sd);
           });

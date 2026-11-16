@@ -95,7 +95,7 @@
 .eg-vignette { position: absolute; inset: 0; z-index: 4; pointer-events: none;
   background: linear-gradient(180deg, rgba(255,255,255,.0) 70%, rgba(40,30,20,.10) 100%); }
 
-/* standout buttons under the filter stack: same 48px size as filter .round-btn, distinct by colour */
+/* standout buttons in the 34 ⋯ fold, distinct by colour */
 .eg-pop { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .eg-pop button.eg-bigbtn {
   width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fff; padding: 0; cursor: pointer;
@@ -145,19 +145,24 @@
 .cr-skip{display:none!important}
 
 /* ---------- v=261116x: 34 — all buttons folded into one toggle (top-right) ---------- */
-.page-egg .eg-stack { top: calc(env(safe-area-inset-top, 0px) + 10px); right: 10px; }
-.page-egg .eg-stack .eg-toggle { background: #E6DACA; color: var(--wood-dark, #8A6545); }
+.page-egg .eg-stack { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 10px; z-index: 150;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
+.page-egg .eg-stack > * { pointer-events: auto; }
+.page-egg .eg-stack .eg-toggle { position: relative; width: 56px; height: 56px; border-radius: 50%; padding: 0; cursor: pointer;
+  border: 1px solid rgba(74,60,48,.14); box-shadow: 0 2px 8px rgba(74,60,48,.16); -webkit-tap-highlight-color: transparent;
+  display: flex; align-items: center; justify-content: center; background: #E6DACA; color: var(--wood-dark, #8A6545); }
+.page-egg .eg-stack .eg-toggle svg, .page-egg .eg-stack .eg-toggle .ico { width: 32px; height: 32px; display: flex; }
 .page-egg .eg-stack > :not(.eg-toggle) { transition: opacity .22s ease, transform .22s ease, visibility 0s linear 0s; }
 .page-egg .eg-stack.eg-collapsed > :not(.eg-toggle) {
   visibility: hidden; opacity: 0; transform: translateY(-10px); pointer-events: none;
   transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
 }
-.page-egg .eg-stack .fs-extra { margin-top: 2px; }
+.page-egg .eg-stack .eg-extra { margin-top: 2px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .eg-pop button.eg-bigbtn { width: 56px; height: 56px; }
 .eg-line button.eg-bigbtn { background: #5FA97A; }
 .eg-coffee button.eg-bigbtn { background: #A9805C; }
 .eg-restart button.eg-bigbtn { background: #7F9AB0; }
 .eg-bubble { border-color: #5FA97A; }
 .eg-bubble::after { border-color: #5FA97A; }
-/* 33 — filter column under the valance */
-.page-credits > .cr-stack { right: 10px; z-index: 40; }
+/* v=261116y: eyes continue button on the dark curtain — a near-opaque cream disc so the walker doesn't show through */
+#app .page-credits .cr-continue.btn-eyes.btn-eyes { background: #FBF7EF; box-shadow: 0 3px 12px rgba(30,15,10,.35); }

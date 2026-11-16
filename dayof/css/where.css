@@ -110,11 +110,8 @@
 .where-desc-wrap.open .where-desc{position:absolute;left:-8px;right:-4px;top:0;margin:0;padding:10px 3.6em 14px 16px;background:rgba(251,247,239,.98);border-radius:0 0 16px 16px;border:1px solid rgba(201,162,122,.55);border-top:0;box-shadow:0 10px 24px rgba(74,60,48,.18);max-height:min(60vh,60dvh);overflow:auto;color:var(--ink,#4A3C30);cursor:pointer}
 .where-desc-wrap.open .where-desc-toggle{z-index:1;right:4px;top:10px}
 .where-desc-toggle{min-width:44px;min-height:30px;text-align:right}
-/* filter stack (find-Kai pages after step 10): compact column at the top-right of the scene area */
-.where-area > .filter-stack{top:10px;right:max(10px,env(safe-area-inset-right));gap:10px;z-index:7}
-.page-where.has-stack .where-done{right:calc(max(10px,env(safe-area-inset-right)) + 66px)}
 /* room for the global 「上一頁」 button (.step-no, fixed top-left ≥44px): row1 starts right of it (JS measures → --back-off),
    the story text sits below it and may use the full width */
 .page-where .where-head{padding:6px 12px 8px 16px}
-.page-where .where-head .row1{padding-left:var(--back-off,88px);min-height:44px}
+.page-where .where-head .row1{padding-left:var(--back-off,52px);min-height:44px}
 .page-where .where-desc{margin-top:6px}

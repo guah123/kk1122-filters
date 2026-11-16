@@ -17,12 +17,9 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       yes.type = no.type = 'button';
       var say = el('div', 'yn-say'); say.style.opacity = 0; say.setAttribute('aria-live', 'polite');
       var doneBox = el('div', 'yn-done'); doneBox.appendChild(el('div', '', '那就去跟他說吧 ♡'));
-      var cont = el('button', 'qz-btn', '繼續看看'); cont.type = 'button'; doneBox.appendChild(cont);
+      var cont = el('button', 'qz-btn', '繼續看看'); cont.type = 'button'; if (DAYOF.eyesButton) DAYOF.eyesButton(cont); doneBox.appendChild(cont);
       container.appendChild(wrap); container.appendChild(yes); container.appendChild(no); container.appendChild(say); container.appendChild(doneBox);
-      var stack = null;
-      if (DAYOF.FilterStack && ctx.filtersAvailable && ctx.filtersAvailable().length) {
-        try { stack = DAYOF.FilterStack.mount(container, ctx, { layout: 'row' }); container.classList.add('has-stack'); } catch (e) { console.error(e); }
-      }
+      var stack = null; // v=261116y (Kai): no filter stack on 13 (lyrics pages only)
       function crect(e) { var r = e.getBoundingClientRect(), c = container.getBoundingClientRect(); return { x: r.left - c.left, y: r.top - c.top, w: r.width, h: r.height }; }
       function place(el_, x, y) { el_.style.left = x + 'px'; el_.style.top = y + 'px'; }
       var noPos = null; // logical position (the CSS transition makes live rects lag)

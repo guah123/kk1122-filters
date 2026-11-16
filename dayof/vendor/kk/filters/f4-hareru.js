@@ -25,7 +25,6 @@
     return true;
   };
 
-  const RAYS = 12;            // 太陽光芒數
   const CLOUD_ALPHA = 0.95;   // 雲層合成透明度（亮灰白暖雲；底層＋雲紋疊後整體約 85% 不透明，隱約透出後方）
   const M_DIV = 6;            // 遮罩解析度＝畫面 1/6
   const C_DIV = 2;            // 雲層解析度＝畫面 1/2
@@ -52,7 +51,7 @@
     critterHint: '左下角烏雲抹開處，只有抹到那裡才浮現：大人牽著穿黃外套的小孩沿下緣來回走（人類）',
     create() {
       const st = {
-        C: null, cg: null, M: null, mg: null, sky: null, rain: null, beams: null,
+        C: null, cg: null, M: null, mg: null, sky: null, rain: null,
         cu: 1, sun: { x: 0, y: 0, r: 0 }, strokes: null, tab: null,
         fingers: {}, cleared: 0, vis: 0, sunFrac: 0, sunV: 0, critFrac: 0, critV: 0, crit: { x: 0, y: 0 }, lastEst: -9, lastNow: 0, dirty: false, key: '',
         birds: [], sparks: [], lw: 1,
@@ -145,25 +144,6 @@
         return d;
       }
 
-      /* 太陽放射光束（預畫成一張，抹開處才看得見） */
-      function buildBeams(S) {
-        const B = Math.ceil((S.u * 1.5) / 2);
-        const c = KK.canvas(B * 2, B * 2), g = c.getContext('2d');
-        g.translate(B, B);
-        const rnd = KK.rng(5);
-        const angs = [92, 108, 123, 139, 155, 171, 186, 200];
-        for (const deg of angs) {
-          const a = (deg + (rnd() - 0.5) * 6) * Math.PI / 180, L = B * (0.7 + rnd() * 0.3), hw = 0.05 + rnd() * 0.035;
-          g.save(); g.rotate(a);
-          const gr = g.createLinearGradient(0, 0, L, 0);
-          gr.addColorStop(0, KK.rgba(P.cream, 0.75)); gr.addColorStop(0.5, KK.rgba(P.cream, 0.28)); gr.addColorStop(1, KK.rgba(P.cream, 0));
-          g.fillStyle = gr;
-          g.beginPath(); g.moveTo(0, -L * 0.012); g.lineTo(L, -L * hw); g.lineTo(L, L * hw); g.lineTo(0, L * 0.012); g.closePath(); g.fill();
-          g.restore();
-        }
-        return c;
-      }
-
       /* Catmull-Rom 取樣成密折線（遮罩座標）＋累積長度 */
       function samplePath(wp, S, k) {
         const W = wp.map((p) => [p[0] * S.w * k, p[1] * S.h * k]);
@@ -244,7 +224,6 @@
         // 遠、近兩層預先合成一張，雙倍寬（每幀只用來源視窗平移）
         st.sky = KK.canvas(Cw * 2, Ch);
         { const sg = st.sky.getContext('2d'); for (let i = 0; i < 2; i++) { sg.drawImage(far, i * Cw, 0); sg.drawImage(near, i * Cw, 0); } }
-        st.beams = buildBeams(S);
 
         st.birds = [
           { laps: 1, off: 0.0, y: 0.10, s: 1.0, f: 4 }, { laps: 1, off: 0.07, y: 0.135, s: 0.75, f: 5 }, { laps: 1, off: 0.14, y: 0.095, s: 0.85, f: 4 },
@@ -317,29 +296,14 @@
         g.globalCompositeOperation = 'source-over';
         const aSun = ART('hareru-sun.png');
         if (aSun) {
-          const sz = r * 4.4;
-          g.save(); g.globalAlpha = sa; g.translate(x, y); g.rotate(Math.sin(S.phase * TAU) * 0.08);
+          const sz = Math.min(S.w, S.h) * 0.30;   // v2 水彩太陽（400×400，無光芒）約畫面寬 30%
+          g.save(); g.globalAlpha = sa * 0.92; g.translate(x, y); g.rotate(Math.sin(S.phase * TAU) * 0.08);
           g.drawImage(aSun, -sz / 2, -sz / 2, sz, sz); g.restore();
           g.globalAlpha = 1;
           return;
         }
         g.globalAlpha = sa;
-        // 光芒：長短相間，整個 loop 轉 2 格（保持長短相間對稱）→ 無縫
-        const a0 = (S.phase * 2 * TAU) / RAYS + 0.1;
-        g.fillStyle = KK.rgba(P.ochre, 0.92);
-        for (let i = 0; i < RAYS; i++) {
-          const a = a0 + (i / RAYS) * TAU;
-          const long = i % 2 === 0;
-          const l0 = r * 1.28, l1 = r * (long ? 2.15 : 1.7), hw = long ? 0.11 : 0.09;
-          const ca = Math.cos(a), sa2 = Math.sin(a), cp = -sa2, sp = ca;
-          const j = (n) => KK.jit(i * 13.7 + n, t, r * 0.035);
-          g.beginPath();
-          g.moveTo(x + ca * l0 + cp * l0 * hw + j(1), y + sa2 * l0 + sp * l0 * hw + j(2));
-          g.lineTo(x + ca * l1 + j(3), y + sa2 * l1 + j(4));
-          g.lineTo(x + ca * l0 - cp * l0 * hw + j(5), y + sa2 * l0 - sp * l0 * hw + j(6));
-          g.closePath();
-          g.fill();
-        }
+        // （向量光芒已移除，Kai 2026-11-16：不要放射光束）
         // 核心：計程車黃，手繪邊
         g.fillStyle = P.ochre;
         KK.wobCircle(g, x, y, r, r * 0.025, 5, t, 18); g.fill();
@@ -360,27 +324,19 @@
         g.globalAlpha = 1;
       }
 
-      /* ---------- 彩虹（低飽和，手繪抖動） ---------- */
+      /* ---------- 彩虹：只用美術圖 hareru-rainbow.png（程式畫的彩虹已移除，Kai 2026-11-16）；沒有圖就不畫 ---------- */
       function drawRainbow(g, S, a) {
         if (a <= 0.01) return;
-        const u = S.u, land = S.w > S.h;
-        const R = (land ? 0.62 : 0.5) * Math.min(S.w, u * 1.1);
-        const cx = S.w * (land ? 0.42 : 0.4), apex = S.h * (land ? 0.17 : 0.13);
-        const cy = apex + R;
-        const cols = [P.brick, P.apricot, P.ochre, P.moss, P.mist, KK.mix(P.night, P.mist, 0.45)];
-        const bw = u * 0.0125;
-        g.lineCap = 'round'; g.lineWidth = bw;
-        for (let b = 0; b < cols.length; b++) {
-          const rr = R - b * bw * 0.95;
-          const pts = [];
-          for (let i = 0; i <= 18; i++) {
-            const ang = Math.PI * (1.17 + (i / 18) * 0.66);
-            pts.push([cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr]);
-          }
-          g.strokeStyle = KK.rgba(cols[b], 0.62 * a);
-          KK.smoothPath(g, pts, false, u * 0.0016, 31 + b * 11, S.t);
-          g.stroke();
-        }
+        const img = ART('hareru-rainbow.png');
+        if (!img) return;
+        // 左上起、往右上太陽方向拱起：畫在畫面上方約 35%，左端 x≈0.05w，右側略抬高靠近太陽
+        const land = S.w > S.h;
+        const w = S.w * (land ? 0.62 : 0.8), hh = w * (img.naturalHeight / img.naturalWidth);
+        const x0 = S.w * 0.05, y0 = S.h * (land ? 0.1 : 0.085);
+        g.save(); g.globalAlpha = 0.68 * a;
+        g.translate(x0 + w / 2, y0 + hh / 2); g.rotate(-0.1);
+        g.drawImage(img, -w / 2, -hh / 2, w, hh);
+        g.restore();
       }
 
       function drawBirds(g, S, a) {
@@ -452,22 +408,23 @@
           const vis = KK.clamp(st.vis * 1.15, 0, 1);
           const sa = KK.smooth(0.03, 0.4, st.sunV); // 太陽整顆顯現的程度：看太陽處被抹開多少
 
-          // 2. 陽光層（雲下方）：暖色 screen 光＋放射光束，只在抹開處看得到
+          // 2. 陽光層（雲下方）：暖色光罩，只在抹開處看得到
           g.save();
           const warm = 0.1 + 0.26 * KK.smooth(0.0, 0.12, st.vis);   // 暖光罩（source-over 比 screen 便宜很多）
           g.fillStyle = KK.rgba(KK.mix(P.cream, P.apricot, 0.5), warm);
           g.fillRect(0, 0, S.w, S.h);
           g.globalCompositeOperation = 'lighter';
-          if (st.vis > 0.005) {
+          // 放射光束已移除（Kai 2026-11-16）；若美術另給 hareru-sunlight.png 柔光圖才疊上
+          const aLt = ART('hareru-sunlight.png');
+          if (aLt && st.vis > 0.005) {
             const bs = u * 1.5, sway = 1 + Math.sin(S.phase * TAU) * 0.05;
-            g.globalAlpha = (0.32 + 0.1 * Math.sin(S.phase * TAU * 2)) * KK.smooth(0, 0.1, st.vis);
-            const aLt = ART('hareru-sunlight.png');
-            if (aLt) { g.globalCompositeOperation = 'screen'; g.globalAlpha = Math.min(1, g.globalAlpha * 2.2); }
-            g.drawImage(aLt || st.beams, st.sun.x - bs * sway / 2, st.sun.y - bs * sway / 2, bs * sway, bs * sway);
+            g.globalCompositeOperation = 'screen';
+            g.globalAlpha = Math.min(1, (0.32 + 0.1 * Math.sin(S.phase * TAU * 2)) * KK.smooth(0, 0.1, st.vis) * 2.2);
+            g.drawImage(aLt, st.sun.x - bs * sway / 2, st.sun.y - bs * sway / 2, bs * sway, bs * sway);
             g.globalAlpha = 1;
           }
           g.globalCompositeOperation = 'source-over';
-          drawRainbow(g, S, KK.smooth(0.3, 0.55, st.vis));
+          drawRainbow(g, S, KK.smooth(0.0, 0.04, st.vis));   // 在雲層底下：只有抹開處透出來
           drawSun(g, S, vis, sa);
           drawBirds(g, S, KK.smooth(0.5, 0.62, st.vis));
 
@@ -494,11 +451,7 @@
           g.drawImage(st.C, 0, 0, S.w, S.h);
           g.restore();
 
-          // 穿過雲層透出來的一團暖光（暗示太陽在那裡）
-          g.save();
-          g.globalCompositeOperation = 'lighter';
-          KK.drawSprite(g, KK.glow(P.apricot, 256), st.sun.x, st.sun.y, u * 1.0, 0.3 * (1 - sa * 0.6));
-          g.restore();
+          // （原本疊在雲上的暖光暈已移除：太陽／彩虹只在抹開處出現）
 
           KK.paper(g, S, { grain: 0.4, vignette: 0.4 });
         },

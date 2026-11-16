@@ -4,7 +4,7 @@
  *   → 玻璃上的水珠＋滑落中的大水珠 → 細斜雨絲 → 下緣水窪漣漪 → 手指點出的漣漪＋小水花
  *   → 紅傘下的兩個人（人類：大人牽小孩）每 12 秒沿下緣走過一次 → 紙張顆粒＋暗角。
  * 互動（Kai 02:47：與〈太陽〉的抹開烏雲區隔）：點一下／按住滑動 → 在手指處出現漣漪圈＋小水花（可多指）。不再抹霧。
- * 點陣素材（有檔就用）：rain-mist（靜態薄霧）、rain-strokes、rain-drop-1..4、rain-puddle、rain-umbrella-walkers、rain-splash、rain-ripple。
+ * 點陣素材（有檔就用）：rain-mist（靜態薄霧）、rain-drop-1..4、rain-puddle、rain-umbrella-walkers、rain-splash、rain-ripple。
  * 載入：KK 還沒載入時本檔只登記到 DAYOF.kkPlugins，由 camera.js 在 KK 載入後執行註冊。 */
 (function () {
   'use strict';
@@ -22,14 +22,13 @@
 
     /* 滑落的大水珠：x 比例、起點 y、行程、每 loop 圈數、起點偏移、大小 */
     var RUNNERS = [
+      // 毛毛雨（Kai 2026-11-16）：7 → 3 顆
       { x: 0.12, y0: 0.05, len: 0.55, laps: 1, off: 0.00, s: 1.0 },
-      { x: 0.31, y0: 0.18, len: 0.62, laps: 1, off: 0.42, s: 0.8 },
-      { x: 0.55, y0: 0.02, len: 0.48, laps: 2, off: 0.15, s: 0.7 },
       { x: 0.72, y0: 0.25, len: 0.58, laps: 1, off: 0.70, s: 1.1 },
-      { x: 0.88, y0: 0.08, len: 0.66, laps: 1, off: 0.28, s: 0.85 },
-      { x: 0.44, y0: 0.40, len: 0.42, laps: 2, off: 0.61, s: 0.65 },
-      { x: 0.20, y0: 0.50, len: 0.38, laps: 1, off: 0.83, s: 0.75 },
+      { x: 0.44, y0: 0.40, len: 0.42, laps: 1, off: 0.36, s: 0.65 },
     ];
+    /* 毛毛雨參數（Kai 2026-11-16：原本像暴雨）：雨絲約 200 → 48 條、更短更細更淡更慢；鏡頭水珠 70 → 23 */
+    var STREAKS = 48, STREAK_ALPHA = 0.5, STREAK_TILES_PER_LOOP = 4, BEADS = 23;
     /* 水窪漣漪：x 比例、y 比例、每 loop 次數、偏移 */
     var RIPPLES = [
       [0.14, 0.955, 3, 0.0], [0.36, 0.975, 2, 0.3], [0.58, 0.95, 3, 0.55], [0.8, 0.97, 2, 0.15], [0.68, 0.985, 4, 0.8], [0.27, 0.94, 2, 0.7],
@@ -69,15 +68,16 @@
           return t;
         }
         function makeRain(Tw, Th, U) {
-          var t = KK.canvas(Tw, Th), g = t.getContext('2d'), rnd = KK.rng(77), slope = 0.18;
-          g.strokeStyle = KK.rgba(KK.mix(P.cream, P.mist, 0.4), 0.42);
-          g.lineWidth = Math.max(1, U * 0.0035); g.lineCap = 'round';
-          g.beginPath();
-          for (var i = 0; i < 38; i++) {
-            var x = rnd() * Tw, y = rnd() * Th, len = U * (0.035 + rnd() * 0.05);
+          var t = KK.canvas(Tw, Th), g = t.getContext('2d'), rnd = KK.rng(77), slope = 0.14, col = KK.mix(P.cream, P.mist, 0.45);
+          g.lineCap = 'round';
+          for (var i = 0; i < STREAKS; i++) {                // 稀疏、短、細、半透明（每條濃淡略不同，像細雨）
+            var x = rnd() * Tw, y = rnd() * Th, len = U * (0.018 + rnd() * 0.026);
+            g.strokeStyle = KK.rgba(col, 0.55 + rnd() * 0.45);
+            g.lineWidth = Math.max(0.8, U * (0.0013 + rnd() * 0.0009));
+            g.beginPath();
             [-Tw, 0, Tw].forEach(function (ox) { [-Th, 0, Th].forEach(function (oy) { g.moveTo(x + ox, y + oy); g.lineTo(x + ox - len * slope, y + oy + len); }); });
+            g.stroke();
           }
-          g.stroke();
           var d = KK.canvas(Tw, Th * 2), dg = d.getContext('2d');
           dg.drawImage(t, 0, 0); dg.drawImage(t, 0, Th);
           return d;
@@ -109,7 +109,7 @@
           st.bead = makeBead(64);
           var r = KK.rng(316);
           st.beads = [];
-          for (var i = 0; i < 70; i++) st.beads.push({ x: r() * S.w, y: r() * S.h * 0.9, s: S.u * (0.008 + Math.pow(r(), 2) * 0.03), ph: r() });
+          for (var i = 0; i < BEADS; i++) st.beads.push({ x: r() * S.w, y: r() * S.h * 0.9, s: S.u * (0.008 + Math.pow(r(), 2) * 0.03), ph: r() });
           st.key = S.w + 'x' + S.h + (aMist ? 'm' : '');
         }
 
@@ -259,7 +259,7 @@
             // 2. 玻璃上的水珠（靜止，跟著手繪節奏微微閃）＋滑落的大水珠
             var b = KK.boil(t), drops = dropImgs();
             if (drops.length) {                       // 點陣水滴（畫出來的，不是寫實玻璃水珠）
-              for (var j2 = 0; j2 < st.beads.length; j2 += 2) {
+              for (var j2 = 0; j2 < st.beads.length; j2++) {
                 var bd2 = st.beads[j2], im = drops[j2 % drops.length], dw = bd2.s * 2.2, dh = dw * im.naturalHeight / im.naturalWidth;
                 g.globalAlpha = 0.9; g.drawImage(im, bd2.x - dw / 2, bd2.y - dh / 2, dw, dh);
               }
@@ -283,20 +283,11 @@
             }
             }
 
-            // 3. 窗外細斜雨絲（每 loop 落 6 個 tile 高 → 無縫）
-            var aRs = ART('rain-strokes.png');
-            if (aRs) {                                // 點陣雨絲：可垂直平鋪，兩層不同速度（每 loop 整數個 tile → 無縫）
-              [[w, 5, 0.85, 0], [w * 0.7, 8, 0.5, 0.37]].forEach(function (L) {
-                var tw = L[0], th = tw * aRs.naturalHeight / aRs.naturalWidth, off = KK.mod(ph * L[1], 1) * th;
-                g.globalAlpha = L[2];
-                for (var xx = -L[3] * tw; xx < w; xx += tw) for (var yy = off - th; yy < h; yy += th) g.drawImage(aRs, xx, yy, tw, th);
-              });
-              g.globalAlpha = 1;
-            } else {
-              g.globalAlpha = 0.85;
-              g.drawImage(st.rain, 0, Ch - KK.mod(ph * 6, 1) * Ch, Cw, Ch, 0, 0, w, h);
-              g.globalAlpha = 1;
-            }
+            // 3. 窗外毛毛雨：一層稀疏細短雨絲（每 loop 落 STREAK_TILES_PER_LOOP 個 tile 高 → 無縫）。
+            //    rain-strokes.png 太密太長（像暴雨），Kai 2026-11-16 起不再平鋪使用。
+            g.globalAlpha = STREAK_ALPHA;
+            g.drawImage(st.rain, 0, Ch - KK.mod(ph * STREAK_TILES_PER_LOOP, 1) * Ch, Cw, Ch, 0, 0, w, h);
+            g.globalAlpha = 1;
 
             // 4. 下緣水窪：淡淡的水面＋漣漪（手繪橢圓，整數圈擴散）
             var pg = g.createLinearGradient(0, h * 0.9, 0, h);

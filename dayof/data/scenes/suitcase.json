@@ -1,5 +1,5 @@
 {
- "enabled": true,
+ "enabled": false,
  "_note": "step-11 painted-scene mode (format: suitcase.schema.md). Set enabled:false to fall back to the SVG room.",
  "bg": "assets/scenes/s11-suitcase-items.jpg",
  "empty": "assets/scenes/s11-suitcase-empty.jpg",

@@ -11,7 +11,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       { role: '主唱', name: 'Kai' }, { role: '吉他手', name: '蘭多' },
       { role: '視覺設計', name: '聖壹' }, { role: '程式設計', name: 'Kai’s Claude & Grok' } ] },
     { section: '感謝名單', items: [
-      { role: '寫詞顧問', name: 'Emma' }, { role: '甜點Queen', name: 'Lynn @失眠動物園' } ] },
+      { role: '寫詞顧問', name: 'Emma' }, { role: '甜點Queen', name: 'Lynn' } ] },
     { section: '', note: '謝謝你，今天來看看', items: [] }
   ];
 
@@ -44,16 +44,12 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var rollwrap = el('div', 'cr-rollwrap'), roll = el('div', 'cr-roll');
     var zone = el('div', 'cr-walkzone');
     // (Kai t480u) no skip: credits always play in full; the continue button appears only after the roll ends
-    var cont = el('button', 'btn cr-continue', '繼續看看'); cont.type = 'button'; cont.hidden = true;
+    var cont = el('button', 'btn cr-continue', '繼續看看'); cont.type = 'button'; cont.hidden = true; if (DAYOF.eyesButton) DAYOF.eyesButton(cont);
     rollwrap.appendChild(roll); roll.style.visibility = 'hidden';
     stage.appendChild(curL); stage.appendChild(curR); stage.appendChild(valance);
     stage.appendChild(rollwrap); stage.appendChild(zone);
     page.appendChild(stage); page.appendChild(cont);
-    // filter stack (v=261116x, beyond Kai's list): column on the right, below the valance; the roll/continue stay clear
-    var stack = null;
-    if (DAYOF.FilterStack && ctx.filtersAvailable && ctx.filtersAvailable().length) {
-      try { stack = DAYOF.FilterStack.mount(page, ctx, { top: 'calc(env(safe-area-inset-top,0px) + 62px)', className: 'cr-stack' }); } catch (e) { console.error(e); }
-    }
+    var stack = null; // v=261116y (Kai): no filter stack on 33 (lyrics pages only)
 
     function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
 

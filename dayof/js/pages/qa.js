@@ -30,19 +30,16 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var row = el('div', 'qz-btns'), bSend = el('button', 'qz-btn', buttons[0]), bAlt = el('button', 'qz-btn ghost', buttons[1]);
       bSend.type = bAlt.type = 'button';
       row.appendChild(bSend); row.appendChild(bAlt); wrap.appendChild(row);
-      // optional page illustration (step 21): a soft band under the buttons, faded edges, never behind the inputs
+      // optional page illustration (step 21, v=261116y): large top hero (soft faded bottom edge), question + inputs compactly below;
+      // the whole wrap scrolls, so with the keyboard open the hero simply scrolls away
       var art = st.art || fb.art;
       if (art) {
-        var band = el('div', 'qz-art'); band.setAttribute('role', 'img'); band.setAttribute('aria-label', st.artAlt || fb.artAlt || '插圖');
-        band.style.backgroundImage = 'url("' + art + '")';
-        wrap.appendChild(band); container.classList.add('qz-has-art');
+        var hero = el('div', 'qz-hero'); hero.setAttribute('role', 'img'); hero.setAttribute('aria-label', st.artAlt || fb.artAlt || '插圖');
+        hero.style.backgroundImage = 'url("' + art + '")';
+        wrap.insertBefore(hero, wrap.firstChild); container.classList.add('qz-has-art');
       }
       container.appendChild(wrap);
-      // filter stack after unlock (one row, top-right; the page reserves the top band so it never covers inputs)
-      var stack = null;
-      if (st.n >= 10 && DAYOF.FilterStack && ctx.filtersAvailable && ctx.filtersAvailable().length) {
-        try { stack = DAYOF.FilterStack.mount(container, ctx, { layout: 'row' }); container.classList.add('has-stack'); } catch (e) { console.error(e); }
-      }
+      // v=261116y (Kai): no filter stack on qa pages (lyrics pages only)
       function autosize() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, window.innerHeight * 0.5) + 'px'; }
       ta.addEventListener('input', function () {
         autosize();
@@ -69,7 +66,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
           finish({ text: '', skipped: true, huh: true }, 800);
         } else finish({ text: '', skipped: true }, 0);
       });
-      return function () { timers.forEach(clearTimeout); if (stack) stack.destroy(); };
+      return function () { timers.forEach(clearTimeout); };
     }
   });
 })();

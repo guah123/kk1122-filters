@@ -63,7 +63,8 @@ async function waitHttp(url, ms) {
   const curPage = () => page.locator('#app > .page.is-in').last();
   const dbg = (fn, arg) => page.evaluate(([f, a]) => DAYOF.debug[f](a), [fn, arg]);
   async function clickText(re, scope) {
-    const loc = (scope || curPage()).locator('button, a, [role=button], .btn').filter({ hasText: re });
+    let loc = (scope || curPage()).locator('button, a, [role=button], .btn').filter({ hasText: re });
+    if (!(await loc.count())) loc = (scope || curPage()).getByRole('button', { name: re }); // icon-only buttons (v=261116y eyes)
     const n = await loc.count();
     for (let i = n - 1; i >= 0; i--) {
       const el = loc.nth(i);
@@ -143,7 +144,7 @@ async function waitHttp(url, ms) {
             await sc.evaluate((el) => { el.scrollTop = el.scrollHeight; });
             await sleep(500);
             const btn = curPage().locator('.lyr-next');
-            const label = (await btn.textContent()).trim();
+            const label = ((await btn.getAttribute("aria-label")) || (await btn.textContent()) || "").trim(); // icon-only eyes button (v=261116y) keeps its name in aria-label
             if (label !== row.btn) log(n, `lyric button label "${label}" != "${row.btn}"`);
             await btn.click({ timeout: 3000 });
             ok = await advanced(n);

@@ -36,7 +36,7 @@ const ALIAS = { familyphoto: 'photoframe' };
   const st = await p.evaluate(() => DAYOF.debug.state().suitcase);
   if (!st || !st.closed || st.packed.length !== 10 || !st.packed.includes('photoframe')) fails.push('state ' + JSON.stringify(st));
   await p.screenshot({ path: path.join(OUT, '11-painted-closed' + TAG + '.png') });
-  const btn = await p.evaluate(() => { const e = document.querySelector('.sc-scene .sc-actions .btn.show'); if (!e) return null; const r = e.getBoundingClientRect(); return [e.textContent, r.y, r.bottom]; });
+  const btn = await p.evaluate(() => { const e = document.querySelector('.sc-scene .sc-actions .btn.show'); if (!e) return null; const r = e.getBoundingClientRect(); return [e.getAttribute('aria-label') || e.textContent, r.y, r.bottom]; });
   if (!btn || btn[0] !== '繼續看看') fails.push('continue ' + JSON.stringify(btn));
   await p.evaluate(() => document.querySelector('.sc-scene .sc-actions .btn').click()); await sleep(800);
   const step = await p.evaluate(() => DAYOF.debug.state().step); if (step !== 12) fails.push('step ' + step);

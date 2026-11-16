@@ -57,7 +57,7 @@
   var ART_FILES = [
     'paper-grain.jpg', 'vignette-wet.png',
     'otona-sky.png', 'otona-stars.png', 'otona-meteor.png', 'otona-rooftop.png', 'otona-critters.png',
-    'hareru-clouds.jpg', 'hareru-wipe-brush.png', 'hareru-sunlight.png', 'hareru-sun.png',
+    'hareru-clouds.jpg', 'hareru-wipe-brush.png', 'hareru-sunlight.png', 'hareru-sun.png', 'hareru-rainbow.png',
     'remember-hill.png', 'remember-house.png', 'remember-smoke.png', 'remember-runner-a.png', 'remember-runner-b.png', 'remember-far-walkers.png',
     'hareru-walkers.png',
     'rain-strokes.png', 'rain-drop-1.png', 'rain-drop-2.png', 'rain-drop-3.png', 'rain-drop-4.png', 'rain-mist.png', 'rain-puddle.png', 'rain-umbrella-walkers.png',
@@ -334,10 +334,10 @@
     box.appendChild(frame);
     ov.appendChild(box);
 
-    var badge = h('div', 'step-no cam-badge', (opts.stepNo != null ? opts.stepNo + '·' : '') + (mode === 'photo' ? '拍照' : '濾鏡'));
+    /* 不顯示步驟編號徽章（Kai 2026-11-16：濾鏡／相機畫面不出現任何數字；濾鏡名稱在右上 .cam-tag） */
     var back = h('button', 'cam-back', mode === 'photo' ? '← 返回' : '← 回歌詞'); back.type = 'button';
     var tag = h('div', 'cam-tag', mode === 'photo' ? '魚眼相機' : LABEL[filter]);
-    ov.appendChild(badge); ov.appendChild(back); ov.appendChild(tag);
+    ov.appendChild(back); ov.appendChild(tag);
 
     var inapp = h('div', 'cam-inapp', '偵測到內建瀏覽器（LINE／IG／FB…）。請點右上角 ⋯ 改用 Safari 或 Chrome 開啟，相機、麥克風與錄影才穩定。');
     inapp.hidden = !isInApp();

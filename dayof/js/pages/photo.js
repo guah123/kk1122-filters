@@ -1,4 +1,4 @@
-/* 第 29 頁（type 'photo'）：「謝謝你讓我看看你的世界」→［拍照］開魚眼相機
+/* 第 29 頁（type 'photo'）：「現在就拍一張照吧，我也想看看你的世界」→［拍照］開魚眼相機
  * → 拍好按「用這張」：存到手機（相機覆蓋層在點擊當下觸發分享單／下載）＋這頁顯示照片（iPhone 可長按儲存）＋上傳雲端
  * → ［拍完了］→ ctx.next()。相機打不開時顯示「沒辦法拍照？直接下一頁」。
  * 後台未接（api.enabled=false）：照片先存在本機 localStorage（DAYOF.PhotoQueue），state.photo.queued=true，
@@ -9,7 +9,7 @@
   DAYOF._pages = DAYOF._pages || {};
   DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m; };
 
-  var TEXT = '謝謝你讓我看看你的世界';
+  var TEXT = '現在就拍一張照吧，我也想看看你的世界';
   var MAX_EDGE = 1600;
   var QKEY = function (email) { return 'dayof:v1:photoq:' + String(email || '').toLowerCase(); };
 
@@ -63,7 +63,6 @@
         '<div class="photo-result" hidden>' +
         '  <img class="photo-img" alt="你拍的照片">' +
         '  <p class="photo-hint">長按照片可以存到相簿</p>' +
-        '  <button type="button" class="btn photo-btn photo-save" hidden>存到相簿</button>' +
         '</div>' +
         '<p class="photo-status" role="status"></p>' +
         '<div class="photo-actions">' +
@@ -75,24 +74,14 @@
       var $ = function (s) { return wrap.querySelector(s); };
       var ptxt = (ctx.step && (ctx.step.text || ctx.step.q)) || TEXT;
       if (DAYOF.punctLines) DAYOF.punctLines($('.photo-text'), ptxt); else $('.photo-text').textContent = ptxt;
-      // filter stack (one row, top-right) — the wrap's top padding keeps it clear of the text/buttons
-      var stack = null;
-      if (DAYOF.FilterStack && ctx.filtersAvailable && ctx.filtersAvailable().length) {
-        try { stack = DAYOF.FilterStack.mount(container, ctx, { layout: 'row' }); container.classList.add('has-stack'); } catch (e) { console.error(e); }
-      }
+      var stack = null; // v=261116y (Kai): no filter stack on 29 (lyrics pages only)
       var shootBtn = $('.photo-shoot'), doneBtn = $('.photo-done'), skip = $('.photo-skip');
-      var saveBtn = $('.photo-save'), lastBlob = null;
-      /* 存到相簿：分享單被取消（AbortError）或手勢過期（NotAllowedError）→ 留著「存到相簿」鈕，一鍵重試 */
+      /* v=261116y (Kai): no 「存到相簿」 retry button on the result page — saving happens via the share sheet on 用這張
+         (camera overlay); if that was cancelled the photo can still be long-pressed here */
       function watchSave(info) {
-        if (!info || !info.promise) { if (info && info.method === 'none') saveBtn.hidden = false; return; }
-        info.promise.then(function (out) {
-          if (!alive) return;
-          if (out === 'shared') { saveBtn.hidden = true; if (ctx.toast) ctx.toast('已存到相簿'); }
-          else if (out === 'download') saveBtn.hidden = true;
-          else saveBtn.hidden = false;
-        });
+        if (!info || !info.promise) return;
+        info.promise.then(function (out) { if (alive && out === 'shared' && ctx.toast) ctx.toast('已存到相簿'); }, function () {});
       }
-      saveBtn.addEventListener('click', function () { if (lastBlob && DAYOF.Camera) watchSave(DAYOF.Camera.savePhoto(lastBlob)); });
       var result = $('.photo-result'), img = $('.photo-img'), status = $('.photo-status');
 
       function setStatus(msg, ok) { status.textContent = msg || ''; status.classList.toggle('ok', !!ok); }
@@ -148,7 +137,7 @@
           onPhoto: function (blob, dataUrl, info) {
             if (!alive) return;
             showPhoto(dataUrl);
-            lastBlob = blob; watchSave(info);
+            watchSave(info);
             if (info && info.method === 'none') setStatus('自動儲存沒成功，請長按照片存到相簿');
             shrink(dataUrl).then(function (d) { if (alive) upload(d); });
           },

@@ -50,16 +50,13 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     // plain <img> + click handler (no <a> wrapper, no touch/contextmenu hijack) so iOS long-press save still works
     img.addEventListener('click', function () { if (cfg.COFFEE_LINK) openUrl(cfg.COFFEE_LINK); else openLightbox(); });
     box.appendChild(img);
-    var zoom = el('a', 'cm-zoom', '放大 QR code'); zoom.href = '#'; zoom.setAttribute('role', 'button');
-    zoom.addEventListener('click', function (e) { e.preventDefault(); openLightbox(); });
-    box.appendChild(zoom);
-    box.appendChild(el('div', 'cm-acct', cfg.CTBC_ACCOUNT || ''));
+    // v=261116y (Kai): no 「放大 QR code」 / 「下載付款碼」 links; account line without the bank branch name
+    box.appendChild(el('div', 'cm-acct', String(cfg.CTBC_ACCOUNT || '').replace(/\s*中國信託.*$/, '').trim()));
     box.appendChild(el('p', 'cm-hint', '長按圖片可以下載／點圖片直接打開中信轉帳'));
     var act = el('div', 'cm-actions');
     var go = el('button', 'cm-btn', '打開中信轉帳'); go.type = 'button';
     go.addEventListener('click', function () { openUrl(link()); });
-    var dl = el('a', 'cm-dl', '下載付款碼'); dl.href = 'assets/ctbc-qr-crop.png'; dl.setAttribute('download', 'kai-coffee-ctbc-qr.png');
-    act.appendChild(go); act.appendChild(dl); box.appendChild(act);
+    act.appendChild(go); box.appendChild(act);
 
     if (ctx.modal) { try { return ctx.modal(box, { closeX: true }); } catch (e) {} }
     var bd = el('div', 'fn-backdrop'), md = el('div', 'fn-modal'), x = el('button', 'fn-x', '×'); x.type = 'button'; x.setAttribute('aria-label', '關閉');
@@ -158,27 +155,22 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     });
     rsBox.appendChild(rsBtn); rsBox.appendChild(el('span', 'eg-cap', '從頭開始'));
 
-    var stack = null;
-    if (DAYOF.FilterStack && DAYOF.FilterStack.mount) {
-      try { stack = DAYOF.FilterStack.mount(page, ctx, { extra: [lineBox, cofBox, rsBox], className: 'eg-stack' }); } catch (e) { stack = null; }
-    }
-    if (!stack) {
-      var own = el('div', 'filter-stack eg-stack');
-      own.style.cssText = 'position:absolute;top:10px;right:10px;z-index:50;display:flex;flex-direction:column;align-items:center;gap:10px';
-      var ex = el('div', 'fs-extra'); ex.appendChild(lineBox); ex.appendChild(cofBox); ex.appendChild(rsBox); own.appendChild(ex);
-      page.appendChild(own); stack = { el: own };
-    }
+    // v=261116y (Kai): 34 is not a lyrics page → no filter buttons; only LINE / Coffee / 從頭開始 inside the ⋯ fold
+    var own = el('div', 'eg-stack');
+    var ex = el('div', 'eg-extra'); ex.appendChild(lineBox); ex.appendChild(cofBox); ex.appendChild(rsBox); own.appendChild(ex);
+    page.appendChild(own);
+    var stack = { el: own, destroy: function () { if (own.parentNode) own.parentNode.removeChild(own); } };
     // v=261116x (Kai): every button folds into ONE toggle top-right; starts collapsed, tap to expand/collapse
     var SVG_MORE = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="24" r="2.6" fill="currentColor"/><circle cx="24" cy="24" r="2.6" fill="currentColor"/><circle cx="35" cy="24" r="2.6" fill="currentColor"/></svg>';
     var SVG_X = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M15 15l18 18M33 15L15 33"/></svg>';
     var tog = el('button', 'round-btn eg-toggle'); tog.type = 'button';
-    tog.setAttribute('aria-label', '展開按鈕（濾鏡、LINE 社群、Buy Kai a Coffee、從頭開始）');
+    tog.setAttribute('aria-label', '展開按鈕（LINE 社群、Buy Kai a Coffee、從頭開始）');
     tog.setAttribute('aria-expanded', 'false');
     var togIco = el('span', 'ico'); tog.appendChild(togIco);
     function setOpen(on) {
       stack.el.classList.toggle('eg-collapsed', !on);
       tog.setAttribute('aria-expanded', on ? 'true' : 'false');
-      tog.setAttribute('aria-label', on ? '收起按鈕' : '展開按鈕（濾鏡、LINE 社群、Buy Kai a Coffee、從頭開始）');
+      tog.setAttribute('aria-label', on ? '收起按鈕' : '展開按鈕（LINE 社群、Buy Kai a Coffee、從頭開始）');
       togIco.innerHTML = on ? SVG_X : SVG_MORE;
     }
     tog.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); setOpen(stack.el.classList.contains('eg-collapsed')); });

@@ -10,6 +10,24 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   var qs = new URLSearchParams(location.search);
   var TEST = qs.get('test') === '1';
 
+  /* v=261116y (Kai): every 「繼續看看」 button is icon-only — a watercolor pair of eyes (assets/ui/btn-continue-eyes.png).
+     DAYOF.eyesButton(btn): keeps the accessible name (aria-label/title), swaps the visible label for the image, class 'btn-eyes'.
+     Styling lives in css/base.css. Idempotent; returns the button. */
+  DAYOF.eyesButton = function (btn, label) {
+    if (!btn || btn.nodeType !== 1) return btn;
+    label = label || (btn.getAttribute('aria-label') || btn.textContent || '').trim() || '繼續看看';
+    btn.setAttribute('aria-label', label); btn.title = label;
+    btn.classList.add('btn-eyes');
+    if (!btn.querySelector('img.btn-eyes-img')) {
+      btn.textContent = '';
+      var img = document.createElement('img');
+      img.className = 'btn-eyes-img'; img.src = 'assets/ui/btn-continue-eyes.png'; img.alt = ''; img.draggable = false;
+      img.setAttribute('aria-hidden', 'true');
+      btn.appendChild(img);
+    }
+    return btn;
+  };
+
   /* ---------- structural fallback CSS (zero specificity via :where → css/base.css wins) ---------- */
   var CSS = [
     ':where(html,body){margin:0;height:100%}',
@@ -22,7 +40,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     'body:has(.cam-overlay) #app > .step-no{visibility:hidden}',
     ':where(.step-no){position:fixed;top:calc(env(safe-area-inset-top,0px) + 6px);left:6px;z-index:10000;min-width:22px;height:22px;padding:0 7px;border-radius:11px;background:rgba(255,255,255,.78);color:var(--ink,#4A3C30);font:700 12px/22px var(--font,system-ui);text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.15);pointer-events:none;box-sizing:border-box}',
     /* 上一頁 (v=261116x): the step badge is a back button on steps 2–34; hidden on 1 and while the camera is open */
-    ':where(#app > .step-back){height:44px;min-width:44px;padding:0 14px 0 8px;border-radius:22px;border:0;display:inline-flex;align-items:center;gap:2px;font:600 14px/1 var(--font,system-ui);pointer-events:auto;cursor:pointer}',
+    ':where(#app > .step-back){width:46px;height:46px;min-width:46px;padding:0;border-radius:50%;border:0;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer}',
     '#app > .step-back[hidden]{display:none}',
     /* shared punctuation-break text: one block per clause, bracketed asides small + gray */
     ':where(.pl-line){display:block}',
@@ -231,15 +249,15 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     return handle;
   }
 
-  // the badge shows 「上一頁」 on 2–34 (step number kept in data-step / aria-label); hidden on step 1
+  // v=261116y (Kai): the badge is an icon-only back chevron on 2–34 (no text; aria-label/title 上一頁; step number in data-step); hidden on step 1
   function setBadge(txt) {
     if (!badge) return;
     var n = parseInt(txt, 10);
-    if (!(n >= 1)) { badge.lastChild.textContent = String(txt); return; }
+    if (!(n >= 1)) { badge.lastChild.textContent = ''; return; }
     badge.dataset.step = n;
     badge.hidden = n <= 1;
-    badge.setAttribute('aria-label', '上一頁（目前第 ' + n + ' 頁）');
-    badge.lastChild.textContent = '上一頁';
+    badge.setAttribute('aria-label', '上一頁'); badge.title = '上一頁';
+    badge.lastChild.textContent = '';
   }
   var lastPrev = 0;
   function prev() {
@@ -526,7 +544,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     if (!root) { root = document.createElement('div'); root.id = 'app'; document.body.appendChild(root); }
     badge = document.createElement('button'); badge.type = 'button'; badge.className = 'step-no step-back'; badge.hidden = true;
     var chev = document.createElement('span'); chev.className = 'sb-chev'; chev.setAttribute('aria-hidden', 'true');
-    chev.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>';
+    chev.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M14.8 5.2c-1.9 1.7-4.3 4.2-6.3 6.6.1.4 4.1 4.6 6.4 7"/></svg>';
+    badge.setAttribute('aria-label', '上一頁'); badge.title = '上一頁';
     badge.appendChild(chev); badge.appendChild(document.createElement('span'));
     badge.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); prev(); });
     root.appendChild(badge);

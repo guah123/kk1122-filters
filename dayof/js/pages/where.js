@@ -79,7 +79,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var note = el('span', null, meta, ''); note.className = 'sis-note';
         var upd = function () { note.textContent = ''; }; // secrets are never advertised
         upd(); box._upd = upd;
-        var b = el('button', 'btn', box, '繼續看看'); b.type = 'button';
+        var b = el('button', 'btn', box, '繼續看看'); b.type = 'button'; if (DAYOF.eyesButton) DAYOF.eyesButton(b);
         b.addEventListener('click', function () { b.disabled = true; ctx.next(); });
       }
       function saveFound(patch) {
@@ -120,17 +120,12 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       } else {
         el('p', null, area, '場景載入中…').style.cssText = 'padding:40px;text-align:center';
       }
-      // filter buttons (post-unlock find-Kai pages: 17/19/23/25/27) — top-right of the scene area, under the header
-      var stack = null;
-      if ((step.n || 0) >= 10 && DAYOF.FilterStack && DAYOF.FilterStack.mount) {
-        try { stack = DAYOF.FilterStack.mount(area, ctx, { labels: false }); if (stack && stack.el && stack.el.children.length) container.classList.add('has-stack'); } catch (e) { console.error(e); }
-      }
+      // v=261116y (Kai): no filter stack on find-Kai pages (lyrics pages only); the 「找到凱凱了」 bar is full width again
       // revisiting a solved step: let the player continue straight away (scene stays playable)
       if (already) showDone({ sec: already.sec, hints: already.hints });
 
       return function cleanup() {
         destroyed = true; window.removeEventListener('resize', fitBack);
-        if (stack && stack.destroy) stack.destroy();
         if (handle) handle.destroy();
       };
     }
