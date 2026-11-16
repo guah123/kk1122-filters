@@ -143,3 +143,21 @@
 .cr-continue{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);transform:translate(-50%,10px);opacity:0;z-index:30;transition:opacity .6s,transform .6s}
 .cr-continue.show{opacity:1;transform:translate(-50%,0)}
 .cr-skip{display:none!important}
+
+/* ---------- v=261116x: 34 — all buttons folded into one toggle (top-right) ---------- */
+.page-egg .eg-stack { top: calc(env(safe-area-inset-top, 0px) + 10px); right: 10px; }
+.page-egg .eg-stack .eg-toggle { background: #E6DACA; color: var(--wood-dark, #8A6545); }
+.page-egg .eg-stack > :not(.eg-toggle) { transition: opacity .22s ease, transform .22s ease, visibility 0s linear 0s; }
+.page-egg .eg-stack.eg-collapsed > :not(.eg-toggle) {
+  visibility: hidden; opacity: 0; transform: translateY(-10px); pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
+}
+.page-egg .eg-stack .fs-extra { margin-top: 2px; }
+.eg-pop button.eg-bigbtn { width: 56px; height: 56px; }
+.eg-line button.eg-bigbtn { background: #5FA97A; }
+.eg-coffee button.eg-bigbtn { background: #A9805C; }
+.eg-restart button.eg-bigbtn { background: #7F9AB0; }
+.eg-bubble { border-color: #5FA97A; }
+.eg-bubble::after { border-color: #5FA97A; }
+/* 33 — filter column under the valance */
+.page-credits > .cr-stack { right: 10px; z-index: 40; }

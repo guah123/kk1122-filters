@@ -46,8 +46,8 @@ html.cam-open, html.cam-open body { overflow: hidden; }
   position: absolute; z-index: 5; right: 10px; min-height: 38px; padding: 0 14px; border-radius: 19px; border: 0; font-size: 14px; font-weight: 700;
 }
 .cam-save { top: 56px; background: var(--sun, #F2C66D); color: var(--ink, #4A3C30); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
-.cam-reset { bottom: 12px; right: 10px; background: rgba(251, 247, 239, 0.75); color: var(--ink, #4A3C30); }
-.cam-overlay.recording .cam-reset { bottom: 12px; }
+.cam-reset { bottom: 52px; right: 10px; z-index: 7; background: rgba(251, 247, 239, 0.85); color: var(--ink, #4A3C30); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+.cam-overlay.recording .cam-reset { bottom: 52px; }
 .cam-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 3; }
 .cam-flash.go { animation: camflash 0.35s ease-out; }
 @keyframes camflash { 0% { opacity: 0.85; } 100% { opacity: 0; } }
@@ -64,7 +64,10 @@ html.cam-open, html.cam-open body { overflow: hidden; }
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; justify-items: center;
   padding: 18px 12px calc(14px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(to top, rgba(27, 21, 18, 0.7) 55%, rgba(27, 21, 18, 0));
+  pointer-events: none;   /* 整條控制列是全寬覆蓋層：只讓真正的按鈕接點擊，底下的「重新佈滿烏雲」等才點得到 */
 }
+.cam-ctrl > button { pointer-events: auto; }
+.cam-ctrl .cam-right { pointer-events: none; }
 .cam-ctrl.hide { display: none; }
 .cam-flip {
   width: 66px; min-height: 58px; border: 0; background: none; color: var(--cream, #F6EFE2);

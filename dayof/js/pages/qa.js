@@ -4,7 +4,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   var FALLBACK = {
     9: { key: 'q9', q: '如果上太空之前，你可以留下一段話在你的社群上給大家，你會留什麼？（請注意：太空人可能一去不返）', buttons: ['送出', '跳過'] },
     15: { key: 'q15', q: '如果今天是陳柏凱的喪禮，你想跟大家分享一件他的事，你會分享什麼？', buttons: ['送出', '跳過'], note: '（如果你有回他，他也會回你這一題）' },
-    21: { key: 'q21', q: '如果世界是一片披薩，你是一種配料，你是什麼配料，為什麼？', buttons: ['送出', '蛤'] },
+    21: { key: 'q21', q: '如果世界是一片披薩，你是一種配料，你是什麼配料，為什麼？', buttons: ['送出', '蛤'], art: 'assets/scenes/s21-pizza-world.jpg', artAlt: '漂浮在雲上的披薩世界，小小的人在上面散步' },
     31: { key: 'q31', q: '如果你只能帶著這輩子的一件記憶到下輩子，你想帶著哪一件事？', buttons: ['送出', '跳過'] }
   };
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -18,7 +18,10 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var prev = ctx.state.answers[key] || {};
       var wrap = el('div', 'qz-wrap');
       wrap.appendChild(el('div', 'qz-label', '簡答題'));
-      wrap.appendChild(el('div', 'qz-card', q));
+      var card = el('div', 'qz-card');
+      // v=261116x: break after every ，。？、； ; bracketed asides (incl. the step note) small + gray as the card's last line
+      if (DAYOF.punctLines) DAYOF.punctLines(card, q, { note: note }); else card.textContent = q + (note ? '\n' + note : '');
+      wrap.appendChild(card);
       var ta = el('textarea', 'qz-area'); ta.placeholder = '寫在這裡…'; ta.rows = 5;
       ta.value = prev.text != null && prev.text !== '' ? prev.text : (prev.draft || '');
       wrap.appendChild(ta);
@@ -27,8 +30,19 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var row = el('div', 'qz-btns'), bSend = el('button', 'qz-btn', buttons[0]), bAlt = el('button', 'qz-btn ghost', buttons[1]);
       bSend.type = bAlt.type = 'button';
       row.appendChild(bSend); row.appendChild(bAlt); wrap.appendChild(row);
-      if (note) wrap.appendChild(el('div', 'qz-note', note));
+      // optional page illustration (step 21): a soft band under the buttons, faded edges, never behind the inputs
+      var art = st.art || fb.art;
+      if (art) {
+        var band = el('div', 'qz-art'); band.setAttribute('role', 'img'); band.setAttribute('aria-label', st.artAlt || fb.artAlt || '插圖');
+        band.style.backgroundImage = 'url("' + art + '")';
+        wrap.appendChild(band); container.classList.add('qz-has-art');
+      }
       container.appendChild(wrap);
+      // filter stack after unlock (one row, top-right; the page reserves the top band so it never covers inputs)
+      var stack = null;
+      if (st.n >= 10 && DAYOF.FilterStack && ctx.filtersAvailable && ctx.filtersAvailable().length) {
+        try { stack = DAYOF.FilterStack.mount(container, ctx, { layout: 'row' }); container.classList.add('has-stack'); } catch (e) { console.error(e); }
+      }
       function autosize() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, window.innerHeight * 0.5) + 'px'; }
       ta.addEventListener('input', function () {
         autosize();
@@ -55,7 +69,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
           finish({ text: '', skipped: true, huh: true }, 800);
         } else finish({ text: '', skipped: true }, 0);
       });
-      return function () { timers.forEach(clearTimeout); };
+      return function () { timers.forEach(clearTimeout); if (stack) stack.destroy(); };
     }
   });
 })();

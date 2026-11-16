@@ -225,7 +225,8 @@
           frameRate: { ideal: 30 },
         },
         audio: KK.Camera.wantAudio()
-          ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 2 } }
+          // 錄音樂（演唱會）：關掉通話用的回音消除／降噪／自動增益（這三個會把音樂壓扁、抽掉），要立體聲 48 kHz
+          ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 2 }, sampleRate: { ideal: 48000 } }
           : false,
       };
     },

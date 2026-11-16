@@ -96,8 +96,15 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     { id: 'football', label: '一顆足球' }, { id: 'photoframe', label: '一個全家福相框' }, { id: 'cigarettes', label: '一包菸' },
     { id: 'dress', label: '一套洋裝（和帽子一起）' }
   ];
-  var LEFT = ['switch', 'headphones', 'book', 'monstera', 'guitar'];
-  var RIGHT = ['chips', 'football', 'photoframe', 'cigarettes', 'dress'];
+  // scattered layout (design px on a 390×844 screen; JS maps them onto the real stage). [cx, cy, rotate°, size]
+  // bands: header ≤130 · top scatter 132–340 · suitcase 350–494 (sides x≤100 / ≥290) · message ~510 · bottom scatter 536–716
+  var POS = {
+    switch: [67, 190, -6, 0.95], headphones: [196, 184, 7, 1.04], book: [325, 196, -4, 0.92],
+    monstera: [116, 290, 5, 1.08], guitar: [272, 293, -9, 1.1],
+    chips: [61, 410, 3, 0.94], football: [329, 436, -3, 0.96],
+    photoframe: [86, 588, -5, 1], cigarettes: [304, 598, 9, 0.9], dress: [196, 668, -3, 1.04]
+  };
+  var DESIGN = { W: 390, H: 844, TOP: 130, BOTTOM: 124, CASE_Y: 422, CASE_W: 172 };
   var LABEL = {}; ITEMS.forEach(function (i) { LABEL[i.id] = i.label; });
 
   // slot centres inside the suitcase interior (viewBox 260x200)
@@ -159,8 +166,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   var ROCKET = '<svg class="sc-rocket" viewBox="0 0 34 46"><g ' + ST + '><path d="M17 2 Q27 12 25 30 H9 Q7 12 17 2z" fill="#FBF7EF"/><circle cx="17" cy="16" r="4" fill="#9DBFD8"/><path d="M9 24 L2 34 L9 32z M25 24 L32 34 L25 32z" fill="#C65D4C"/><path d="M12 30 Q17 44 22 30z" fill="#F2C66D"/></g></svg>';
   var STAR = '<svg class="sc-star" viewBox="0 0 24 24"><path d="M12 1 L15 9 L23 9.5 L17 14.5 L19 23 L12 18 L5 23 L7 14.5 L1 9.5 L9 9z" fill="#F2C66D" stroke="' + INK + '" stroke-width="1.5" stroke-linejoin="round"/></svg>';
 
-  DAYOF.registerPage('suitcase', {
-    render: function (container, ctx) {
+  function renderDefault(container, ctx) {
       var state = ctx.state;
       var saved = state.suitcase && state.suitcase.closed ? state.suitcase : null;
       var slotOf = {};               // id -> slot index (packed)
@@ -171,13 +177,13 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       // ---- DOM
       var stage = document.createElement('div'); stage.className = 'sc-stage';
       var html = DEFS +
-        '<div class="sc-head"><h2 class="sc-title">上太空的行李箱你要帶什麼去？</h2><p class="sc-hint">把想帶的東西拖進行李箱，拖完點一下行李箱把它關起來</p></div>';
-      function col(cls, ids) {
-        return '<div class="sc-col ' + cls + '">' + ids.map(function (id) {
-          return '<div class="sc-item" data-id="' + id + '"><div class="sc-art">' + ART[id] + '</div><div class="sc-cap">' + LABEL[id] + '</div></div>';
-        }).join('') + '</div>';
-      }
-      html += col('l', LEFT) + col('r', RIGHT);
+        '<div class="sc-head"><h2 class="sc-title">上太空的行李箱你要帶什麼去？</h2><p class="sc-hint">把想帶的東西拖進行李箱，<br>拖完點一下行李箱，把它關起來</p></div>';
+      function capHtml(t) { return t.replace(/（[^（）]*）|\([^()]*\)/g, function (m) { return '<span class="sc-note">' + m + '</span>'; }); }
+      html += '<div class="sc-rug" aria-hidden="true"></div>';
+      html += ITEMS.map(function (it) {
+        var q = POS[it.id];
+        return '<div class="sc-item" data-id="' + it.id + '" style="--r:' + q[2] + 'deg;--z:' + q[3] + '"><div class="sc-art">' + ART[it.id] + '</div><div class="sc-cap">' + capHtml(LABEL[it.id]) + '</div></div>';
+      }).join('');
       html += '<div class="sc-case" role="button" aria-label="行李箱"><div class="shadow"></div>' + BACK + '<div class="sc-slots"></div>' + FRONT + '<svg class="lay sc-lid" viewBox="0 0 260 200" aria-hidden="true"></svg></div>';
       html += '<div class="sc-under"><div class="sc-msg"></div><div class="sc-actions"><button class="btn sc-fallbackbtn" type="button">繼續看看</button></div></div>';
       stage.innerHTML = html;
@@ -191,9 +197,18 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       drawLid(100, false);
       var trayEl = {}; [].forEach.call(stage.querySelectorAll('.sc-item'), function (el) { trayEl[el.getAttribute('data-id')] = el; });
 
+      var $rug = stage.querySelector('.sc-rug');
       function layout() {
+        var W = stage.clientWidth, Hh = stage.clientHeight; if (!W || !Hh) return;
+        var sx = Math.min(1.15, W / DESIGN.W), sy = Math.max(0.6, (Hh - DESIGN.TOP - DESIGN.BOTTOM) / (DESIGN.H - DESIGN.TOP - DESIGN.BOTTOM));
+        var k = Math.min(1, sx, sy);
+        stage.style.setProperty('--s', k.toFixed(3));
+        var X = function (cx) { return W / 2 + (cx - DESIGN.W / 2) * sx; }, Y = function (cy) { return DESIGN.TOP + (cy - DESIGN.TOP) * sy; };
+        ITEMS.forEach(function (it) { var q = POS[it.id], e = trayEl[it.id]; e.style.left = X(q[0]).toFixed(1) + 'px'; e.style.top = Y(q[1]).toFixed(1) + 'px'; });
+        $case.style.top = Y(DESIGN.CASE_Y).toFixed(1) + 'px'; $case.style.width = (DESIGN.CASE_W * Math.min(1.1, sx, sy)).toFixed(1) + 'px';
+        if ($rug) { $rug.style.top = (Y(DESIGN.CASE_Y) + DESIGN.CASE_W * k * 0.3).toFixed(1) + 'px'; }
         var s = stage.getBoundingClientRect(), c = $case.getBoundingClientRect();
-        if (c.height) $under.style.top = (c.bottom - s.top + 16) + 'px';
+        if (c.height) $under.style.top = (c.bottom - s.top + 12) + 'px';
       }
       window.addEventListener('resize', layout);
       layout(); later(layout, 60);
@@ -292,6 +307,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         el.addEventListener('pointerdown', function (e) { startDrag(e, it.id, false, el); });
         el.addEventListener('touchstart', function (e) { e.preventDefault(); }, { passive: false });
         [].forEach.call(el.querySelectorAll('svg'), function (v) { v.setAttribute('draggable', 'false'); v.setAttribute('focusable', 'false'); });
+        el.addEventListener('dragstart', function (e) { e.preventDefault(); });
+        el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
       });
       // block page scroll / rubber-band while this step is mounted (iOS)
       function stopTouch(e) { if (e.cancelable) e.preventDefault(); }
@@ -368,6 +385,12 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
 
       $btn.addEventListener('click', function () { if (closed) ctx.next(); });
 
+      // ---- filter buttons (helmet is unlocked at 10) — top-right of the stage, above the scattered items
+      var stack = null;
+      if ((ctx.step && ctx.step.n || 11) >= 10 && DAYOF.FilterStack && DAYOF.FilterStack.mount) {
+        try { stack = DAYOF.FilterStack.mount(stage, ctx, { labels: false }); } catch (e) { console.error(e); }
+      }
+
       // ---- restore
       if (saved) {
         (saved.packed || []).forEach(function (id) { if (ART[id] && !(id in slotOf)) { var i = freeSlot(); slotOf[id] = i; addPacked(id, i); trayEl[id].classList.add('gone'); } });
@@ -377,11 +400,308 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
 
       return function cleanup() {
         window.removeEventListener('resize', layout); if (dragging && dragging.cleanup) dragging.cleanup();
+        if (stack && stack.destroy) stack.destroy();
         timers.forEach(clearTimeout);
         ghosts.forEach(function (g) { if (g.parentNode) g.parentNode.removeChild(g); });
         dragging = null; cancelAnimationFrame(raf);
         document.documentElement.style.overscrollBehavior = prevOB[0]; document.body.style.overscrollBehavior = prevOB[1];
       };
+    }
+
+  /* ======================================================================================================
+   * Painted-scene mode (OFF by default). Turned on only when data/scenes/suitcase.json exists (or, for tests,
+   * ?suitcaseCfg=<relative .json path>). Format: data/scenes/suitcase.schema.md. The 10 props are painted INTO the
+   * background; invisible hit regions sit over them, a drag lifts a crop of the painting (and reveals the optional
+   * 'empty' painting underneath), dropping into the suitcase zone packs it, tapping the zone closes the case.
+   * ====================================================================================================== */
+  var ALIAS = { familyphoto: 'photoframe' };
+  function validRect(r) {
+    return Array.isArray(r) && r.length === 4 && r.every(function (v) { return typeof v === 'number' && v >= 0 && v <= 1; }) && r[2] > r[0] && r[3] > r[1];
+  }
+  function normCfg(c) {
+    if (!c || typeof c !== 'object' || c.enabled === false || typeof c.bg !== 'string' || !validRect(c.suitcase) || !c.items) return null;
+    var items = {}, n = 0;
+    Object.keys(c.items).forEach(function (k) { var id = ALIAS[k] || k; if (LABEL[id] && validRect(c.items[k])) { items[id] = c.items[k]; n++; } });
+    if (!n) return null;
+    var cut = {}; if (c.cutouts && typeof c.cutouts === 'object') Object.keys(c.cutouts).forEach(function (k) { var id = ALIAS[k] || k; if (items[id] && typeof c.cutouts[k] === 'string') cut[id] = c.cutouts[k]; });
+    return { bg: c.bg, empty: typeof c.empty === 'string' ? c.empty : null, closed: typeof c.closed === 'string' ? c.closed : null, items: items, suitcase: c.suitcase, lid: validRect(c.lid) ? c.lid : null, cutouts: cut };
+  }
+  function loadSceneCfg() {
+    if (!window.fetch) return Promise.resolve(null);
+    var url = 'data/scenes/suitcase.json';
+    try {
+      var q = new URLSearchParams(location.search).get('suitcaseCfg');   // debug/test only: relative same-origin .json
+      if (q && /^[\w\-./]+\.json$/.test(q) && q.indexOf('..') < 0 && q.charAt(0) !== '/') url = q;
+    } catch (e) { }
+    return fetch(url, { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (c) { return c && c.enabled === false ? null : normCfg(c); }, function () { return null; });
+  }
+  function loadImg(src) { return new Promise(function (res) { if (!src) return res(null); var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { res(null); }; im.src = src; }); }
+
+  function renderScene(container, ctx, cfg, bgImg) {
+    var state = ctx.state;
+    var saved = state.suitcase && state.suitcase.closed ? state.suitcase : null;
+    var IW = bgImg.naturalWidth, IH = bgImg.naturalHeight;
+    var ids = ITEMS.map(function (i) { return i.id; }).filter(function (id) { return cfg.items[id]; });
+    var packed = {}, order = [];      // id -> true, packing order
+    var closed = false, closing = false, zeroAsked = false, dragging = null;
+    var timers = [], ghosts = [], raf = 0, geo = null;
+    function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
+    function E(tag, cls, parent) { var e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e; }
+
+    var stage = E('div', 'sc-stage sc-scene', container);
+    stage.innerHTML = DEFS + '<div class="scs-bg"></div><div class="scs-img"></div><div class="scs-layer"></div>' +
+      '<div class="sc-head"><h2 class="sc-title">上太空的行李箱你要帶什麼去？</h2><p class="sc-hint">把想帶的東西拖進行李箱，<br>拖完點一下行李箱，把它關起來</p></div>' +
+      '<div class="sc-under"><div class="sc-msg"></div><div class="sc-actions"><button class="btn sc-fallbackbtn" type="button">繼續看看</button></div></div>';
+    var $bg = stage.querySelector('.scs-bg'), $layer = stage.querySelector('.scs-layer');
+    var $hint = stage.querySelector('.sc-hint'), $msg = stage.querySelector('.sc-msg'), $btn = stage.querySelector('.sc-actions .btn'), $under = stage.querySelector('.sc-under');
+    var $img = stage.querySelector('.scs-img');
+    $bg.style.backgroundImage = 'url("' + (cfg.empty || cfg.bg) + '")';   // blurred backdrop fills the bands around the width-fit painting
+    $img.style.backgroundImage = 'url("' + cfg.bg + '")';
+    var emptyEl = {}, hitEl = {};
+    ids.forEach(function (id) {
+      if (cfg.empty) { var p = E('div', 'scs-empty', $layer); p.style.backgroundImage = 'url("' + cfg.empty + '")'; emptyEl[id] = p; }
+      var h = E('div', 'scs-hit', $layer); h.setAttribute('data-id', id); h.setAttribute('role', 'button'); h.setAttribute('aria-label', LABEL[id]); hitEl[id] = h;
+    });
+    var $zone = E('div', 'scs-zone', $layer); $zone.setAttribute('role', 'button'); $zone.setAttribute('aria-label', '行李箱');
+    var $closedImg = null; if (cfg.closed) { $closedImg = E('div', 'scs-closedimg', $layer); $closedImg.style.backgroundImage = 'url("' + cfg.closed + '")'; }
+    var $packs = E('div', 'scs-packs', $zone);
+    // when there is no painted 'closed' plate: the painted open lid is softened (blurred crop of the plate) while the SVG lid closes
+    var $veil = E('div', 'scs-veil', $layer); $veil.style.backgroundImage = 'url("' + (cfg.empty || cfg.bg) + '")';
+    var $lidZone = E('div', 'scs-zone scs-lidzone', $layer); if (!cfg.lid) $lidZone.style.display = 'none';   // open lid is tappable too
+    var $lid = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); $lid.setAttribute('class', 'scs-lid'); $lid.setAttribute('viewBox', '0 0 260 200'); $lid.setAttribute('preserveAspectRatio', 'none'); $layer.appendChild($lid);
+    var packEl = {};
+
+    // ---- geometry: cover transform of the painting onto the stage
+    function crop(el, r) {   // show painting region r (fractions) inside el, which is sized/positioned to r
+      el.style.backgroundSize = geo.iw + 'px ' + geo.ih + 'px';
+      el.style.backgroundPosition = (-r[0] * geo.iw) + 'px ' + (-r[1] * geo.ih) + 'px';
+    }
+    var MINHIT = 48;
+    function padBox(b) { var w = Math.max(b.w, MINHIT), h = Math.max(b.h, MINHIT); return { x: b.x + b.w / 2 - w / 2, y: b.y + b.h / 2 - h / 2, w: w, h: h }; }
+    function inB(x, y, b) { return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h; }
+    // overlapping props: the smallest box that CONTAINS the point wins, else the nearest centre among padded boxes
+    function pick(x, y) {
+      var best = null, bestA = 1e12, near = null, nearD = 1e12;
+      ids.forEach(function (id) {
+        if (packed[id]) return; var b = R(cfg.items[id]);
+        if (inB(x, y, b)) { var a = b.w * b.h; if (a < bestA) { bestA = a; best = id; } }
+        else if (inB(x, y, padBox(b))) { var d = Math.hypot(x - b.x - b.w / 2, y - b.y - b.h / 2); if (d < nearD) { nearD = d; near = id; } }
+      });
+      return best || near;
+    }
+    function R(r) { return { x: geo.ox + r[0] * geo.iw, y: geo.oy + r[1] * geo.ih, w: (r[2] - r[0]) * geo.iw, h: (r[3] - r[1]) * geo.ih }; }
+    function place(el, b) { el.style.left = b.x + 'px'; el.style.top = b.y + 'px'; el.style.width = b.w + 'px'; el.style.height = b.h + 'px'; }
+    function layout() {
+      var W = stage.clientWidth, H = stage.clientHeight; if (!W || !H) return;
+      // WIDTH-FIT (every painted prop reachable): image width = stage width, vertically centred between the header and
+      // the bottom restart-link strip; if that is too short, fit the height instead (bands left/right)
+      var HEAD = 136, FOOT = 56, k = Math.min(W / IW, (H - HEAD - FOOT) / IH);
+      geo = { k: k, iw: IW * k, ih: IH * k, W: W, H: H }; geo.ox = (W - geo.iw) / 2; geo.oy = HEAD + Math.max(0, (H - HEAD - FOOT - geo.ih) / 2);
+      place($img, { x: geo.ox, y: geo.oy, w: geo.iw, h: geo.ih });
+      ids.forEach(function (id) {
+        var b = R(cfg.items[id]);
+        if (emptyEl[id]) { place(emptyEl[id], b); crop(emptyEl[id], cfg.items[id]); }
+        place(hitEl[id], padBox(b));   // marker only (pointer-events:none); touches are resolved by pick()
+      });
+      var z = R(cfg.suitcase); place($zone, z);
+      if ($closedImg) { place($closedImg, z); crop($closedImg, cfg.suitcase); }
+      // SVG lid fallback: map the lid art's body (viewBox x 6..254, y 86..194) onto the zone
+      var lw = z.w * 260 / 248, lh = z.h * 200 / 108;
+      place($lid, { x: z.x - 6 / 248 * z.w, y: z.y - 86 / 108 * z.h, w: lw, h: lh });
+      order.forEach(function (id, i) { slotPlace(packEl[id], i); });
+      if (cfg.lid) { var lb = R(cfg.lid); place($lidZone, lb); place($veil, lb); crop($veil, cfg.lid); }
+      // message + 繼續看看 float over the empty wall in the upper part of the painting
+      $under.style.bottom = 'auto'; $under.style.top = Math.max(HEAD + 4, geo.oy + geo.ih * 0.13) + 'px';
+    }
+    // packed minis: 5×2 grid over the lower part of the zone
+    function slotPlace(el, i) {
+      if (!el) return; var z = R(cfg.suitcase), id = el.getAttribute('data-id'), b = R(cfg.items[id]);
+      // two loose rows on the case's open interior (upper ~60% of the body box), slightly overlapping like a real pile
+      var cw = z.w / 5, chh = z.h * 0.3, s = Math.min(cw * 1.3 / b.w, chh * 1.25 / b.h, 1);
+      var cx = (i % 5 + 0.5) * cw + (Math.floor(i / 5) ? cw * 0.25 : 0), cy = z.h * 0.16 + (Math.floor(i / 5) + 0.5) * chh;
+      el.style.width = b.w + 'px'; el.style.height = b.h + 'px'; lifted(el, id);
+      el.style.left = (cx - b.w / 2) + 'px'; el.style.top = (cy - b.h / 2) + 'px';
+      el.style.transform = 'scale(' + s.toFixed(3) + ') rotate(' + ROT[i % ROT.length] + 'deg)';
+    }
+    function lifted(el, id) {
+      if (cfg.cutouts[id]) { el.style.backgroundImage = 'url("' + cfg.cutouts[id] + '")'; el.style.backgroundSize = '100% 100%'; el.style.backgroundPosition = '0 0'; el.classList.add('cut'); }
+      else { el.style.backgroundImage = 'url("' + cfg.bg + '")'; crop(el, cfg.items[id]); }
+    }
+    function setRemoved(id, on) { if (emptyEl[id]) emptyEl[id].classList.toggle('show', !!on); }
+    function addPacked(id) {
+      if (packed[id]) return; packed[id] = true; order.push(id);
+      var el = E('div', 'scs-pack', $packs); el.setAttribute('data-id', id);
+      packEl[id] = el; slotPlace(el, order.length - 1); setRemoved(id, true); hitEl[id].classList.add('gone');
+      el.addEventListener('pointerdown', function (e) { e.stopPropagation(); startDrag(e, id, true, el); });
+    }
+    function removePacked(id) {
+      if (!packed[id]) return; delete packed[id]; order.splice(order.indexOf(id), 1);
+      var el = packEl[id]; if (el && el.parentNode) el.parentNode.removeChild(el); delete packEl[id];
+      order.forEach(function (oid, i) { slotPlace(packEl[oid], i); });
+      setRemoved(id, false); hitEl[id].classList.remove('gone');
+    }
+
+    // ---- drag (pointer events + capture; stale drags aborted; iOS scroll blocked below)
+    var LIFT = 30, capture = null;
+    function overZone(x, y) {
+      return [$zone, cfg.lid ? $lidZone : null].some(function (el) { if (!el) return false; var r = el.getBoundingClientRect(), m = 12; return x >= r.left - m && x <= r.right + m && y >= r.top - m && y <= r.bottom + m; });
+    }
+    function ghostAt(g, x, y, s) { g.style.transform = 'translate(' + (x - g._w * s / 2) + 'px,' + (y - g._h * s / 2 - LIFT) + 'px) scale(' + s + ')'; }   // transform-origin 0 0
+    function abortDrag() { var d = dragging; if (!d) return; dragging = null; $zone.classList.remove('over'); d.cleanup(); if (d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost); if (d.fromPacked) packEl[d.id] && (packEl[d.id].style.opacity = ''); else setRemoved(d.id, false); }
+    function startDrag(e, id, fromPacked, src) {
+      if (closed || closing) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (dragging) abortDrag();
+      e.preventDefault();
+      var d = dragging = { id: id, fromPacked: fromPacked, pid: e.pointerId, sx: e.clientX, sy: e.clientY, moved: false, ghost: null, done: false };
+      try { src.setPointerCapture(e.pointerId); } catch (er) { }
+      function mv(ev) {
+        if (ev.pointerId !== d.pid || d.done) return;
+        if (!d.moved) {
+          if (Math.abs(ev.clientX - d.sx) + Math.abs(ev.clientY - d.sy) < 7) return;
+          d.moved = true; if (capture) capture.blocked = true;
+          var b = R(cfg.items[id]), g = E('div', 'scs-ghost', document.body); g._w = b.w; g._h = b.h;
+          g.style.width = b.w + 'px'; g.style.height = b.h + 'px'; lifted(g, id);
+          ghosts.push(g); d.ghost = g;
+          if (fromPacked) packEl[id].style.opacity = '0'; else setRemoved(id, true);
+        }
+        ghostAt(d.ghost, ev.clientX, ev.clientY, 1.12);
+        $zone.classList.toggle('over', overZone(ev.clientX, ev.clientY) || overZone(ev.clientX, ev.clientY - LIFT));
+      }
+      function up(ev) {
+        if (ev.pointerId !== d.pid || d.done) return;
+        d.done = true; d.cleanup(); dragging = null; $zone.classList.remove('over');
+        if (!d.moved) { if (!fromPacked && hitEl[id]) { hitEl[id].classList.add('wiggle'); later(function () { hitEl[id].classList.remove('wiggle'); }, 500); } return; }
+        var x = ev.clientX, y = ev.clientY, ok = ev.type !== 'pointercancel' && (overZone(x, y) || overZone(x, y - LIFT));
+        var g = d.ghost; g.classList.add('anim');
+        if (ok) {
+          if (!fromPacked) { zeroAsked = false; addPacked(id); packEl[id].style.opacity = '0'; }
+          var pr = packEl[id].getBoundingClientRect();
+          var ps = Math.min(pr.width / g._w, pr.height / g._h); g.style.transform = 'translate(' + (pr.left + pr.width / 2 - g._w * ps / 2) + 'px,' + (pr.top + pr.height / 2 - g._h * ps / 2) + 'px) scale(' + ps.toFixed(3) + ')';
+          later(function () { if (packEl[id]) packEl[id].style.opacity = ''; if (g.parentNode) g.parentNode.removeChild(g); }, 270);
+        } else {
+          var b = R(cfg.items[id]), sr = stage.getBoundingClientRect();
+          if (fromPacked) removePacked(id); else setRemoved(id, true);
+          g.style.transform = 'translate(' + (sr.left + b.x) + 'px,' + (sr.top + b.y) + 'px) scale(1)';
+          later(function () { setRemoved(id, false); if (g.parentNode) g.parentNode.removeChild(g); }, 270);
+        }
+        $msg.textContent = '';
+      }
+      d.cleanup = function () {
+        ['pointermove', 'pointerup', 'pointercancel'].forEach(function (t, i) { var f = i ? up : mv; src.removeEventListener(t, f); window.removeEventListener(t, f); });
+        try { src.releasePointerCapture(d.pid); } catch (er) { }
+      };
+      ['pointermove', 'pointerup', 'pointercancel'].forEach(function (t, i) { var f = i ? up : mv; src.addEventListener(t, f); window.addEventListener(t, f); });
+    }
+    $layer.addEventListener('pointerdown', function (e) {
+      if (closed || closing || (e.target.closest && e.target.closest('.scs-pack'))) return;   // packed minis handle themselves
+      var sr = stage.getBoundingClientRect(), id = pick(e.clientX - sr.left, e.clientY - sr.top);
+      if (!id) return;                                         // not on a prop → the suitcase zones get the event
+      e.stopPropagation(); startDrag(e, id, false, $layer);
+    }, true);
+    $layer.addEventListener('touchstart', function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false });
+    $layer.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    $layer.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    function stopTouch(e) { if (e.cancelable) e.preventDefault(); }
+    stage.addEventListener('touchmove', stopTouch, { passive: false });
+    container.addEventListener('touchmove', stopTouch, { passive: false });
+    container.style.touchAction = 'none';
+    var prevOB = [document.documentElement.style.overscrollBehavior, document.body.style.overscrollBehavior];
+    document.documentElement.style.overscrollBehavior = 'none'; document.body.style.overscrollBehavior = 'none';
+
+    // ---- close (tap the zone)
+    var lastPD = 0, lastTap = 0;
+    [$zone, $lidZone].forEach(function ($z) {
+    $z.addEventListener('pointerdown', function (e) { lastPD = Date.now(); capture = { x: e.clientX, y: e.clientY, t: Date.now(), blocked: false, pid: e.pointerId }; });
+    $z.addEventListener('pointerup', function (e) {
+      var c = capture; capture = null;
+      if (!c || c.blocked || c.pid !== e.pointerId) return;
+      if (Math.abs(e.clientX - c.x) + Math.abs(e.clientY - c.y) > 14 || Date.now() - c.t > 900) return;
+      lastTap = Date.now(); onTap();
+    });
+    $z.addEventListener('pointercancel', function () { capture = null; });
+    $z.addEventListener('click', function () { if (Date.now() - lastPD < 1500) return; if (Date.now() - lastTap > 700) { lastTap = Date.now(); onTap(); } });
+    });
+    function onTap() {
+      if (closed || closing) return;
+      if (!order.length && !zeroAsked) { zeroAsked = true; $msg.textContent = '什麼都不帶嗎？再點一次就關上囉'; return; }
+      closeCase(true);
+    }
+    function finishClosed(animated) {
+      closed = true; closing = false;
+      ids.forEach(function (id) { hitEl[id].classList.add('away'); });
+      $hint.textContent = order.length ? '行李箱關好了，準備出發！' : '輕輕的，什麼都不帶也很好。';
+      $msg.textContent = order.length ? '帶了 ' + order.length + ' 樣東西' : '';
+      later(function () { $btn.classList.add('show'); }, animated ? 250 : 0);
+    }
+    function drawLid(phi, fin) { $lid.innerHTML = lidSvg(phi, fin); }
+    function closeCase(animated) {
+      if (closed || closing) return;
+      closing = true; $msg.textContent = '';
+      state.suitcase = { packed: ITEMS.map(function (i) { return i.id; }).filter(function (id) { return packed[id]; }), closed: true, at: Date.now() };
+      try { ctx.save(); } catch (e) { }
+      $zone.classList.add('closing');
+      if ($closedImg) {   // painted closed suitcase: cross-fade
+        $closedImg.classList.add('show'); later(function () { $packs.style.opacity = '0'; }, animated ? 200 : 0);
+        if (!animated) return finishClosed(false);
+        later(function () { puffAt(); finishClosed(true); }, 520); return;
+      }
+      $lid.classList.add('show');
+      if (!animated) { drawLid(0, true); $lid.style.opacity = '1'; if (cfg.lid) $veil.style.opacity = '1'; $packs.style.opacity = '0'; return finishClosed(false); }
+      var t0 = null, DUR = 560;
+      (function step(ts) {
+        if (!ts) { raf = requestAnimationFrame(step); return; }
+        if (t0 === null) t0 = ts;
+        var t = Math.min(1, (ts - t0) / DUR), e = t * t * (1.6 - 0.6 * t), phi = 70 * (1 - e);
+        $lid.style.opacity = Math.min(1, t * 3).toFixed(2); drawLid(phi, false); if (cfg.lid) $veil.style.opacity = Math.min(1, t * 1.6).toFixed(2);
+        if (phi < 30) $packs.style.opacity = '0';
+        if (t < 1) { raf = requestAnimationFrame(step); return; }
+        drawLid(0, true); puffAt(); later(function () { finishClosed(true); }, 330);
+      })();
+    }
+    function puffAt() {
+      var box = E('div', 'sc-puff', stage), z = $zone.getBoundingClientRect(), s = stage.getBoundingClientRect();
+      box.style.left = (z.left - s.left + z.width / 2) + 'px'; box.style.top = (z.top - s.top + z.height * 0.3) + 'px';
+      for (var k = 0; k < 9; k++) {
+        var w = document.createElement('div'); w.innerHTML = STAR; var st = w.firstChild, a = (-90 + (k - 4) * 22) * Math.PI / 180, dist = 70 + (k % 3) * 28;
+        st.style.setProperty('--dx', Math.cos(a) * dist + 'px'); st.style.setProperty('--dy', Math.sin(a) * dist + 'px'); st.style.animationDelay = (k % 3) * 60 + 'ms'; box.appendChild(st);
+      }
+      var rk = document.createElement('div'); rk.innerHTML = ROCKET; box.appendChild(rk.firstChild);
+      later(function () { if (box.parentNode) box.parentNode.removeChild(box); }, 1500);
+    }
+    $btn.addEventListener('click', function () { if (closed) ctx.next(); });
+
+    var stack = null;
+    if (DAYOF.FilterStack && DAYOF.FilterStack.mount) { try { stack = DAYOF.FilterStack.mount(stage, ctx, { labels: false }); } catch (e) { console.error(e); } }
+
+    window.addEventListener('resize', layout); layout(); later(layout, 60);
+    if (saved) { (saved.packed || []).forEach(function (id) { if (cfg.items[id]) addPacked(id); }); closeCase(false); }
+    requestAnimationFrame(function () { stage.classList.add('ready'); });
+
+    return function cleanup() {
+      window.removeEventListener('resize', layout); if (dragging && dragging.cleanup) dragging.cleanup();
+      timers.forEach(clearTimeout); cancelAnimationFrame(raf);
+      ghosts.forEach(function (g) { if (g.parentNode) g.parentNode.removeChild(g); });
+      if (stack && stack.destroy) stack.destroy();
+      document.documentElement.style.overscrollBehavior = prevOB[0]; document.body.style.overscrollBehavior = prevOB[1];
+      if (stage.parentNode) stage.parentNode.removeChild(stage);
+    };
+  }
+
+  // default = shipped scattered-SVG room; the painted-scene mode replaces it only if its config + painting load
+  DAYOF.registerPage('suitcase', {
+    render: function (container, ctx) {
+      var cur = renderDefault(container, ctx), dead = false;
+      loadSceneCfg().then(function (cfg) {
+        if (dead || !cfg) return null;
+        return loadImg(cfg.bg).then(function (im) {
+          if (dead || !im || !im.naturalWidth) return;
+          try { cur(); } catch (e) { }
+          [].forEach.call(container.querySelectorAll('.sc-stage'), function (s) { s.parentNode.removeChild(s); });
+          cur = renderScene(container, ctx, cfg, im);
+        });
+      }).catch(function (e) { console.error(e); });
+      return function () { dead = true; if (cur) cur(); };
     }
   });
 })();

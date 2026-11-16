@@ -86,7 +86,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       bg.appendChild(layer);
       var ok = false;
       if (DAYOF.Where && DAYOF.Where.mount) {
-        try { handle = DAYOF.Where.mount(layer, id, { interactive: false, fit: 'cover' }); ok = !!handle || layer.childNodes.length > 0; } catch (e) { handle = null; ok = layer.childNodes.length > 0; }
+        try { handle = DAYOF.Where.mount(layer, id, { interactive: false, fit: 'cover', drift: false }); /* v=261116x: centred cover, no pan */ ok = !!handle || layer.childNodes.length > 0; } catch (e) { handle = null; ok = layer.childNodes.length > 0; }
       }
       if (!ok) { var ph = el('div', 'eg-ph'); ph.style.background = PH[id] || PH.park; layer.appendChild(ph); }
       return { el: layer, handle: handle, id: id };
@@ -160,15 +160,32 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
 
     var stack = null;
     if (DAYOF.FilterStack && DAYOF.FilterStack.mount) {
-      try { stack = DAYOF.FilterStack.mount(page, ctx, { extra: [lineBox, cofBox, rsBox] }); } catch (e) { stack = null; }
+      try { stack = DAYOF.FilterStack.mount(page, ctx, { extra: [lineBox, cofBox, rsBox], className: 'eg-stack' }); } catch (e) { stack = null; }
     }
     if (!stack) {
-      var own = el('div', 'filter-stack');
-      own.style.cssText = 'position:absolute;top:12px;right:12px;z-index:50;display:flex;flex-direction:column;align-items:center;gap:12px';
-      own.appendChild(lineBox); own.appendChild(cofBox); own.appendChild(rsBox); page.appendChild(own); stack = { el: own };
+      var own = el('div', 'filter-stack eg-stack');
+      own.style.cssText = 'position:absolute;top:10px;right:10px;z-index:50;display:flex;flex-direction:column;align-items:center;gap:10px';
+      var ex = el('div', 'fs-extra'); ex.appendChild(lineBox); ex.appendChild(cofBox); ex.appendChild(rsBox); own.appendChild(ex);
+      page.appendChild(own); stack = { el: own };
     }
+    // v=261116x (Kai): every button folds into ONE toggle top-right; starts collapsed, tap to expand/collapse
+    var SVG_MORE = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="24" r="2.6" fill="currentColor"/><circle cx="24" cy="24" r="2.6" fill="currentColor"/><circle cx="35" cy="24" r="2.6" fill="currentColor"/></svg>';
+    var SVG_X = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M15 15l18 18M33 15L15 33"/></svg>';
+    var tog = el('button', 'round-btn eg-toggle'); tog.type = 'button';
+    tog.setAttribute('aria-label', '展開按鈕（濾鏡、LINE 社群、Buy Kai a Coffee、從頭開始）');
+    tog.setAttribute('aria-expanded', 'false');
+    var togIco = el('span', 'ico'); tog.appendChild(togIco);
+    function setOpen(on) {
+      stack.el.classList.toggle('eg-collapsed', !on);
+      tog.setAttribute('aria-expanded', on ? 'true' : 'false');
+      tog.setAttribute('aria-label', on ? '收起按鈕' : '展開按鈕（濾鏡、LINE 社群、Buy Kai a Coffee、從頭開始）');
+      togIco.innerHTML = on ? SVG_X : SVG_MORE;
+    }
+    tog.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); setOpen(stack.el.classList.contains('eg-collapsed')); });
+    stack.el.insertBefore(tog, stack.el.firstChild);
+    setOpen(false);
     // the stack sits above the walker/bg
-    if (stack.el) stack.el.style.zIndex = '50';
+    if (stack.el) stack.el.style.zIndex = '150';
 
     return function cleanup() {
       cleaned = true; cancelAnimationFrame(rafId); timers.forEach(clearTimeout);

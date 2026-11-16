@@ -11,7 +11,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       { role: '主唱', name: 'Kai' }, { role: '吉他手', name: '蘭多' },
       { role: '視覺設計', name: '聖壹' }, { role: '程式設計', name: 'Kai’s Claude & Grok' } ] },
     { section: '感謝名單', items: [
-      { role: '寫詞顧問', name: 'Emma' }, { role: '甜點大師', name: 'Lynn @失眠動物園' } ] },
+      { role: '寫詞顧問', name: 'Emma' }, { role: '甜點Queen', name: 'Lynn @失眠動物園' } ] },
     { section: '', note: '謝謝你，今天來看看', items: [] }
   ];
 
@@ -49,6 +49,11 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     stage.appendChild(curL); stage.appendChild(curR); stage.appendChild(valance);
     stage.appendChild(rollwrap); stage.appendChild(zone);
     page.appendChild(stage); page.appendChild(cont);
+    // filter stack (v=261116x, beyond Kai's list): column on the right, below the valance; the roll/continue stay clear
+    var stack = null;
+    if (DAYOF.FilterStack && ctx.filtersAvailable && ctx.filtersAvailable().length) {
+      try { stack = DAYOF.FilterStack.mount(page, ctx, { top: 'calc(env(safe-area-inset-top,0px) + 62px)', className: 'cr-stack' }); } catch (e) { console.error(e); }
+    }
 
     function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
 
@@ -194,6 +199,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     return function cleanup() {
       cleaned = true; cancelAnimationFrame(rafId); timers.forEach(clearTimeout);
       window.removeEventListener('resize', onResize);
+      if (stack) stack.destroy();
       page.classList.remove('page-credits', 'cr-out', 'cr-closed');
     };
   }

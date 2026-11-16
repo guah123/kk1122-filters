@@ -8,8 +8,8 @@ DAYOF.registerPage('landing', {
       '<div class="dx-bg" role="img" aria-label="《看看》主視覺：魚眼視角的房間、窗外城市與書櫃"></div>' +
       '<div class="dx-sun"></div>' +
       '<div class="lp-body">' +
-        '<p class="lp-sub lp-in d1">Kai 的生日音樂會 <b>·</b> 2026.11.22</p>' +
-        '<button type="button" class="btn lp-btn lp-in d2" data-act="start">' + (resume ? '繼續' : '開始') + '</button>' +
+        '<button type="button" class="btn lp-btn lp-in d1" data-act="start">' + (resume ? '繼續' : '開始') + '</button>' +
+        '<p class="lp-sub lp-in d2">Kai 的生日音樂會<b>·</b>2026.11.22</p>' +
         (resume && ctx.step && typeof ctx.step.restart === 'function'
           ? '<button type="button" class="lp-restart lp-in d3" data-act="restart">從頭開始</button>' : '') +
       '</div>';

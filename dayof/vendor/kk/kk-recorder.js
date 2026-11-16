@@ -17,7 +17,7 @@
     'video/webm;codecs=vp8,opus',
     'video/webm',
   ];
-  const R = { runs: [], active: null, last: null, MIMES: MIMES, limitSec: 600 };
+  const R = { runs: [], active: null, last: null, MIMES: MIMES, limitSec: 600, videoBps: 6000000, audioBps: 192000 };
   let seq = 0;
 
   const errStr = (e) => (e && (e.name ? e.name + ': ' : '') + (e.message || '')) || String(e);
@@ -75,7 +75,9 @@
     try { ms = stage.recordStream(30); } catch (e) { unlock(); throw e; }
     const base = run.mime ? { mimeType: run.mime } : {};
     let rec;
-    try { rec = new MediaRecorder(ms, Object.assign({}, base, { videoBitsPerSecond: 3500000, audioBitsPerSecond: 128000 })); }
+    // DAYOF 261116x（Kai step 10 錄影畫質／音質）：720×1280@30 的 H.264 3.5 Mbps 在演唱會暗光＋雜訊畫面容易出現色塊 → 6 Mbps；
+    // 音樂收音 128 kbps → 192 kbps（AAC／Opus 立體聲），每分鐘約 +0.6 MB。
+    try { rec = new MediaRecorder(ms, Object.assign({}, base, { videoBitsPerSecond: R.videoBps, audioBitsPerSecond: R.audioBps })); }
     catch (e) {
       try { rec = new MediaRecorder(ms, base); }
       catch (e2) { unlock(); throw e2; }
@@ -85,6 +87,8 @@
     const c = { t0: performance.now(), frames: 0, n: 0, bt: performance.now(), samples: [], reason: '', stopped: false };
     c.audioTracks = ms.getAudioTracks().map(function (t) { return t.readyState + (t.muted ? '/muted' : '') + (t.enabled ? '' : '/disabled'); }).join(',') || '無音軌';
     c.hasAudio = ms.getAudioTracks().length > 0;
+    try { const at = ms.getAudioTracks()[0]; c.audioSettings = at && at.getSettings ? at.getSettings() : null; } catch (e) { c.audioSettings = null; }
+    c.recBps = { video: rec.videoBitsPerSecond || null, audio: rec.audioBitsPerSecond || null };
     const prevOnFrame = stage.onFrame;
     const onFrame = function (S) {
       const now = performance.now();
@@ -118,7 +122,7 @@
       const result = {
         blob: blob, mime: type, size: blob.size, durationSec: dur, width: cw, height: ch,
         fpsAvg: avg, fpsMin: c.samples.length ? Math.min.apply(null, c.samples) : avg,
-        hasAudioTrack: c.hasAudio, audioTracks: c.audioTracks, stopReason: c.reason || '未知', stopKind: c.kind || 'user',
+        hasAudioTrack: c.hasAudio, audioTracks: c.audioTracks, audioSettings: c.audioSettings, recBps: c.recBps, stopReason: c.reason || '未知', stopKind: c.kind || 'user',
         filter: run.filter, n: run.n, facing: run.facing, warn: '', recErr: run.recErr || '',
       };
       result.orientation = orient(cw, ch);
@@ -172,7 +176,9 @@
       orientation: r.orientation, durationSec: r.durationSec == null ? null : Math.round(r.durationSec * 10) / 10,
       sizeBytes: r.size, fpsAvg: r.fpsAvg == null ? null : Math.round(r.fpsAvg * 10) / 10,
       fpsMin: r.fpsMin == null ? null : Math.round(r.fpsMin * 10) / 10,
-      hasAudioTrack: r.hasAudioTrack, audioTracks: r.audioTracks, stopReason: r.stopReason, warn: r.warn || '', recErr: r.recErr || '',
+      hasAudioTrack: r.hasAudioTrack, audioTracks: r.audioTracks,
+      audio: r.audioSettings ? ['echoCancellation', 'noiseSuppression', 'autoGainControl', 'sampleRate', 'channelCount'].map(function (k) { return k + '=' + r.audioSettings[k]; }).join(' ') : '-',
+      bitrate: r.recBps ? r.recBps : null, stopReason: r.stopReason, warn: r.warn || '', recErr: r.recErr || '',
       ext: R.ext(r), stopKind: R.kindLabel(r.stopKind),
       autoDownload: r.save ? (r.save.skipped ? '略過（selftest）' : r.save.triggered ? '已觸發' : r.save.pending ? '背景無法下載，待按鈕' : '未觸發' + (r.save.error ? '（' + r.save.error + '）' : '')) : '-',
       fallbackShown: !!(r.save && r.save.fallback), fallbackUsed: !!(r.save && r.save.usedFallback),

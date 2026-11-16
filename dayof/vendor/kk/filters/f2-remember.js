@@ -21,9 +21,9 @@
     mood: '懷念・奔跑・被等待',
     duration: 14,
     hint: '點一下或滑過畫面，放出螢火蟲',
-    critterHint: '遠坡坡頂：Kai 牽著小袋熊慢慢走向小屋，走到屋前淡出',
+    critterHint: '只有人類：姊弟沿草坡稜線跑回家（不畫小動物）',
     create() {
-      const st = { back: null, front: null, flies: [], lastSpawn: 0, runX: null, runFace: 1 };
+      const st = { back: null, front: null, flies: [], lastSpawn: 0, runX: null, runFace: 1, crest: null, crestKey: '' };
 
       function bandUnit(S) { return S.u * (S.h >= S.w ? 1 : 0.95); }
 
@@ -31,6 +31,40 @@
       function farY(x) { const u = x / st.w; return st.h - st.b * (0.24 + 0.035 * u + 0.032 * Math.sin(u * 4.2 + 0.8) + 0.01 * Math.sin(u * 11)); }
       function runY(x) { const u = x / st.w; return st.h - st.b * (0.09 + 0.11 * u + 0.02 * Math.sin(u * 6.5 + 1.2) + 0.008 * Math.sin(u * 15)); }
       function fgY(x) { const u = x / st.w; return st.h - st.b * (0.032 + 0.014 * Math.sin(u * 5 + 2) + 0.008 * u); }
+
+      /* 點陣草坡（remember-hill.png 720×420）的稜線：逐欄找第一個不透明像素，平滑後換成畫面 y。
+       * 素材構圖：x=0.8 處稜線距底約 133px（與向量 runY／房子位置一致）；姊弟踩這條線、房子坐在這條線上。 */
+      function crestFrom(img) {
+        const w = st.w, dh = w * img.naturalHeight / img.naturalWidth, key = w + 'x' + st.h + ':' + img.src;
+        if (st.crestKey === key) return st.crest;
+        let arr = null;
+        try {
+          const n = Math.max(2, Math.round(w)), hh = Math.max(2, Math.round(dh));
+          const c = KK.canvas(n, hh), cg = c.getContext('2d');
+          cg.drawImage(img, 0, 0, n, hh);
+          const d = cg.getImageData(0, 0, n, hh).data, raw = new Float32Array(n);
+          for (let x = 0; x < n; x++) {
+            let y = 0;
+            while (y < hh - 1 && d[(y * n + x) * 4 + 3] < 128) y++;
+            raw[x] = y;
+          }
+          arr = new Float32Array(n);
+          const R = Math.max(2, Math.round(n * 0.012));
+          for (let x = 0; x < n; x++) {
+            let a = 0, k = 0;
+            for (let j = Math.max(0, x - R); j <= Math.min(n - 1, x + R); j++) { a += raw[j]; k++; }
+            arr[x] = st.h - dh + a / k;
+          }
+        } catch (e) { arr = null; }
+        st.crestKey = key; st.crest = arr;
+        return arr;
+      }
+      function crestY(x, aHill) {
+        const arr = aHill ? crestFrom(aHill) : null;
+        if (!arr) return runY(x);
+        const i = Math.max(0, Math.min(arr.length - 1, Math.round(x)));
+        return arr[i];
+      }
 
       function hill(g, yf, col, t, seed, amp) {
         const step = Math.max(8, st.w / 60);
@@ -249,7 +283,8 @@
           }
         },
         draw(g, S) {
-          const t = S.t, ph = S.phase, b = st.b, w = S.w, h = S.h, G = st.G, u = S.u;
+          const t = S.t, ph = S.phase, b = st.b, w = S.w, h = S.h, u = S.u;
+          let G = st.G;
           const bi = KK.boil(t);
 
           // 黃昏天色（screen，低透明度，不蓋臉）
@@ -272,7 +307,16 @@
           const bmHouse = !!(aHill && aHouse);
           if (aHill) g.drawImage(aHill, 0, h - w * aHill.naturalHeight / aHill.naturalWidth, w, w * aHill.naturalHeight / aHill.naturalWidth);
           else g.drawImage(st.back[bi], 0, 0);
-          if (bmHouse) { const hs = b * 0.4; g.drawImage(aHouse, G.hx - hs / 2, G.base + b * 0.02 - hs, hs, hs); }
+          if (bmHouse) {
+            // 點陣房子（remember-house.png 256×256）：坐在點陣稜線上；窗光、門光、煙囪位置改用素材上的實際位置
+            const hs = b * 0.4, base = crestY(G.hx, aHill), top = base + b * 0.012 - hs, left = G.hx - hs / 2;
+            g.drawImage(aHouse, left, top, hs, hs);
+            G = Object.assign({}, G, {
+              base: top + hs * 0.94, doorH: hs * 0.2,
+              win: [[left + hs * 0.252, top + hs * 0.689], [left + hs * 0.751, top + hs * 0.696]],
+              chx: left + hs * 0.754, chTop: top + hs * 0.15,
+            });
+          }
 
           // 窗光與門光
           const boost = 0.3 * KK.smooth(11.2, 12, t) * (1 - KK.smooth(13, 14, t));
@@ -307,11 +351,11 @@
           const wind = 0.7 * Math.sin(ph * TAU);
           if (aSmoke) {                               // 點陣炊煙：3 縷依序往上飄、輕晃（7 秒一輪，整除 14）
             for (let i = 0; i < 3; i++) {
-              const k = KK.mod(t / 7 + i / 3, 1), env = KK.smooth(0, 0.15, k) * (1 - KK.smooth(0.55, 1, k));
+              const k = KK.mod(t / 7 + i / 3, 1), env = KK.smooth(0, 0.1, k) * (1 - KK.smooth(0.45, 1, k));
               if (env <= 0.01) continue;
-              const sw = b * 0.09, sh = sw * 2;
-              const x = G.chx + Math.sin(k * TAU + wind) * b * 0.015 + k * b * 0.03, y = G.chTop - k * b * 0.25;
-              g.globalAlpha = env * 0.85; g.drawImage(aSmoke, x - sw / 2, y - sh, sw, sh);
+              const sw = b * 0.085 * (0.85 + 0.3 * k), sh = sw * 2;   // 從煙囪口冒出、邊升邊散（升高約 0.13b，不脫離煙囪）
+              const x = G.chx - b * 0.006 + Math.sin(k * TAU + wind) * b * 0.008 + k * b * 0.02, y = G.chTop + b * 0.035 - k * b * 0.12;
+              g.globalAlpha = env * 0.85; g.drawImage(aSmoke, x - sw * 0.3, y - sh, sw, sh);   // 素材的煙根在 x≈0.30 處 → 對準煙囪口
             }
             g.globalAlpha = 1;
           }
@@ -344,13 +388,21 @@
             drawDragonfly(g, x, y, Math.atan2(vy, vx), u * 0.048, t);
           });
 
-          // 小動物（Kai 牽著小袋熊）：沿遠坡坡頂慢慢走向小屋，走到屋前淡出（偷偷的；跟姊弟追逐是兩條不同的路）
-          if (S.critter) {
-            const cs = u * 0.05, cw = cs * 1.3;
-            const xEnd = G.hx - G.bw / 2 - cw * 0.5;
-            const x = KK.lerp(-cw, xEnd, ph);
-            const al = 0.8 * KK.smooth(0.02, 0.1, ph) * (1 - KK.smooth(0.86, 0.98, ph));
-            if (al > 0.01) KK.Critter.draw(g, x, farY(x) + cs * 0.06, cs, { pose: 'walk', facing: 1, alpha: al, tone: 0.45, t });
+          // 遠方散步的三個人（remember-far-walkers.png 207×256：大人＋小孩＋大人，人類，原圖面朝右；Kai step 32 不要小動物）
+          //   取代原本遠坡的小動物彩蛋：很小（高約 w×0.1）、略淡（距離感），沿草坡稜線慢慢往右走向小屋，
+          //   整個 loop（14 秒）走一趟、頭尾淡入淡出 → 無縫；只往前走，不倒退；若方向改變就水平翻轉。先畫，姊弟蓋在前面。
+          const aFar = ART('remember-far-walkers.png');
+          if (aFar && aHill) {
+            const fh = w * 0.1, fw = fh * aFar.naturalWidth / aFar.naturalHeight;
+            const x0 = -fw * 0.6, x1 = G.hx - b * 0.2 - fw * 0.5;           // 走到小屋左邊就淡出
+            const fx = KK.lerp(x0, x1, ph);
+            const fal = 0.78 * KK.smooth(0.0, 0.08, ph) * (1 - KK.smooth(0.88, 0.99, ph));
+            const fface = x1 >= x0 ? 1 : -1;
+            const fhop = Math.abs(Math.sin(t * TAU * 1.5)) * fh * 0.015;
+            if (fal > 0.01) {
+              g.save(); g.globalAlpha = fal; g.translate(fx, crestY(fx, aHill) + fh * 0.03 - fhop); g.scale(fface, 1);
+              g.drawImage(aFar, -fw / 2, -fh, fw, fh); g.restore();
+            }
           }
 
           // 姊弟追逐
@@ -370,7 +422,7 @@
               const fr = (aRunB && Math.floor(t / 0.14) % 2) ? aRunB : aRunA, sz = u * 0.26;
               const hop = Math.abs(Math.sin(f)) * sz * 0.02;
               if (fade > 0.01 && base > -sz && base < w + sz) {
-                g.save(); g.globalAlpha = fade; g.translate(base, runY(base) - hop); g.scale(st.runFace, 1);
+                g.save(); g.globalAlpha = fade; g.translate(base, crestY(base, aHill) - hop); g.scale(st.runFace, 1);
                 g.drawImage(fr, -sz / 2, -sz * 0.95, sz, sz); g.restore();
               }
             } else order.forEach((o) => {

@@ -14,7 +14,6 @@ DAYOF.registerPage('form', {
         '<label class="field"><span>email</span>' +
           '<input class="input" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="name@example.com" value=""></label>' +
         '<div class="field-msg" data-for="email" role="alert"></div>' +
-        '<p class="fm-note">填 email 會記住你的進度；<br>最後我們會把你寫下的話寄給你</p>' +
         '<button type="submit" class="btn">送出</button>' +
       '</form></div>';
     var form = container.querySelector('form');

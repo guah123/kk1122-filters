@@ -58,7 +58,7 @@
     'paper-grain.jpg', 'vignette-wet.png',
     'otona-sky.png', 'otona-stars.png', 'otona-meteor.png', 'otona-rooftop.png', 'otona-critters.png',
     'hareru-clouds.jpg', 'hareru-wipe-brush.png', 'hareru-sunlight.png', 'hareru-sun.png',
-    'remember-hill.png', 'remember-house.png', 'remember-smoke.png', 'remember-runner-a.png', 'remember-runner-b.png',
+    'remember-hill.png', 'remember-house.png', 'remember-smoke.png', 'remember-runner-a.png', 'remember-runner-b.png', 'remember-far-walkers.png',
     'hareru-walkers.png',
     'rain-strokes.png', 'rain-drop-1.png', 'rain-drop-2.png', 'rain-drop-3.png', 'rain-drop-4.png', 'rain-mist.png', 'rain-puddle.png', 'rain-umbrella-walkers.png',
     'rain-ripple.png', 'rain-splash.png',
@@ -429,6 +429,8 @@
         toast('沒有麥克風，影片會是無聲的', 3000);
       }
       if (seq !== C.seq || C.closed) { if (KK.Camera.video === v) KK.Camera.stop(); return; }
+      // KK.Camera.start 的最後一段備援是「只開相機」：麥克風被別的 App 佔用時會靜靜變成無聲影片 → 要講出來
+      if (!C.noMic && mode === 'video' && KK.Camera.stream && !KK.Camera.stream.getAudioTracks().length) { C.micWarn = '麥克風無法使用（可能被別的 App 佔用），這次錄影會沒有聲音'; toast(C.micWarn, 4000); } else C.micWarn = '';
       C.stage.video = v;
       C.stage.mirror = C.facing === 'user';
       flipTxt.textContent = C.facing === 'user' ? '前鏡頭' : '後鏡頭';
@@ -449,7 +451,7 @@
         onResize();
         if (mode === 'video') {
           if (!KK.Recorder.supported()) { main.disabled = true; toast('這個瀏覽器不能錄影（iPhone 需 iOS 14.3 以上），但可以看濾鏡', 5000); }
-          else { var def = KK.byId[kkId]; toast((def && def.hint ? def.hint + '。' : '') + '按紅色圓鈕開始錄影，再按一次停止，會自動存到手機', 4200); }
+          else { var def = KK.byId[kkId]; toast((C.micWarn ? C.micWarn + '。' : '') + (def && def.hint ? def.hint + '。' : '') + '按紅色圓鈕開始錄影，再按一次停止，會自動存到手機', C.micWarn ? 6000 : 4200); }
         } else toast('對準你的世界，按下快門', 2600);
       } catch (e) {
         if (C.closed) return;

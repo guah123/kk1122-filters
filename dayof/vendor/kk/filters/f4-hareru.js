@@ -4,10 +4,10 @@
  *   0–1s    全滿烏雲：灰藍潮濕的柔軟雨雲緩緩飄、細斜雨絲，右上只隱約透出一團暖光（暗示太陽在那裡）。
  *   1–9s    像在起霧的窗上，一隻看不見的手指抹 4 下：斜向略帶弧度的抹痕，從太陽附近往中間、左下擴；
  *           抹開處是「被太陽照亮的畫面」：暖光＋放射光束，太陽整顆只在抹開處才出現。
- *   9–12.5s 停留：太陽光芒緩轉、閃光、低飽和彩虹浮現、小鳥飛過；左下缺口裡藏著坐著看太陽的小動物。
+ *   9–12.5s 停留：太陽光芒緩轉、閃光、低飽和彩虹浮現、小鳥飛過；左下缺口裡藏著散步的大人和小孩（人類）。
  *   12.5–14s 烏雲淡回全滿 → 與 0 秒相同，無縫 loop。
  *
- * 圖層（由下而上）：暖光＋光束 → 彩虹／小鳥 → 太陽（依太陽處抹開程度顯現）→ 小動物
+ * 圖層（由下而上）：暖光＋光束 → 彩虹／小鳥 → 太陽（依太陽處抹開程度顯現）→ 左下散步的兩人
  *   → 烏雲層（半解析度離屏 C，抹開處用遮罩 M 以 destination-out 挖掉）→ 紙張。
  * 效能：雲紋、雨絲都預畫成可無縫平鋪的 tile（雙倍寬／高），每幀只用「來源視窗平移」各一次 drawImage。
  * 無縫：雲紋每 loop 平移整數個 tile 寬；雨絲整數圈下落；太陽轉 2×(2π/12)；閃光、小鳥整數圈。 */
@@ -49,7 +49,7 @@
     mood: '雨過天晴・自己決定・希望',
     duration: 14,
     hint: '用手指把烏雲抹開，抹多少由你決定',
-    critterHint: '左下角烏雲抹開處，只有抹到那裡才淡淡浮現：Kai 牽著小袋熊沿下緣來回走（低對比、無光暈）',
+    critterHint: '左下角烏雲抹開處，只有抹到那裡才浮現：大人牽著穿黃外套的小孩沿下緣來回走（人類）',
     create() {
       const st = {
         C: null, cg: null, M: null, mg: null, sky: null, rain: null, beams: null,
@@ -216,7 +216,7 @@
         for (let y = Math.max(0, sy - rr); y <= Math.min(H - 1, sy + rr); y++)
           for (let x = Math.max(0, sx - rr); x <= Math.min(W - 1, sx + rr); x++) { a += d[(y * W + x) * 4 + 3]; n++; }
         // 小動物所在處的抹開比例（可見度＝這個值）
-        const cx = Math.round(st.crit.x / M_DIV), cy = Math.round(st.crit.y / M_DIV), cr = Math.max(2, Math.round((S.u * 0.05) / M_DIV));
+        const cx = Math.round(st.crit.x / M_DIV), cy = Math.round(st.crit.y / M_DIV), cr = Math.max(2, Math.round((S.u * 0.08) / M_DIV));
         let ca = 0, cn = 0;
         for (let y = Math.max(0, cy - cr); y <= Math.min(H - 1, cy + cr); y++)
           for (let x = Math.max(0, cx - cr); x <= Math.min(W - 1, cx + cr); x++) { ca += d[(y * W + x) * 4 + 3]; cn++; }
@@ -252,7 +252,7 @@
         // 閃光
         st.sparks = [[-1.9, -0.9, 2, 0.0], [1.7, -1.3, 3, 0.4], [2.3, 0.8, 2, 0.7], [-0.4, 2.1, 3, 0.2], [-2.4, 0.9, 2, 0.55]];
 
-        st.crit = { x: S.w * (land ? 0.13 : 0.19), y: S.h * (land ? 0.93 : 0.945) - S.u * 0.02 };
+        st.crit = { x: S.w * (land ? 0.13 : 0.19), y: S.h * (land ? 0.95 : 0.955) - S.u * (land ? 0.1 : 0.12) };   // 左下走路兩人的身體中心
         if (S.autoDemo) {
           // 預先算好「t → 抹開比例／太陽處抹開比例」的表，之後每幀只查表（決定性且不用每幀 getImageData）
           const k = Mw / S.w;
@@ -471,15 +471,18 @@
           drawSun(g, S, vis, sa);
           drawBirds(g, S, KK.smooth(0.5, 0.62, st.vis));
 
-          // 3. 小動物（Kai 牽著小袋熊）：藏在左下烏雲底下的下緣來回走，低對比、無光暈
-          const ca = KK.smooth(0.25, 0.7, st.critV); // 可見度＝牠所在處被抹開的程度，未抹開完全看不到
-          if (S.critter && ca > 0.01) {
-            const land = S.w > S.h;
-            const cs = u * 0.05;
-            // 在左下烏雲底下的下緣，小範圍來回走（整數圈）；只在那一帶被抹開時才看得到
-            const sw = Math.sin(S.phase * TAU);
-            const cx = S.w * (land ? 0.13 : 0.19) + sw * S.w * 0.05, cy = S.h * (land ? 0.95 : 0.955);
-            KK.Critter.draw(g, cx, cy, cs, { pose: 'walk', facing: Math.cos(S.phase * TAU) > 0 ? 1 : -1, alpha: ca * 0.7, tone: 0.3, t });
+          // 3. 左下角抹開處：大人（風衣）牽著穿黃外套的小孩（hareru-walkers.png 256×256，人類、不撐傘、原圖面朝右）
+          //    沿下緣小範圍來回走（整數圈 → 無縫），往左走時水平翻轉，腳步小跳；只有那一帶被抹開才看得到（在雲層底下）。
+          const ca = KK.smooth(0.2, 0.6, st.critV);
+          const aWk = ART('hareru-walkers.png');
+          if (aWk && ca > 0.01) {
+            const land = S.w > S.h, ws = u * (land ? 0.22 : 0.27);
+            const sw = Math.sin(S.phase * TAU * 2), face = Math.cos(S.phase * TAU * 2) >= 0 ? 1 : -1;
+            const cx = S.w * (land ? 0.13 : 0.19) + sw * S.w * 0.05, cy = S.h * (land ? 0.95 : 0.955);   // 腳底留在下方控制列漸層之上
+            const hop = Math.abs(Math.sin(S.phase * TAU * 28)) * ws * 0.02;
+            g.save(); g.globalAlpha = ca; g.translate(cx, cy - hop); g.scale(face, 1);
+            g.drawImage(aWk, -ws / 2, -ws * (250 / 256), ws, ws);
+            g.restore();
           }
           g.restore();
 

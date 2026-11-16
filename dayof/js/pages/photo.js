@@ -1,15 +1,15 @@
-/* 第 29 頁（type 'photo'）：「現在就拍一張照吧，我也想看看你的世界」→［拍照］開魚眼相機
+/* 第 29 頁（type 'photo'）：「謝謝你讓我看看你的世界」→［拍照］開魚眼相機
  * → 拍好按「用這張」：存到手機（相機覆蓋層在點擊當下觸發分享單／下載）＋這頁顯示照片（iPhone 可長按儲存）＋上傳雲端
  * → ［拍完了］→ ctx.next()。相機打不開時顯示「沒辦法拍照？直接下一頁」。
  * 後台未接（api.enabled=false）：照片先存在本機 localStorage（DAYOF.PhotoQueue），state.photo.queued=true，
- *   顯示「照片已存在手機；雲端將於後台接上後上傳」；app.js 開機時可呼叫 DAYOF.PhotoQueue.retry(email, api, state) 補傳。 */
+ *   （v=261116x：上傳狀態一律不顯示文字，靜默處理）；app.js 開機時可呼叫 DAYOF.PhotoQueue.retry(email, api, state) 補傳。 */
 (function () {
   'use strict';
   window.DAYOF = window.DAYOF || {}; var DAYOF = window.DAYOF;
   DAYOF._pages = DAYOF._pages || {};
   DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m; };
 
-  var TEXT = '現在就拍一張照吧，我也想看看你的世界';
+  var TEXT = '謝謝你讓我看看你的世界';
   var MAX_EDGE = 1600;
   var QKEY = function (email) { return 'dayof:v1:photoq:' + String(email || '').toLowerCase(); };
 
@@ -64,7 +64,6 @@
         '  <img class="photo-img" alt="你拍的照片">' +
         '  <p class="photo-hint">長按照片可以存到相簿</p>' +
         '  <button type="button" class="btn photo-btn photo-save" hidden>存到相簿</button>' +
-        '  <a class="photo-dl" href="#" download>下載這張照片</a>' +
         '</div>' +
         '<p class="photo-status" role="status"></p>' +
         '<div class="photo-actions">' +
@@ -74,7 +73,13 @@
         '</div>';
       container.appendChild(wrap);
       var $ = function (s) { return wrap.querySelector(s); };
-      $('.photo-text').textContent = (ctx.step && (ctx.step.text || ctx.step.q)) || TEXT;
+      var ptxt = (ctx.step && (ctx.step.text || ctx.step.q)) || TEXT;
+      if (DAYOF.punctLines) DAYOF.punctLines($('.photo-text'), ptxt); else $('.photo-text').textContent = ptxt;
+      // filter stack (one row, top-right) — the wrap's top padding keeps it clear of the text/buttons
+      var stack = null;
+      if (DAYOF.FilterStack && ctx.filtersAvailable && ctx.filtersAvailable().length) {
+        try { stack = DAYOF.FilterStack.mount(container, ctx, { layout: 'row' }); container.classList.add('has-stack'); } catch (e) { console.error(e); }
+      }
       var shootBtn = $('.photo-shoot'), doneBtn = $('.photo-done'), skip = $('.photo-skip');
       var saveBtn = $('.photo-save'), lastBlob = null;
       /* 存到相簿：分享單被取消（AbortError）或手勢過期（NotAllowedError）→ 留著「存到相簿」鈕，一鍵重試 */
@@ -88,12 +93,11 @@
         });
       }
       saveBtn.addEventListener('click', function () { if (lastBlob && DAYOF.Camera) watchSave(DAYOF.Camera.savePhoto(lastBlob)); });
-      var result = $('.photo-result'), img = $('.photo-img'), dl = $('.photo-dl'), status = $('.photo-status');
+      var result = $('.photo-result'), img = $('.photo-img'), status = $('.photo-status');
 
       function setStatus(msg, ok) { status.textContent = msg || ''; status.classList.toggle('ok', !!ok); }
       function showPhoto(src) {
-        img.src = src; dl.href = src;
-        dl.setAttribute('download', 'kanKan-1122-fisheye.jpg');
+        img.src = src;
         result.hidden = false;
         wrap.classList.add('has-photo');
         shootBtn.textContent = '再拍一張';
@@ -105,7 +109,6 @@
       if (state.photo && state.photo.at) {
         var q = DAYOF.PhotoQueue.get(email);
         if (q) showPhoto(q); else { doneBtn.hidden = false; shootBtn.textContent = '再拍一張'; shootBtn.classList.add('ghost'); }
-        setStatus(state.photo.driveFileId ? '照片已上傳到雲端' : (state.photo.queued ? '照片已存在手機；雲端將於後台接上後上傳' : ''), !!state.photo.driveFileId);
       }
 
       function upload(dataUrl) {
@@ -115,28 +118,26 @@
           rec.queued = true;
           DAYOF.PhotoQueue.put(email, dataUrl);
           if (ctx.save) ctx.save();
-          setStatus('照片已存在手機；雲端將於後台接上後上傳');
           return;
         }
-        setStatus('上傳到雲端中…');
         if (ctx.save) ctx.save();
         api.photo(email, dataUrl).then(function (r) {
           if (r && r.ok) {
             rec.driveFileId = r.fileId || null;
             DAYOF.PhotoQueue.clear(email);
-            if (alive) setStatus('照片已上傳到雲端，謝謝你讓我看看你的世界', true);
+
           } else if (r && r.offline) {
             rec.queued = true; DAYOF.PhotoQueue.put(email, dataUrl);
-            if (alive) setStatus('照片已存在手機；雲端將於後台接上後上傳');
+
           } else {
             rec.uploadError = String((r && r.error) || '上傳失敗'); rec.queued = true; DAYOF.PhotoQueue.put(email, dataUrl);
-            if (alive) setStatus('照片已存在手機；雲端上傳失敗，之後會再試一次');
+
           }
           if (ctx.save) ctx.save();
         }, function (e) {
           rec.uploadError = String((e && e.message) || e); rec.queued = true; DAYOF.PhotoQueue.put(email, dataUrl);
           if (ctx.save) ctx.save();
-          if (alive) setStatus('照片已存在手機；網路不穩，之後會再試一次');
+
         });
       }
 
@@ -148,7 +149,7 @@
             if (!alive) return;
             showPhoto(dataUrl);
             lastBlob = blob; watchSave(info);
-            if (info && info.method === 'none') setStatus('自動儲存沒成功，請長按照片或按「下載這張照片」');
+            if (info && info.method === 'none') setStatus('自動儲存沒成功，請長按照片存到相簿');
             shrink(dataUrl).then(function (d) { if (alive) upload(d); });
           },
         }).then(function (res) {
@@ -162,6 +163,7 @@
       return function cleanup() {
         alive = false;
         if (DAYOF.Camera && DAYOF.Camera.isOpen()) DAYOF.Camera.close();
+        if (stack) stack.destroy();
         if (objUrl) { try { URL.revokeObjectURL(objUrl); } catch (e) { /* ignore */ } }
       };
     },

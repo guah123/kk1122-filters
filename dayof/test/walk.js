@@ -182,6 +182,7 @@ async function waitHttp(url, ms) {
   // egg coffee modal
   curStep = total;
   try {
+    { const tg = curPage().locator('.eg-toggle').first(); if (await tg.count()) { await tg.click({ force: true }); await sleep(500); } } // v=261116x: p34 buttons are folded
     const c2 = curPage().locator('button[aria-label*="coffee" i], .eg-coffee button, .egg-coffee, [data-action=coffee]')
       .or(curPage().locator('button, a, [role=button]').filter({ hasText: /coffee|咖啡/i })).first();
     if (await c2.count()) {

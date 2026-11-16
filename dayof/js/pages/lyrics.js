@@ -5,14 +5,14 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   var CSS = [
     '.page-lyrics{display:flex;flex-direction:column;background:var(--cream,#F6EFE2);',
     '  background-image:radial-gradient(ellipse at 20% 0%,rgba(255,255,255,.7),transparent 60%),radial-gradient(ellipse at 100% 100%,rgba(201,162,122,.12),transparent 55%);}',
-    '.page-lyrics .lyr-head{flex:0 0 auto;padding:calc(env(safe-area-inset-top,0px) + 40px) 72px 10px 24px;}',
+    '.page-lyrics .lyr-head{flex:0 0 auto;padding:calc(env(safe-area-inset-top,0px) + 62px) 80px 10px 24px;}',
     '.page-lyrics .lyr-kicker{font:600 11px/1.2 var(--font,system-ui);letter-spacing:.24em;color:var(--wood-dark,#8A6545);opacity:.8;margin:0 0 6px}',
     '.page-lyrics .lyr-title{font-family:var(--font-serif,serif);font-weight:700;font-size:26px;line-height:1.25;color:var(--ink,#4A3C30);margin:0;word-break:break-word}',
     '.page-lyrics .lyr-rule{width:40px;height:2px;border-radius:2px;background:var(--wood,#C9A27A);margin-top:12px;opacity:.7}',
     '.page-lyrics .lyr-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:8px 18px calc(env(safe-area-inset-bottom,0px) + 28px)}',
     '.page-lyrics .lyr-paper{background:var(--paper,#FBF7EF);border-radius:var(--radius,18px);box-shadow:0 2px 14px rgba(74,60,48,.08);padding:22px 20px 18px;}',
-    '.page-lyrics.has-stack .lyr-scroll{padding-right:66px}',
-    '.page-lyrics.has-stack .lyr-head{padding-right:66px}',
+    '.page-lyrics.has-stack .lyr-scroll{padding-right:80px}',
+    '.page-lyrics.has-stack .lyr-head{padding-right:80px}',
     '.page-lyrics .lyr-titlerow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
     '.page-lyrics .lyr-artist{font:400 13px/1.4 var(--font,system-ui);color:var(--ink-soft,#7A6A5A);margin:6px 0 0}',
     '.page-lyrics .lyr-tbtn{font:600 12px/1 var(--font,system-ui);color:var(--sky-deep,#5E86A8);background:rgba(255,255,255,.7);border:1.5px solid var(--sky,#9DBFD8);border-radius:999px;padding:7px 12px;cursor:pointer;white-space:nowrap}',
@@ -20,7 +20,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     '.page-lyrics .lyr-text{font-family:var(--font-serif,serif);font-size:17px;line-height:1.9;color:var(--ink,#4A3C30);letter-spacing:.02em;margin:0;text-align:left;word-break:break-word}',
     '.page-lyrics .lyr-stanza{margin:0 0 1.4em}',
     '.page-lyrics .lyr-stanza:last-child{margin-bottom:0}',
-    '.page-lyrics .lyr-line{margin:0 0 .4em;line-height:1.55;padding-left:1.2em;text-indent:-1.2em}',
+    '.page-lyrics .lyr-line{margin:0 0 .4em;line-height:1.55}',
+    '.page-lyrics.lat .lyr-line{padding-left:1.2em;text-indent:-1.2em}',
     '.page-lyrics .lyr-tl{display:none;font-family:var(--font,system-ui);font-size:14px;line-height:1.6;color:var(--sky-deep,#5E86A8);margin:-.1em 0 .7em;padding-left:1.2em;letter-spacing:.01em}',
     '.page-lyrics.show-tr .lyr-tl{display:block}',
     '.page-lyrics .lyr-trans{white-space:pre-line;font-family:var(--font,system-ui);font-size:14px;line-height:1.9;color:var(--ink-soft,#7A6A5A);margin:22px 0 0;padding-top:16px;border-top:1px dashed rgba(138,101,69,.3);display:none}',
@@ -182,6 +183,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
             var t = document.createElement('p'); t.className = 'lyr-trans'; t.textContent = tr; paper.appendChild(t);
           }
           var foreign = song && song.lang ? !/^(zh|tw)/i.test(song.lang) : !/[\u4e00-\u9fff]/.test(lyr.replace(/[\u3040-\u30ff]/g, '') ) || /[\u3040-\u30ff]/.test(lyr);
+          container.classList.toggle('lat', !!foreign && !/^(zh|tw)/i.test((song && song.lang) || ''));
           if (tr && foreign) { tbtn.hidden = false; setTr(!!st.lyrTr[n]); } else { setTr(false); }
         } else {
           var e = document.createElement('div'); e.className = 'lyr-empty'; e.textContent = '（歌詞待補）'; paper.appendChild(e);

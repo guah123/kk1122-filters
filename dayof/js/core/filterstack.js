@@ -1,22 +1,34 @@
-/* filterstack.js — round semi-transparent filter buttons stacked top-right (owner A). */
+/* filterstack.js — round filter buttons stacked top-right (owner A).
+ * DAYOF.FilterStack.mount(container, ctx, opts?) → { el, destroy }
+ *   opts.labels  true → show the text label under each icon (default: icon-only, v=261116x)
+ *   opts.layout  'row' → one horizontal row anchored top-right (default: vertical column)
+ *   opts.top     number(px) | css length → override the top offset
+ *   opts.className extra class on the wrapper;  opts.extra [nodes] appended under the filters */
 window.DAYOF = window.DAYOF || {};
 (function () {
   var CSS = [
-    ':where(.filter-stack){position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;z-index:50;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none}',
+    /* v=261116x: icon-only, 56px, muted low-saturation tints (cream / wood / sky palette), no frosted white */
+    ':where(.filter-stack){position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:10px;z-index:50;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none}',
+    ':where(.filter-stack.fs-row){flex-direction:row;align-items:flex-start;gap:8px}',
     ':where(.filter-stack) > *{pointer-events:auto}',
     ':where(.filter-stack .fs-item){display:flex;flex-direction:column;align-items:center;gap:2px}',
-    ':where(.filter-stack .round-btn){width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:var(--ink,#4A3C30);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;box-shadow:0 3px 10px rgba(74,60,48,.18);-webkit-tap-highlight-color:transparent;font:600 12px/1 var(--font,system-ui)}',
+    ':where(.filter-stack .round-btn){position:relative;width:56px;height:56px;border-radius:50%;border:1px solid rgba(74,60,48,.14);background:#E6DACA;color:var(--ink,#4A3C30);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;box-shadow:0 2px 8px rgba(74,60,48,.16);-webkit-tap-highlight-color:transparent;font:600 12px/1 var(--font,system-ui)}',
     ':where(.filter-stack .round-btn:active){transform:scale(.94)}',
-    ':where(.filter-stack .round-btn svg){width:30px;height:30px;display:block}',
-    ':where(.filter-stack .round-btn .ico){display:flex;align-items:center;justify-content:center}',
-    ':where(.filter-stack .fs-label){font:600 10px/1.2 var(--font,system-ui);color:var(--ink,#4A3C30);background:rgba(255,255,255,.6);padding:1px 6px;border-radius:8px;white-space:nowrap}',
-    /* new-filter pulse: until the user taps that filter once (state.filterSeen[id]) */
-    '.filter-stack .round-btn.is-new{animation:fsPulse 1.6s ease-in-out infinite;border-color:var(--sun,#F2C66D)}',
-    '.filter-stack .round-btn.is-new::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--sun,#F2C66D);animation:fsRing 1.6s ease-out infinite;pointer-events:none}',
-    '.filter-stack .round-btn{position:relative}',
-    '@keyframes fsPulse{0%,100%{transform:scale(1);box-shadow:0 3px 10px rgba(74,60,48,.18)}50%{transform:scale(1.1);box-shadow:0 0 0 6px rgba(242,198,109,.35),0 3px 14px rgba(242,198,109,.55)}}',
-    '@keyframes fsRing{0%{opacity:.9;transform:scale(.9)}100%{opacity:0;transform:scale(1.45)}}',
-    '@media (prefers-reduced-motion:reduce){.filter-stack .round-btn.is-new,.filter-stack .round-btn.is-new::after{animation-duration:3.2s}}',
+    ':where(.filter-stack .round-btn svg){width:32px;height:32px;display:block}',
+    ':where(.filter-stack .round-btn .ico){display:flex;align-items:center;justify-content:center;width:32px;height:32px}',
+    /* per-filter muted tints (overridable from css/*.css) */
+    '.filter-stack .filter-helmet{background:#D6DEE3;color:#4C6273}',
+    '.filter-stack .filter-rain{background:#D3DBDD;color:#4F6A75}',
+    '.filter-stack .filter-sun{background:#EADFC6;color:#7E6236}',
+    '.filter-stack .filter-fish{background:#DCE0D0;color:#5B6B4C}',
+    '.filter-stack .filter-home{background:#E8D9C8;color:#7A5A40}',
+    ':where(.filter-stack .fs-label){font:600 10px/1.2 var(--font,system-ui);color:var(--ink,#4A3C30);background:rgba(251,247,239,.8);padding:1px 6px;border-radius:8px;white-space:nowrap}',
+    /* new-filter pulse (subtle): until the user taps that filter once (state.filterSeen[id]) */
+    '.filter-stack .round-btn.is-new{animation:fsPulse 2.2s ease-in-out infinite}',
+    '.filter-stack .round-btn.is-new::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(201,162,122,.75);animation:fsRing 2.2s ease-out infinite;pointer-events:none}',
+    '@keyframes fsPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}',
+    '@keyframes fsRing{0%{opacity:.8;transform:scale(.95)}100%{opacity:0;transform:scale(1.3)}}',
+    '@media (prefers-reduced-motion:reduce){.filter-stack .round-btn.is-new,.filter-stack .round-btn.is-new::after{animation-duration:4s}}',
     ':where(.filter-stack .fs-extra){margin-top:6px;display:flex;flex-direction:column;align-items:center;gap:10px}'
   ].join('\n');
   function injectCss() {
@@ -37,7 +49,8 @@ window.DAYOF = window.DAYOF || {};
       opts = opts || {};
       injectCss();
       var wrap = document.createElement('div');
-      wrap.className = 'filter-stack';
+      wrap.className = 'filter-stack' + (opts.layout === 'row' ? ' fs-row' : '') + (opts.className ? ' ' + opts.className : '');
+      if (opts.top != null) wrap.style.top = typeof opts.top === 'number' ? opts.top + 'px' : opts.top;
       var busy = false;
       var ids = (ctx && ctx.filtersAvailable) ? ctx.filtersAvailable() : [];
       var byId = {};
@@ -65,7 +78,7 @@ window.DAYOF = window.DAYOF || {};
           Promise.resolve(p).then(function () { busy = false; }, function () { busy = false; });
         });
         item.appendChild(b);
-        if (opts.labels !== false) {
+        if (opts.labels === true) {
           var l = document.createElement('span'); l.className = 'fs-label'; l.textContent = f.label; item.appendChild(l);
         }
         wrap.appendChild(item);

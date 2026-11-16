@@ -3,6 +3,9 @@ window.DAYOF = window.DAYOF || {}; DAYOF._pages = DAYOF._pages || {};
 DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m; };
 (function () {
   'use strict';
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  // story text: keep \n line breaks (CSS pre-line); parenthetical asides （…）/(…) become small gray notes
+  function descHtml(t) { return esc(t).replace(/（[^（）\n]*）|\([^()\n]*\)/g, function (m) { return '<span class="where-note">' + m + '</span>'; }); }
   function el(tag, cls, parent, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; if (parent) parent.appendChild(e); return e; }
 
   DAYOF.registerPage('where', {
@@ -39,16 +42,32 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       if (step.desc) {
         var wrap = el('div', 'where-desc-wrap', head);
         var d = el('p', 'where-desc collapsed', wrap, '');
-        d.textContent = step.desc;
+        d.innerHTML = descHtml(step.desc);
         var tg = el('button', 'where-desc-toggle', wrap, '展開'); tg.type = 'button';
-        // only show toggle when text is actually clipped
+        tg.setAttribute('aria-expanded', 'false');
+        // only show toggle when text is actually clipped (collapsed = first 2 lines)
         tg.style.display = 'none';
-        var applyToggle = function () { if (d.classList.contains('collapsed')) tg.style.display = d.scrollWidth > d.clientWidth + 2 ? '' : 'none'; };
-        tg.addEventListener('click', function () {
-          var c = d.classList.toggle('collapsed'); tg.textContent = c ? '展開' : '收合'; tg.style.display = ''; if (c) applyToggle();
-        });
+        var applyToggle = function () { if (d.classList.contains('collapsed')) tg.style.display = d.scrollHeight > d.clientHeight + 2 ? '' : 'none'; };
+        var setOpen = function (open) {
+          d.classList.toggle('collapsed', !open); wrap.classList.toggle('open', open); head.classList.toggle('desc-open', open);
+          tg.textContent = open ? '收合' : '展開'; tg.setAttribute('aria-expanded', open ? 'true' : 'false'); tg.style.display = '';
+          if (!open) applyToggle();
+        };
+        tg.addEventListener('click', function () { setOpen(d.classList.contains('collapsed')); });
+        d.addEventListener('click', function () { if (tg.style.display !== 'none') setOpen(d.classList.contains('collapsed')); });
         setTimeout(applyToggle, 60); setTimeout(applyToggle, 400);
       }
+
+      // keep the title row clear of the global 「上一頁」 button (top-left, fixed; its width is owned by app.js)
+      var fitBack = function () {
+        if (destroyed) return;
+        var bk = document.querySelector('#app > .step-no, .step-no'); if (!bk) return;
+        var r = bk.getBoundingClientRect(), hr = head.getBoundingClientRect(), cs = getComputedStyle(bk);
+        if (!r.width || cs.display === 'none' || cs.visibility === 'hidden') { head.style.setProperty('--back-off', '0px'); return; }
+        head.style.setProperty('--back-off', Math.max(0, Math.ceil(r.right - hr.left - 16 + 8)) + 'px');
+      };
+      [0, 120, 600, 1500].forEach(function (ms) { setTimeout(fitBack, ms); });
+      window.addEventListener('resize', fitBack);
 
       var area = el('div', 'where-area', container);
 
@@ -101,11 +120,17 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       } else {
         el('p', null, area, '場景載入中…').style.cssText = 'padding:40px;text-align:center';
       }
+      // filter buttons (post-unlock find-Kai pages: 17/19/23/25/27) — top-right of the scene area, under the header
+      var stack = null;
+      if ((step.n || 0) >= 10 && DAYOF.FilterStack && DAYOF.FilterStack.mount) {
+        try { stack = DAYOF.FilterStack.mount(area, ctx, { labels: false }); if (stack && stack.el && stack.el.children.length) container.classList.add('has-stack'); } catch (e) { console.error(e); }
+      }
       // revisiting a solved step: let the player continue straight away (scene stays playable)
       if (already) showDone({ sec: already.sec, hints: already.hints });
 
       return function cleanup() {
-        destroyed = true;
+        destroyed = true; window.removeEventListener('resize', fitBack);
+        if (stack && stack.destroy) stack.destroy();
         if (handle) handle.destroy();
       };
     }

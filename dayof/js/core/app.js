@@ -21,6 +21,12 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     '#app > .page.is-out{position:absolute;top:0;left:0;right:0;z-index:0;opacity:0;pointer-events:none}',
     'body:has(.cam-overlay) #app > .step-no{visibility:hidden}',
     ':where(.step-no){position:fixed;top:calc(env(safe-area-inset-top,0px) + 6px);left:6px;z-index:10000;min-width:22px;height:22px;padding:0 7px;border-radius:11px;background:rgba(255,255,255,.78);color:var(--ink,#4A3C30);font:700 12px/22px var(--font,system-ui);text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.15);pointer-events:none;box-sizing:border-box}',
+    /* 上一頁 (v=261116x): the step badge is a back button on steps 2–34; hidden on 1 and while the camera is open */
+    ':where(#app > .step-back){height:44px;min-width:44px;padding:0 14px 0 8px;border-radius:22px;border:0;display:inline-flex;align-items:center;gap:2px;font:600 14px/1 var(--font,system-ui);pointer-events:auto;cursor:pointer}',
+    '#app > .step-back[hidden]{display:none}',
+    /* shared punctuation-break text: one block per clause, bracketed asides small + gray */
+    ':where(.pl-line){display:block}',
+    ':where(.pl-note){display:block;font-size:.72em;line-height:1.6;color:var(--ink-soft,#7A6A5A);margin-top:.35em;font-family:var(--font,system-ui)}',
     ':where(.toast){position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);transform:translateX(-50%) translateY(12px);z-index:10001;max-width:86vw;padding:10px 16px;border-radius:20px;background:rgba(74,60,48,.92);color:#fff;font-size:14px;line-height:1.4;opacity:0;transition:opacity .25s,transform .25s;text-align:center}',
     ':where(.toast.show){opacity:1;transform:translateX(-50%) translateY(0)}',
     ':where(.toast a){color:var(--sun,#F2C66D);margin-left:10px;text-decoration:underline;cursor:pointer}',
@@ -80,6 +86,34 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var r = DAYOF.FLOW && DAYOF.FLOW[n - 1];
     return r || { n: n, type: 'unknown' };
   }
+
+  /* DAYOF.punctLines(el, text): break after every ，。？、；！ (outside brackets); 「（…）」 asides → small gray .pl-note.
+   * Returns el. Used by qa / yesno / photo / where-style texts. */
+  DAYOF.punctLines = function (el, text, opts) {
+    opts = opts || {};
+    el.textContent = '';
+    var src = String(text == null ? '' : text), parts = [], buf = '', depth = 0, i, ch;
+    for (i = 0; i < src.length; i++) {
+      ch = src[i];
+      if (ch === '\n') { if (depth) { buf += ch; continue; } if (buf) parts.push(buf); buf = ''; continue; }
+      if (ch === '（' || ch === '(') {
+        if (!depth && buf.trim()) { parts.push(buf); buf = ''; }
+        depth++; buf += ch; continue;
+      }
+      buf += ch;
+      if ((ch === '）' || ch === ')') && depth) { depth--; if (!depth) { parts.push(buf); buf = ''; } continue; }
+      if (!depth && '，。？、；！?!;'.indexOf(ch) >= 0) { parts.push(buf); buf = ''; }
+    }
+    if (buf.trim()) parts.push(buf);
+    if (opts.note) parts.push(opts.note);
+    parts.forEach(function (t) {
+      t = t.trim(); if (!t) return;
+      var isNote = /^[（(].*[）)]$/.test(t);
+      var sp = document.createElement('span'); sp.className = isNote ? 'pl-note' : 'pl-line'; sp.textContent = t;
+      el.appendChild(sp);
+    });
+    return el;
+  };
 
   var state = blankState();
   var api = DAYOF.api || { enabled: false, save: function () { return Promise.resolve({ ok: false, offline: true }); },
@@ -197,7 +231,24 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     return handle;
   }
 
-  function setBadge(txt) { if (badge) badge.textContent = String(txt); }
+  // the badge shows 「上一頁」 on 2–34 (step number kept in data-step / aria-label); hidden on step 1
+  function setBadge(txt) {
+    if (!badge) return;
+    var n = parseInt(txt, 10);
+    if (!(n >= 1)) { badge.lastChild.textContent = String(txt); return; }
+    badge.dataset.step = n;
+    badge.hidden = n <= 1;
+    badge.setAttribute('aria-label', '上一頁（目前第 ' + n + ' 頁）');
+    badge.lastChild.textContent = '上一頁';
+  }
+  var lastPrev = 0;
+  function prev() {
+    var n = cur ? cur.n : state.step;
+    if (n <= 1) return n;
+    if (DAYOF.Camera && typeof DAYOF.Camera.isOpen === 'function' && DAYOF.Camera.isOpen()) return n;
+    var now = Date.now(); if (now - lastPrev < 350) return n; lastPrev = now; // no double-tap skipping
+    return goto(n - 1);
+  }
 
   function filtersAvailable(n) {
     return (DAYOF.FILTERS || []).filter(function (f) { return f.unlock <= n; }).map(function (f) { return f.id; });
@@ -225,6 +276,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       save: save,
       next: function () { return next(n); },
       goto: function (m) { return goto(m); },
+      prev: function () { return prev(); },
       setAnswer: function (k, v) { state.answers[k] = v; save(); },
       config: cfg,
       api: api,
@@ -472,7 +524,11 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     document.head.insertBefore(st, document.head.firstChild);
     root = document.getElementById('app');
     if (!root) { root = document.createElement('div'); root.id = 'app'; document.body.appendChild(root); }
-    badge = document.createElement('div'); badge.className = 'step-no'; badge.setAttribute('aria-hidden', 'true');
+    badge = document.createElement('button'); badge.type = 'button'; badge.className = 'step-no step-back'; badge.hidden = true;
+    var chev = document.createElement('span'); chev.className = 'sb-chev'; chev.setAttribute('aria-hidden', 'true');
+    chev.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>';
+    badge.appendChild(chev); badge.appendChild(document.createElement('span'));
+    badge.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); prev(); });
     root.appendChild(badge);
 
     var stepParam = parseInt(qs.get('step'), 10);
@@ -501,6 +557,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     identify: identify,
     goto: goto,
     next: function () { return next(); },
+    prev: function () { return prev(); },
     get ctx() { return cur ? cur.ctx : null; },
     set ctx(v) { /* set by render */ },
     state: function () { return state; },
@@ -514,6 +571,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   var dbg = DAYOF.debug = DAYOF.debug || {};
   dbg.goto = function (n) { return goto(n); };
   dbg.next = function () { return next(); };
+  dbg.prev = function () { return prev(); };
   dbg.state = function () { return state; };
   dbg.reset = function () { return reset(); };
   var engineSolve = dbg.solveWhere;
