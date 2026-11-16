@@ -1,6 +1,6 @@
 // v=261116x final check: 390×844 dsf2, ?test=1 — console errors, non-200 assets, back button 2–34, key screenshots → ../verify/final/
 const { chromium } = require('playwright'); const { spawn } = require('child_process'); const path = require('path'); const fs = require('fs');
-const OUT = path.join(__dirname, '..', '..', 'verify', 'y', 'final'); fs.mkdirSync(OUT, { recursive: true });
+const OUT = path.join(__dirname, '..', '..', 'verify', 'z', 'final'); fs.mkdirSync(OUT, { recursive: true });
 const PORT = 8600 + Math.floor(Math.random() * 300); const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   const srv = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], { cwd: path.join(__dirname, '..'), stdio: 'ignore' }); await sleep(900);

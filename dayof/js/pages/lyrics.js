@@ -144,7 +144,6 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var foot = document.createElement('div'); foot.className = 'lyr-foot';
       var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn lyr-next locked';
       btn.textContent = row.btn || '繼續看看'; btn.disabled = true;
-      if (btn.textContent === '繼續看看' && DAYOF.eyesButton) DAYOF.eyesButton(btn);
       foot.appendChild(btn);
       scroll.appendChild(paper); scroll.appendChild(foot);
       var hint = document.createElement('div'); hint.className = 'lyr-scrollhint gone'; hint.textContent = '往下捲動 ↓';

@@ -116,7 +116,6 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
 
       var $case = stage.querySelector('.sc-case'), $slots = stage.querySelector('.sc-slots');
       var $msg = stage.querySelector('.sc-msg'), $hint = stage.querySelector('.sc-hint'), $btn = stage.querySelector('.sc-actions .btn');
-      if (DAYOF.eyesButton) DAYOF.eyesButton($btn);
       var $under = stage.querySelector('.sc-under');
       var $lid = stage.querySelector('.sc-lid');
       function drawLid(phi, final) { $lid.innerHTML = lidSvg(phi, final); }
@@ -380,7 +379,6 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       '<div class="sc-under"><div class="sc-msg"></div><div class="sc-actions"><button class="btn sc-fallbackbtn" type="button">繼續看看</button></div></div>';
     var $bg = stage.querySelector('.scs-bg'), $layer = stage.querySelector('.scs-layer');
     var $hint = stage.querySelector('.sc-hint'), $msg = stage.querySelector('.sc-msg'), $btn = stage.querySelector('.sc-actions .btn'), $under = stage.querySelector('.sc-under');
-    if (DAYOF.eyesButton) DAYOF.eyesButton($btn);
     var $img = stage.querySelector('.scs-img');
     $bg.style.backgroundImage = 'url("' + (cfg.empty || cfg.bg) + '")';   // blurred backdrop fills the bands around the width-fit painting
     $img.style.backgroundImage = 'url("' + cfg.bg + '")';

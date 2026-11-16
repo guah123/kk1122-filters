@@ -44,7 +44,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var rollwrap = el('div', 'cr-rollwrap'), roll = el('div', 'cr-roll');
     var zone = el('div', 'cr-walkzone');
     // (Kai t480u) no skip: credits always play in full; the continue button appears only after the roll ends
-    var cont = el('button', 'btn cr-continue', '繼續看看'); cont.type = 'button'; cont.hidden = true; if (DAYOF.eyesButton) DAYOF.eyesButton(cont);
+    var cont = el('button', 'btn cr-continue', '繼續看看'); cont.type = 'button'; cont.hidden = true;
     rollwrap.appendChild(roll); roll.style.visibility = 'hidden';
     stage.appendChild(curL); stage.appendChild(curR); stage.appendChild(valance);
     stage.appendChild(rollwrap); stage.appendChild(zone);

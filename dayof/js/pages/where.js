@@ -79,7 +79,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var note = el('span', null, meta, ''); note.className = 'sis-note';
         var upd = function () { note.textContent = ''; }; // secrets are never advertised
         upd(); box._upd = upd;
-        var b = el('button', 'btn', box, '繼續看看'); b.type = 'button'; if (DAYOF.eyesButton) DAYOF.eyesButton(b);
+        var b = el('button', 'btn', box, '繼續看看'); b.type = 'button';
         b.addEventListener('click', function () { b.disabled = true; ctx.next(); });
       }
       function saveFound(patch) {
