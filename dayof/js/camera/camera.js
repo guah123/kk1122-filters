@@ -95,7 +95,7 @@
   };
 
   /* ---------- 共用紙紋＋濕畫暈邊（取代 KK.paper；所有濾鏡最後一步都會呼叫，錄影／拍照一起輸出） ----------
-   * 紙紋：assets/filters/paper-grain.jpg（soft-light）或程式產生的可平鋪淺色紙紋（multiply 約 14%，隨 opt.grain 縮放）。
+   * 紙紋：assets/filters/paper-grain.jpg（淺色暖調水彩紙，multiply，強度與程式紙紋相同：約 14%，隨 opt.grain 縮放，上限 30%）或程式產生的可平鋪淺色紙紋（multiply 約 14%，隨 opt.grain 縮放）。
    * 暈邊：assets/filters/vignette-wet.png 或程式產生的暖色不規則水漬暈邊（預畫一次，每幀只 drawImage）。 */
   function installPaper(KK) {
     if (KK._dayofPaper) return;
@@ -173,7 +173,7 @@
         ctx.save();
         var b = KK.boil(S.t || 0);
         ctx.translate(b * 61, b * 37);                      // 跟著手繪節奏輕微跳動
-        if (pg) { ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 0.55; ctx.fillStyle = ctx.createPattern(pg, 'repeat'); }
+        if (pg) { ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = Math.min(0.3, 0.14 * (gA / 0.5)); ctx.fillStyle = ctx.createPattern(pg, 'repeat'); }
         else { if (!grain) grain = makeGrain(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = Math.min(0.3, 0.14 * (gA / 0.5)); ctx.fillStyle = ctx.createPattern(grain, 'repeat'); }
         ctx.fillRect(-200, -200, S.w + 400, S.h + 400);
         ctx.restore();
