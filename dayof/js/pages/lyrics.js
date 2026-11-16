@@ -20,8 +20,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     '.page-lyrics .lyr-text{font-family:var(--font-serif,serif);font-size:17px;line-height:1.9;color:var(--ink,#4A3C30);letter-spacing:.02em;margin:0;text-align:left;word-break:break-word}',
     '.page-lyrics .lyr-stanza{margin:0 0 1.4em}',
     '.page-lyrics .lyr-stanza:last-child{margin-bottom:0}',
-    '.page-lyrics .lyr-line{margin:0}',
-    '.page-lyrics .lyr-tl{display:none;font-family:var(--font,system-ui);font-size:14px;line-height:1.6;color:var(--sky-deep,#5E86A8);margin:1px 0 7px;letter-spacing:.01em}',
+    '.page-lyrics .lyr-line{margin:0 0 .4em;line-height:1.55;padding-left:1.2em;text-indent:-1.2em}',
+    '.page-lyrics .lyr-tl{display:none;font-family:var(--font,system-ui);font-size:14px;line-height:1.6;color:var(--sky-deep,#5E86A8);margin:-.1em 0 .7em;padding-left:1.2em;letter-spacing:.01em}',
     '.page-lyrics.show-tr .lyr-tl{display:block}',
     '.page-lyrics .lyr-trans{white-space:pre-line;font-family:var(--font,system-ui);font-size:14px;line-height:1.9;color:var(--ink-soft,#7A6A5A);margin:22px 0 0;padding-top:16px;border-top:1px dashed rgba(138,101,69,.3);display:none}',
     '.page-lyrics.show-tr .lyr-trans{display:block}',
@@ -56,6 +56,12 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
 
   /* 統一清理：同一套規則套到每首歌（防止 Kai 之後貼進來的歌詞帶雜訊） */
   var LABEL_RE = /^\s*[\[（(【]?\s*(主歌|副歌|導歌|橋段|間奏|前奏|尾奏|verse|chorus|pre-?chorus|bridge|intro|outro|hook|refrain)\s*\d*\s*[\]）)】]?\s*[:：]?\s*$/i;
+  var SECTION_RE = /^\s*[\[（(【]?\s*(間奏|前奏|尾奏|intro|outro)\b[^\n]*$/i;   // 前/間/尾奏 + 任何括號註記整行丟掉
+  var VOCABLE_RE = /^[\s嘩搭啦哼喔噢ㄟaAoO~～、,，.。×xX0-9()（）]*$/;
+  function isVocable(l) {
+    if (/^\s*o{2,}[o\s]*$/i.test(l)) return true;
+    return /(嘩啦|搭啦|啦啦)/.test(l) && VOCABLE_RE.test(l.replace(/啦|嘩|搭/g, '')) && !/[\u4e00-\u9fffA-Za-z]{4,}/.test(l.replace(/嘩啦|搭啦|啦|搭|嘩|×\d*/g, ''));
+  }
   function cleanText(s) {
     if (typeof s !== 'string') return '';
     s = s.replace(/\r\n?/g, '\n')
@@ -63,14 +69,18 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       .replace(/\*\*|__/g, '')
       .replace(/\\([\\`*_{}\[\]()#+\-.!~"'])/g, '$1')
       .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .replace(/[　\t]+/g, ' ');
+      .replace(/[　\t]+/g, ' ')
+      .replace(/[（(]\s*(升\s*key|轉調)\s*[）)]/gi, '');
     var lines = s.split('\n').map(function (l) { return l.replace(/ {2,}/g, ' ').trim(); }).filter(function (l) {
       if (/蘭多/.test(l)) return false;
-      if (LABEL_RE.test(l)) return false;
+      if (LABEL_RE.test(l) || SECTION_RE.test(l)) return false;
+      if (/^[（(]\s*(升\s*key|轉調)\s*[）)]$/i.test(l) || /^[（(]?(升\s*key|轉調)[）)]?$/i.test(l)) return false;
+      if (isVocable(l)) return false;
       if (/^[★☆*#=\-_~·•]{3,}$/.test(l)) return false;          // 裝飾線
       if (/^\[?\d{1,2}:\d{2}(\.\d+)?\]?$/.test(l)) return false;  // 時間戳
       return true;
     });
+    lines = lines.join('\n').replace(/\n[ \t]+\n/g, '\n\n').split('\n');
     return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
   function stanzas(s) { return s ? s.split(/\n\n/).map(function (b) { return b.split('\n'); }) : []; }
@@ -152,7 +162,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var lyr = cleanText(song && song.lyrics);
         if (/[\u3040-\u30ff]/.test(lyr)) lyr = lyr.split('\n').filter(function (l) { return !/^[a-z][a-z \-,.'?!~…()]*$/.test(l); }).join('\n').replace(/\n{3,}/g, '\n\n');
         var tr = cleanText(song && song.translation);
-        var artist = song && song.artist && song.artist !== 'Kai' ? String(song.artist) : '';
+        var artist = song && song.artist && song.artist.trim() ? String(song.artist) : '';
         if (artist) { var ar = head.querySelector('.lyr-artist'); ar.textContent = '原唱：' + artist; ar.hidden = false; }
         paper.innerHTML = '';
         if (lyr) {

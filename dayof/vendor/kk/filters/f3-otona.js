@@ -1,5 +1,5 @@
 /* 3〈大人中〉流星：上半部疊一層淡淡夜空，星星眨眼，一段「零星 → 期待 → 流星雨 → 餘韻」的流星節奏（右上→左下）；
- * 下緣是台灣老公寓頂樓剪影（女兒牆、水塔、晾衣架、天線），小動物（Kai 牽著小袋熊）站在頂樓邊緣抬頭許願。
+ * 下緣是台灣老公寓頂樓（女兒牆、水塔、晾衣架、天線），大人牽著小男孩站在女兒牆上抬頭許願（只有人類，不畫小動物）。
  * 手指一劃放一顆流星，消失處閃一下小星光（手指流星不受中央限制）。
  *
  * 分鏡（loop 12 秒，流星只由 S.t 決定 → 無縫）：
@@ -74,7 +74,7 @@
     mood: '長大・許願・夜裡的勇氣',
     duration: 12,
     hint: '用手指在畫面上一劃，放一顆流星',
-    critterHint: '頂樓女兒牆後（畫面中偏右），Kai 牽著小袋熊抬頭看天，流星雨時揮手',
+    critterHint: '頂樓女兒牆上（畫面中偏右），大人牽著小男孩抬頭看天，流星雨時開心小跳（人類）',
     create() {
       const st = { sky: null, roof: [], rh: 0, par: 0, stars: [], w: 0, h: 0, u: 0, meteors: [], downs: {} };
 
@@ -477,21 +477,19 @@
             st.meteors = keep;
           }
 
-          // 5) 抬頭看天的小動物（Kai 牽著小袋熊）：站在頂樓女兒牆後，先畫、再蓋上頂樓剪影（下半身被牆擋住）；流星雨時（5.8–7.4s）開心揮手、小跳
+          // 5) 頂樓＋抬頭許願的兩個人（人類：米色大衣的大人＋黃毛衣的小男孩；Kai step 32：不要小動物）
+          //    先畫頂樓（otona-rooftop.png 720×360，女兒牆牆帽在素材高度 0.822 處），再讓人「站在牆帽上」整個身體露出來；
+          //    人寬約 w×0.16（otona-critters.png 256×256，腳底在素材 250/256）。流星雨時（5.7–7.5s）開心小跳。
           const aRoof = ART('otona-rooftop.png'), aCrit = ART('otona-critters.png');
           const roofH = aRoof ? w * aRoof.naturalHeight / aRoof.naturalWidth : 0;
-          if (aRoof) {                                // 點陣頂樓＋抬頭許願的人（人類）
+          if (aRoof) {
             g.drawImage(aRoof, 0, h - roofH, w, roofH);
             if (aCrit) {
-              const cs2 = w * 0.3, cheer = KK.smooth(5.7, 6.0, t) * (1 - KK.smooth(7.1, 7.5, t));
-              const hop = cheer * Math.abs(Math.sin(t * TAU * 1.5)) * cs2 * 0.03 + Math.sin(ph * TAU * 2) * cs2 * 0.006;
-              g.drawImage(aCrit, w * 0.57 - cs2 / 2, h - roofH * 0.62 - cs2 - hop, cs2, cs2);
+              const cs2 = w * 0.16, capY = h - roofH + roofH * 0.822;
+              const cheer = KK.smooth(5.7, 6.0, t) * (1 - KK.smooth(7.1, 7.5, t));
+              const hop = cheer * Math.abs(Math.sin(t * TAU * 1.5)) * cs2 * 0.05 + Math.abs(Math.sin(ph * TAU * 2)) * cs2 * 0.006;
+              g.drawImage(aCrit, w * 0.55 - cs2 / 2, capY - cs2 * (250 / 256) - hop, cs2, cs2);
             }
-          } else if (S.critter) {
-            const cs = u * 0.05;
-            const cheer = KK.smooth(5.7, 6.0, t) * (1 - KK.smooth(7.1, 7.5, t));
-            const hop = cheer * Math.abs(Math.sin(t * TAU * 1.5)) * cs * 0.08;
-            KK.Critter.draw(g, st.critX, h - st.par + cs * 0.3 - hop, cs, { pose: cheer > 0.5 ? 'wave' : 'lookup', facing: 1, alpha: 0.85, tone: 0.5, t });
           }
           if (!aRoof) g.drawImage(st.roof[bi], 0, h - st.rh);
 

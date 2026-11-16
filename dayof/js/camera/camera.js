@@ -59,7 +59,9 @@
     'otona-sky.png', 'otona-stars.png', 'otona-meteor.png', 'otona-rooftop.png', 'otona-critters.png',
     'hareru-clouds.jpg', 'hareru-wipe-brush.png', 'hareru-sunlight.png', 'hareru-sun.png',
     'remember-hill.png', 'remember-house.png', 'remember-smoke.png', 'remember-runner-a.png', 'remember-runner-b.png',
+    'hareru-walkers.png',
     'rain-strokes.png', 'rain-drop-1.png', 'rain-drop-2.png', 'rain-drop-3.png', 'rain-drop-4.png', 'rain-mist.png', 'rain-puddle.png', 'rain-umbrella-walkers.png',
+    'rain-ripple.png', 'rain-splash.png',
     'fisheye-frame.png', 'fisheye-bubble.png',
   ];
   var artImgs = {}, artPromise = null;
