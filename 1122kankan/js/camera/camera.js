@@ -94,7 +94,7 @@
         .then(function (m) {
           var list = m ? (Array.isArray(m) ? m : (m.files || [])) : ART_FILES;
           list = list.filter(function (n) { return ART_FILES.indexOf(n) >= 0; });
-          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261118h').then(function (im) { if (im) artImgs[n] = im; }); }));
+          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261118i').then(function (im) { if (im) artImgs[n] = im; }); }));
         });
       artPromise = Promise.race([all, new Promise(function (r) { setTimeout(r, 3000); })]);
       return artPromise;
@@ -234,7 +234,7 @@
       if (window.KK && KK.Stage && KK.Recorder) { ok(); return; }
       if (window.KKReady) { window.KKReady(ok); return; }
       var s = document.createElement('script');
-      s.src = ROOT + 'vendor/kk/kk-load.js?v=261118h';   // version tag: phones must not keep an old filter engine
+      s.src = ROOT + 'vendor/kk/kk-load.js?v=261118i';   // version tag: phones must not keep an old filter engine
       s.onload = function () { window.KKReady(ok); };
       s.onerror = function () { kkPromise = null; s.remove(); reject(Object.assign(new Error('無法載入 ' + s.src), { name: 'LoadError' })); };
       document.head.appendChild(s);
@@ -289,6 +289,13 @@
     '.cam-preview-hint{max-width:360px;margin:10px 4px 0;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.5;text-align:center;',
     'background:rgba(242,198,109,.95);color:var(--ink,#4A3C30);-webkit-user-select:text;user-select:text}',
     '.cam-preview-actions .cam-btn:disabled{opacity:.55}',
+    /* v=261118n (Kai, iPhone): the video must never push 儲存／重拍 off-screen — the stage gets a definite height and the
+       video is contain-fitted inside it; the overlay uses the *visible* viewport height (dvh) so Safari's bottom bar can't cover the buttons */
+    '.cam-overlay{height:100vh;height:100dvh;bottom:auto}',
+    '.cam-preview{height:100%;box-sizing:border-box;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}',
+    '.cam-preview-stage{position:relative;align-self:stretch;height:auto;min-height:0;overflow:hidden}',
+    '.cam-preview-vid,.cam-preview-img{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:contain;background:transparent;box-shadow:none;border-radius:0}',
+    '.cam-preview-actions{position:relative;z-index:3}',
     '.cam-overlay.previewing .cam-back,.cam-overlay.previewing .cam-tag,.cam-overlay.previewing .cam-inapp{display:none}',
     '.cam-overlay.previewing .cam-toast{top:auto;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:9}',
   ].join('\n');

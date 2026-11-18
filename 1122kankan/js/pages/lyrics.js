@@ -19,7 +19,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     /* v=261116aa (Kai): outro — tapping 繼續看看 fades every UI layer + the veil, holds the bare illustration ~3s, then moves on */
     /* v=261118f (Kai): no fades — tapping 繼續看看 removes every UI layer at once (bare illustration) and puts ONE emoji
        button tied to the song in the same spot; tapping it goes on */
-    /* v=261118h (Kai): 繼續看看 swaps the UI for the emoji button at once (no fade); only tapping the emoji fades the page out */
+    /* v=261118i (Kai): 繼續看看 swaps the UI for the emoji button at once (no fade); only tapping the emoji fades the page out */
     '#app > .page.page-lyrics.lyr-leave{opacity:0;transition:opacity .5s ease}',
     '.page-lyrics.lyr-outro > :not(.lyr-go){opacity:0 !important;pointer-events:none !important}',
     '.page-lyrics.lyr-outro .filter-stack *{pointer-events:none !important}',
@@ -171,7 +171,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       // v=261116aa: picture-book background per lyrics step (x = horizontal focus so the subject survives the phone crop)
       // v=261118f (Kai): emoji for the post-lyrics button, one per song
       var SONG_EMOJI = { 4: '🫥', 6: '🕊️', 8: '🍲', 10: '🧑‍🚀', 12: '🧳', 14: '⛰️', 16: '🌧️', 18: '🌳', 20: '🌼', 22: '🌸', 24: '👔', 26: '🌤️', 28: '🗽', 30: '🌙', 32: '🌇' };
-      var BG_X = { 4: 50, 20: 55, 24: 62, 26: 34, 28: 58 };   // 20: dandelion hillside (v=261118h)
+      var BG_X = { 4: 50, 20: 55, 24: 62, 26: 34, 28: 58 };   // 20: dandelion hillside (v=261118i)
       if (n >= 4 && n <= 32 && n % 2 === 0) {
         var nn = (n < 10 ? '0' : '') + n;
         container.classList.add('has-bg');
@@ -214,7 +214,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var r = btn.getBoundingClientRect(), cr = container.getBoundingClientRect();
         var goBtn = document.createElement('button'); goBtn.type = 'button'; goBtn.className = 'lyr-go';
         goBtn.textContent = SONG_EMOJI[n] || '👀'; goBtn.setAttribute('aria-label', '繼續看看');
-        // v=261118h (Kai): the emoji button always sits top-right
+        // v=261118i (Kai): the emoji button always sits top-right
         goBtn.style.left = Math.round(cr.width - 34) + 'px'; goBtn.style.top = 'calc(env(safe-area-inset-top, 0px) + 34px)';   // same row + inset as the back button
         container.classList.add('lyr-outro'); container.appendChild(goBtn);
         // v=261118l (Kai): the emoji button OR a tap anywhere on the bare illustration goes on (back button excluded)
