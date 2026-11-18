@@ -1,0 +1,50 @@
+.page-qa,.page-yesno{background:var(--cream,#F6EFE2);color:var(--ink,#4A3C30);font-family:var(--font,system-ui,sans-serif);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.qz-wrap{box-sizing:border-box;max-width:480px;margin:0 auto;min-height:100%;padding:64px 22px 40px;display:flex;flex-direction:column;gap:18px}
+.qz-label{align-self:flex-start;font-size:13px;letter-spacing:.2em;color:var(--wood-dark,#8A6545);border:1.5px solid var(--wood,#C9A27A);border-radius:999px;padding:3px 14px;background:var(--paper,#FBF7EF)}
+.qz-card{background:var(--paper,#FBF7EF);border-radius:var(--radius,18px);box-shadow:var(--shadow,0 6px 20px rgba(74,60,48,.15));padding:24px 22px;font-family:var(--font-serif,serif);font-size:20px;line-height:1.7;position:relative}
+.qz-card:before{content:"";position:absolute;inset:6px;border:1px dashed rgba(138,101,69,.3);border-radius:calc(var(--radius,18px) - 6px);pointer-events:none}
+.qz-area{width:100%;box-sizing:border-box;min-height:150px;max-height:50vh;resize:none;font:16px/1.7 var(--font,system-ui,sans-serif);color:var(--ink,#4A3C30);background:#fffdf8;border:1.5px solid var(--wood,#C9A27A);border-radius:14px;padding:14px 16px;outline:none;box-shadow:inset 0 2px 6px rgba(74,60,48,.06)}
+.qz-area:focus{border-color:var(--wood-dark,#8A6545);box-shadow:0 0 0 3px rgba(201,162,122,.3)}
+.qz-btns{display:flex;gap:12px;justify-content:center}
+.qz-btns .btn{min-width:110px;font-size:17px;cursor:pointer}
+.qz-btn{font:600 17px var(--font,sans-serif);border-radius:999px;padding:12px 28px;border:0;cursor:pointer;background:var(--wood-dark,#8A6545);color:#fff;box-shadow:0 4px 0 #6b4d33,var(--shadow,0 6px 20px rgba(74,60,48,.15))}
+.qz-btn:active{transform:translateY(2px)}
+.qz-btn.ghost{background:transparent;color:var(--wood-dark,#8A6545);border:1.5px solid var(--wood,#C9A27A);box-shadow:none}
+.qz-nudge{min-height:22px;text-align:center;font-size:14px;color:var(--wood-dark,#8A6545);opacity:0;transition:opacity .2s}
+.qz-nudge.on{opacity:1}
+.qz-note{margin-top:auto;padding-top:12px;text-align:center;font-size:14px;color:var(--ink-soft,#7A6A5A)}
+.qz-shake{animation:qzShake .45s}
+@keyframes qzShake{20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.qz-huh{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);font:700 64px var(--font-serif,serif);color:var(--wood-dark,#8A6545);pointer-events:none;animation:qzHuh .8s ease-out forwards;z-index:50}
+@keyframes qzHuh{0%{transform:translate(-50%,-30%) scale(.3);opacity:0}40%{transform:translate(-50%,-60%) scale(1.3);opacity:1}60%{transform:translate(-50%,-50%) scale(.9)}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+/* yesno */
+.page-yesno{overflow:hidden}
+.yn-wrap{position:absolute;inset:0;padding:64px 22px 0;display:flex;flex-direction:column;gap:18px;max-width:480px;margin:0 auto}
+.yn-yes{position:absolute;font:700 26px var(--font,sans-serif);padding:16px 0;width:140px;border:0;border-radius:999px;background:var(--leaf,#8FA37A);color:#fff;box-shadow:0 5px 0 #6f8460,var(--shadow,0 6px 20px rgba(74,60,48,.15));cursor:pointer}
+.yn-no{position:absolute;z-index:5;font:700 26px var(--font,sans-serif);padding:16px 0;width:110px;border:0;border-radius:999px;background:var(--wood,#C9A27A);color:#fff;box-shadow:0 5px 0 var(--wood-dark,#8A6545);cursor:pointer;touch-action:none;transition:left .18s cubic-bezier(.3,1.4,.5,1),top .18s cubic-bezier(.3,1.4,.5,1)}
+.yn-say{position:absolute;z-index:4;font-size:15px;line-height:1.3;padding:3px 10px;border-radius:12px;background:rgba(251,247,239,.92);box-shadow:0 1px 6px rgba(74,60,48,.12);color:var(--wood-dark,#8A6545);pointer-events:none;white-space:nowrap;transition:opacity .3s,left .18s cubic-bezier(.3,1.4,.5,1),top .18s cubic-bezier(.3,1.4,.5,1)}
+.yn-done{position:absolute;inset:0;z-index:20;background:rgba(246,239,226,.94);display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;font:22px var(--font-serif,serif)}
+.yn-done.on{display:flex}
+/* v=261116x: punctuation-broken question lines + small gray asides */
+.qz-card .pl-line{display:block}
+.qz-card .pl-note{display:block;font-family:var(--font,system-ui,sans-serif);font-size:14px;line-height:1.6;color:var(--ink-soft,#7A6A5A);margin-top:8px}
+.qz-card .pl-line{text-wrap:pretty}
+/* v=261116y: step 21 — the 幾米 pizza illustration is a LARGE top hero (full width, ~50% height, soft faded bottom edge);
+   label/question/textarea/buttons sit compactly below. The whole page scrolls, so with the keyboard open the hero scrolls away. */
+/* v=261118 (Kai, step 21): question → centred pizza-world hero → answer → buttons, all on one 390×844 / 360×740 screen.
+   The hero takes the leftover height (flex) and shows the whole floating pizza, centred, edges melting into the page. */
+.page-qa.qz-has-art{background:radial-gradient(ellipse 90% 55% at 50% 52%,rgba(244,214,170,.45),rgba(244,214,170,0) 70%),linear-gradient(180deg,#F8EEDF 0%,#F6EAD8 55%,#F3E3CC 100%)}
+.page-qa.qz-has-art .qz-wrap{min-height:100%;min-height:100svh;padding:62px 20px calc(16px + env(safe-area-inset-bottom,0px));gap:12px}
+.qz-hero{flex:1 1 220px;min-height:170px;max-height:320px;width:100%;margin:0 auto;
+  background-repeat:no-repeat;background-size:auto 140%;background-position:50% 73%;pointer-events:none;
+  -webkit-mask-image:radial-gradient(ellipse 62% 60% at 50% 50%,#000 74%,transparent 100%);mask-image:radial-gradient(ellipse 62% 60% at 50% 50%,#000 74%,transparent 100%)}
+.page-qa.qz-has-art .qz-label{position:relative;z-index:1}
+.page-qa.qz-has-art .qz-card{z-index:1;padding:16px 20px;font-size:18px;line-height:1.6}
+.page-qa.qz-has-art .qz-area{min-height:88px;padding:10px 14px}
+.page-qa.qz-has-art .qz-nudge{min-height:0;height:0;overflow:visible;margin:-8px 0 2px}
+.page-qa.qz-has-art .qz-btns .qz-btn{padding:10px 26px}
+
+/* v=261116aa (Kai): step 21 pizza — smaller answer box, buttons higher so the illustration (boy on the cheese) stays clear */
+.page-qa[data-step="21"] .qz-wrap{gap:12px}
+.page-qa[data-step="21"] .qz-area{min-height:92px;height:92px;max-height:92px;flex:0 0 auto}
+.page-qa[data-step="21"] .qz-nudge{min-height:0;height:0;overflow:visible;margin:-6px 0 0}

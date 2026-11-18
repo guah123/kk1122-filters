@@ -1,0 +1,20 @@
+{
+ "enabled": false,
+ "_note": "step-11 painted-scene mode (format: suitcase.schema.md). Set enabled:false to fall back to the SVG room.",
+ "bg": "assets/scenes/s11-suitcase-items.jpg",
+ "empty": "assets/scenes/s11-suitcase-empty.jpg",
+ "cutouts": {
+  "switch": "assets/suitcase/cut/switch.png", "headphones": "assets/suitcase/cut/headphones.png", "book": "assets/suitcase/cut/book.png",
+  "monstera": "assets/suitcase/cut/monstera.png", "guitar": "assets/suitcase/cut/guitar.png", "chips": "assets/suitcase/cut/chips.png",
+  "football": "assets/suitcase/cut/football.png", "familyphoto": "assets/suitcase/cut/familyphoto.png",
+  "cigarettes": "assets/suitcase/cut/cigarettes.png", "dress": "assets/suitcase/cut/dress.png"
+ },
+ "items": {
+  "switch": [0.1713, 0.8663, 0.4757, 0.9905], "headphones": [0.4144, 0.8542, 0.6458, 0.9705], "book": [0.0579, 0.5174, 0.2373, 0.5712],
+  "monstera": [0.0, 0.2622, 0.2407, 0.4991], "guitar": [0.0, 0.4323, 0.1331, 0.842], "chips": [0.5972, 0.8516, 0.8484, 1.0],
+  "football": [0.8079, 0.8481, 1.0, 1.0], "familyphoto": [0.1921, 0.4557, 0.3345, 0.553], "cigarettes": [0.2824, 0.4861, 0.3449, 0.5495],
+  "dress": [0.8287, 0.2483, 1.0, 0.7031]
+ },
+ "suitcase": [0.125, 0.75, 0.503, 0.894],
+ "lid": [0.098, 0.608, 0.365, 0.765]
+}

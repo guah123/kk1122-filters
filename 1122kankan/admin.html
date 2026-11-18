@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>看看 後台</title>
+<link rel="stylesheet" href="css/base.css?v=261116aa">
+<script src="config.js?v=261116aa"></script>
+<style>
+  :root{--fresh:#FFF1C9}
+  html,body{height:auto;min-height:100%}
+  body{overflow-y:auto}
+  .adm{max-width:720px;margin:0 auto;padding:calc(14px + var(--safe-top)) 16px calc(40px + var(--safe-bottom))}
+  .adm-head{position:sticky;top:0;z-index:5;margin:0 -16px 14px;padding:12px 16px 10px;
+    background:rgba(246,239,226,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    border-bottom:1px solid rgba(138,101,69,.15)}
+  .adm-title{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .adm-title h1{font-family:var(--font-serif);font-size:22px;letter-spacing:.12em;margin:0;color:var(--wood-dark)}
+  .adm-stats{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px;font-size:14px;color:var(--ink-soft)}
+  .adm-stats b{color:var(--ink);font-size:18px;margin-right:2px}
+  .adm-btn{appearance:none;border:0;border-radius:999px;background:var(--wood);color:#fff;padding:8px 16px;
+    font-size:15px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);min-height:40px}
+  .adm-btn.ghost{background:rgba(255,255,255,.7);color:var(--wood-dark);box-shadow:none;border:1px solid rgba(138,101,69,.3)}
+  .adm-btn.small{padding:5px 12px;font-size:13px;min-height:32px}
+  .adm-btn:disabled{opacity:.5}
+  .adm-warn{margin-top:8px;padding:7px 12px;border-radius:10px;background:#F7DCCB;color:#7A3E22;font-size:13px}
+  .adm-sec{background:var(--paper);border-radius:var(--radius);box-shadow:var(--shadow);margin:0 0 14px;overflow:hidden}
+  .adm-sec-h{display:flex;align-items:flex-start;gap:10px;padding:14px 14px 12px}
+  .adm-sec-toggle{flex:1;appearance:none;border:0;background:none;text-align:left;padding:0;cursor:pointer;color:inherit}
+  .adm-no{display:inline-block;font-size:12px;letter-spacing:.08em;color:#fff;background:var(--sky-deep);border-radius:999px;padding:1px 9px;margin-right:6px;vertical-align:2px}
+  .adm-count{font-size:13px;color:var(--ink-soft)}
+  .adm-q{display:block;font-size:15px;font-weight:600;line-height:1.55;margin-top:6px}
+  .adm-caret{display:inline-block;transition:transform .2s;color:var(--wood-dark);margin-left:4px}
+  .adm-sec.collapsed .adm-caret{transform:rotate(-90deg)}
+  .adm-sec.collapsed .adm-sec-b{display:none}
+  .adm-sec-b{padding:0 14px 14px}
+  .adm-item{background:#fff;border-left:4px solid var(--sky);border-radius:10px;padding:10px 12px;margin-top:8px;transition:background 1.2s ease}
+  .adm-item.fresh{background:var(--fresh);border-left-color:var(--sun)}
+  .adm-who{font-size:13px;color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:2px 8px}
+  .adm-who b{color:var(--ink)}
+  .adm-ans{margin-top:4px;font-size:15px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+  .adm-ans.dim{color:var(--ink-soft);font-style:italic}
+  .adm-empty{color:var(--ink-soft);font-size:14px;padding:6px 2px}
+  .adm-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 4px}
+  .adm-chip{background:var(--cream);border:1px solid rgba(138,101,69,.2);border-radius:999px;padding:3px 10px;font-size:13px}
+  .adm-chip b{color:var(--wood-dark);margin-left:4px}
+  .adm-big{font-size:28px;font-weight:700;color:var(--wood-dark);margin-right:6px}
+  .adm-key{max-width:360px;margin:16vh auto 0;background:var(--paper);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 20px;text-align:center}
+  .adm-key h2{font-family:var(--font-serif);letter-spacing:.12em;margin:0 0 14px;color:var(--wood-dark)}
+  .adm-key input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(138,101,69,.35);background:#fff;margin-bottom:12px}
+  .adm-key .err{color:#A2482A;font-size:14px;min-height:20px;margin-bottom:6px}
+  .adm-toast{position:fixed;left:50%;bottom:calc(24px + var(--safe-bottom));transform:translateX(-50%);background:rgba(74,60,48,.9);color:#fff;
+    padding:8px 16px;border-radius:999px;font-size:14px;z-index:20;opacity:0;transition:opacity .25s;pointer-events:none}
+  .adm-toast.show{opacity:1}
+  table.adm-t{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  .adm-t th,.adm-t td{text-align:left;padding:6px 4px;border-bottom:1px solid rgba(138,101,69,.12);vertical-align:top}
+  .adm-t th{color:var(--ink-soft);font-weight:600}
+  .adm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+  @media (min-width:560px){.adm-grid{grid-template-columns:repeat(4,1fr)}}
+  .adm-tile{appearance:none;border:0;padding:0;background:#fff;border-radius:12px;overflow:hidden;cursor:pointer;text-align:left;color:inherit;
+    box-shadow:0 2px 8px rgba(74,60,48,.12);transition:box-shadow 1.2s ease,background 1.2s ease;display:flex;flex-direction:column}
+  .adm-tile.fresh{background:var(--fresh);box-shadow:0 0 0 3px var(--sun)}
+  .adm-thumb{position:relative;width:100%;aspect-ratio:1/1;background:linear-gradient(135deg,#EFE3CC,#DCC7A6);display:flex;align-items:center;justify-content:center;color:var(--wood-dark);font-size:12px}
+  .adm-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .adm-play{position:absolute;right:6px;bottom:6px;width:28px;height:28px;border-radius:50%;background:rgba(40,30,20,.6);display:flex;align-items:center;justify-content:center}
+  .adm-play::after{content:"";border-left:10px solid #fff;border-top:7px solid transparent;border-bottom:7px solid transparent;margin-left:3px}
+  .adm-cap{padding:5px 7px 7px;font-size:11px;line-height:1.4;color:var(--ink-soft);min-width:0}
+  .adm-cap b,.adm-cap span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .adm-cap b{color:var(--ink);font-size:12px}
+  .adm-sec{scroll-margin-top:120px}
+  .adm-lb{position:fixed;inset:0;z-index:30;background:rgba(40,30,20,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(56px + var(--safe-top)) 12px calc(20px + var(--safe-bottom))}
+  .adm-lb-x{position:absolute;top:calc(10px + var(--safe-top));right:12px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.85);font-size:24px;line-height:44px;color:var(--ink);cursor:pointer}
+  .adm-lb-body{max-width:100%;max-height:100%;flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+  .adm-lb-body img,.adm-lb-body video{max-width:100%;max-height:72vh;border-radius:10px;background:#000}
+  .adm-lb-msg{color:#fff;font-size:15px;text-align:center}
+  .adm-lb-foot{color:#F6EFE2;font-size:13px;margin-top:10px;text-align:center}
+  .adm-lb-foot a{color:#fff;font-weight:600}
+</style>
+</head>
+<body class="paper-bg">
+<div class="adm">
+  <div id="keyBox" class="adm-key" hidden>
+    <h2>看看 後台</h2>
+    <div class="err" id="keyErr"></div>
+    <form id="keyForm" autocomplete="off">
+      <input id="keyInput" type="password" placeholder="管理金鑰" autocomplete="current-password" aria-label="管理金鑰">
+      <button class="adm-btn" type="submit" style="width:100%">進入</button>
+    </form>
+  </div>
+
+  <div id="main" hidden>
+    <header class="adm-head">
+      <div class="adm-title">
+        <h1>看看 後台</h1>
+        <button id="refreshBtn" class="adm-btn ghost small" type="button">重新整理</button>
+      </div>
+      <div class="adm-stats">
+        <span>參與 <b id="stTotal">–</b>人</span>
+        <span>完成 <b id="stDone">–</b>人 <small>（走到 32／已寄信）</small></span>
+        <span id="stTime">最後更新 –</span>
+      </div>
+      <div id="warn" class="adm-warn" hidden></div>
+    </header>
+    <div id="sections"></div>
+  </div>
+</div>
+<div id="toast" class="adm-toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  var CFG = window.DAYOF_CONFIG || {};
+  var BACKEND = String(CFG.BACKEND_URL || '');
+  var POLL_MS = 30000;
+  var SS_KEY = 'dayof:admin:key';
+  var LS_COLLAPSE = 'dayof:admin:collapsed';
+  var TZ = 'Asia/Taipei';
+
+  var Q_TEXT = {
+    q9: '如果上太空之前，你可以留下一段話在你的社群上給大家，你會留什麼？（請注意：太空人可能一去不返）',
+    suitcase: '上太空的行李箱你要帶什麼去？',
+    yes13: '如果2026/11/22的這個當下，你正在跟誰賭氣，你可以放下面子好好跟他說一句話嗎？',
+    q15: '如果今天是陳柏凱的喪禮，你想跟大家分享一件他的事，你會分享什麼？',
+    q21: '如果世界是一片披薩，你是一種配料，你是什麼配料，為什麼？',
+    q31: '如果你只能帶著這輩子的一件記憶到下輩子，你想帶著哪一件事？'
+  };
+  var NAMES = {
+    'switch': 'Switch', headphones: '全罩耳機', book: '咖啡色書皮的書', monstera: '龜背芋盆栽', guitar: '一把吉他',
+    chips: '一包洋芋片', football: '一顆足球', photoframe: '一個全家福相框', cigarettes: '一包菸', dress: '一套洋裝（和帽子一起）'
+  };
+  var SECTIONS = [
+    { id: 'q9', no: 9, kind: 'qa' },
+    { id: 'suitcase', no: 11, kind: 'suitcase' },
+    { id: 'yes13', no: 13, kind: 'yes' },
+    { id: 'q15', no: 15, kind: 'qa' },
+    { id: 'q21', no: 21, kind: 'qa' },
+    { id: 'media', no: 29, kind: 'media' },
+    { id: 'q31', no: 31, kind: 'qa' },
+    { id: 'people', no: '進度', kind: 'people' }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var key = '';
+  var data = null;
+  var seen = null;          // Set of item keys already shown
+  var timer = null;
+  var inflight = false;
+  var collapsed = loadCollapsed();
+  var thumbs = {};          // id -> {st:'loading'|'ok'|'none'|'err', url, tries}
+  var thumbQueue = [], thumbActive = 0, THUMB_CONC = 3;
+
+  // ---------- utils ----------
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function ss(get, val) {
+    try {
+      if (get) return sessionStorage.getItem(SS_KEY) || '';
+      if (val) sessionStorage.setItem(SS_KEY, val); else sessionStorage.removeItem(SS_KEY);
+    } catch (e) { return ''; }
+  }
+  function loadCollapsed() {
+    try { return JSON.parse(localStorage.getItem(LS_COLLAPSE) || '{}') || {}; } catch (e) { return { people: true }; }
+  }
+  function saveCollapsed() { try { localStorage.setItem(LS_COLLAPSE, JSON.stringify(collapsed)); } catch (e) {} }
+  var fmtTime = new Intl.DateTimeFormat('zh-TW', { timeZone: TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  var fmtShort = new Intl.DateTimeFormat('zh-TW', { timeZone: TZ, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+  function hms(t) { return t ? fmtTime.format(new Date(t)) : '–'; }
+  function short(t) { return t ? fmtShort.format(new Date(t)) : ''; }
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('show'); }, 1600);
+  }
+  function itemKey(sec, it) { return sec + '|' + it.emailMasked + '|' + it.nickname + '|' + (it.at || ''); }
+  function answerText(it) {
+    if (it.huh) return '蛤？';
+    if (it.skipped || !String(it.text || '').trim()) return '（跳過）';
+    return String(it.text);
+  }
+  function qText(id) { return (data && data.questionTexts && data.questionTexts[id]) || Q_TEXT[id] || ''; }
+  function names() { return (data && data.questions && data.questions.suitcase && data.questions.suitcase.names) || NAMES; }
+
+  // ---------- key ----------
+  function readHashKey() {
+    var h = location.hash ? location.hash.slice(1) : '';
+    if (!h) return '';
+    var k = '';
+    try { k = new URLSearchParams(h).get('k') || ''; } catch (e) { k = ''; }
+    // Strip the hash so the key never stays in the address bar / history.
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+    return k;
+  }
+  function showKeyBox(msg) {
+    stopPolling();
+    $('main').hidden = true; $('keyBox').hidden = false;
+    $('keyErr').textContent = msg || '';
+    $('keyInput').value = '';
+    setTimeout(function () { try { $('keyInput').focus(); } catch (e) {} }, 50);
+  }
+  $('keyForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var k = $('keyInput').value.trim();
+    if (!k) { $('keyErr').textContent = '請輸入金鑰'; return; }
+    start(k);
+  });
+
+  // ---------- fetch ----------
+  function refresh(manual) {
+    if (!key || inflight) return;
+    if (!BACKEND) { warn('config.js 沒有設定 BACKEND_URL'); return; }
+    inflight = true; $('refreshBtn').disabled = true;
+    var url = BACKEND + (BACKEND.indexOf('?') >= 0 ? '&' : '?') + 'action=overview&key=' + encodeURIComponent(key) + '&t=' + Date.now();
+    fetch(url, { method: 'GET', cache: 'no-store', redirect: 'follow', credentials: 'omit' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (j) {
+        if (!j || j.ok !== true) {
+          if (j && j.error === 'forbidden') { key = ''; ss(false, ''); data = null; seen = null; showKeyBox('金鑰錯誤'); return; }
+          throw new Error((j && j.error) || 'bad response');
+        }
+        ss(false, key);
+        $('keyBox').hidden = true; $('main').hidden = false;
+        data = j; warn('');
+        render();
+        if (manual) toast('已更新');
+        startPolling();
+      })
+      .catch(function () {
+        if (!data) { $('keyBox').hidden = true; $('main').hidden = false; render(); }
+        warn('連線失敗，畫面保留' + (data ? '上次（' + hms(Date.parse(data.generatedAt)) + '）' : '') + '的資料，稍後會自動重試。');
+        startPolling();
+      })
+      .then(function () { inflight = false; $('refreshBtn').disabled = false; });
+  }
+  function warn(msg) { var w = $('warn'); w.textContent = msg; w.hidden = !msg; }
+  function startPolling() {
+    if (timer || !key) return;
+    timer = setInterval(function () { if (!document.hidden) refresh(false); }, POLL_MS);
+  }
+  function stopPolling() { if (timer) { clearInterval(timer); timer = null; } }
+  document.addEventListener('visibilitychange', function () {
+    if (!key) return;
+    if (document.hidden) stopPolling();
+    else { refresh(false); startPolling(); }
+  });
+  $('refreshBtn').addEventListener('click', function () { refresh(true); });
+
+  // ---------- render ----------
+  function whoHtml(it) {
+    return '<div class="adm-who"><b>' + esc(it.nickname || '（沒有暱稱）') + '</b><span>' + esc(it.emailMasked) + '</span>' +
+      (it.at ? '<span>' + esc(short(it.at)) + '</span>' : '') + '</div>';
+  }
+  function sectionBody(sec, fresh) {
+    var Q = (data && data.questions) || {};
+    var cls = function (it) { var k = itemKey(sec.id, it); var f = fresh(k); return 'adm-item' + (f ? ' fresh' : ''); };
+    if (sec.kind === 'qa') {
+      var list = Q[sec.id] || [];
+      if (!list.length) return { html: '<div class="adm-empty">還沒有人回答</div>', count: '0 則' };
+      var answered = list.filter(function (it) { return !it.skipped && !it.huh && String(it.text || '').trim(); }).length;
+      return {
+        count: list.length + ' 則（回答 ' + answered + '）',
+        html: list.map(function (it) {
+          var t = answerText(it); var dim = t === '（跳過）';
+          return '<div class="' + cls(it) + '">' + whoHtml(it) + '<div class="adm-ans' + (dim ? ' dim' : '') + '">' + esc(t) + '</div></div>';
+        }).join('')
+      };
+    }
+    if (sec.kind === 'suitcase') {
+      var s = Q.suitcase || { counts: {}, items: [] }; var nm = names();
+      var ids = Object.keys(nm).sort(function (a, b) { return (s.counts[b] || 0) - (s.counts[a] || 0); });
+      var chips = '<div class="adm-chips">' + ids.map(function (id) {
+        return '<span class="adm-chip">' + esc(nm[id]) + '<b>' + (s.counts[id] || 0) + '</b></span>';
+      }).join('') + '</div>';
+      var items = (s.items || []).map(function (it) {
+        var p = (it.packed || []).map(function (id) { return nm[id] || id; });
+        return '<div class="' + cls(it) + '">' + whoHtml(it) + '<div class="adm-ans' + (p.length ? '' : ' dim') + '">' +
+          esc(p.length ? p.join('、') : '（空行李箱）') + '</div></div>';
+      }).join('');
+      return { count: (s.items || []).length + ' 人', html: chips + (items || '<div class="adm-empty">還沒有人打包</div>') };
+    }
+    if (sec.kind === 'yes') {
+      var y = Q.yes13 || { count: 0, totalNoDodges: 0, items: [] };
+      var head = '<div><span class="adm-big">' + (y.count || 0) + '</span>人按了 Yes・No 一共逃跑 <b>' + (y.totalNoDodges || 0) + '</b> 次</div>';
+      var rows = (y.items || []).map(function (it) {
+        return '<div class="' + cls(it) + '">' + whoHtml(it) + '<div class="adm-ans">Yes・追著 No 跑了 ' + (it.noDodges || 0) + ' 次</div></div>';
+      }).join('');
+      return { count: (y.count || 0) + ' 人', html: head + rows };
+    }
+    if (sec.kind === 'media') {
+      if (!data || !Array.isArray(data.media)) return { count: '', html: '<div class="adm-empty">後台更新後會顯示照片</div>' };
+      var med = data.media;
+      var note = data.mediaError ? '<div class="adm-empty">雲端資料夾暫時讀不到，稍後會再試</div>' : '';
+      if (!med.length) return { count: '0 個', html: note + '<div class="adm-empty">還沒有照片或影片</div>' };
+      var np = med.filter(function (m) { return m.kind !== 'video'; }).length;
+      return {
+        count: np + ' 張照片・' + (med.length - np) + ' 段影片',
+        html: note + '<div class="adm-grid">' + med.map(function (m) {
+          var k = itemKey('media', { emailMasked: m.emailMasked, nickname: m.nickname, at: m.id });
+          var th = thumbs[m.id];
+          var inner = th && th.st === 'ok' ? '<img alt="" src="' + esc(th.url) + '">' : '<span>' + (th && th.st === 'loading' ? '讀取中…' : (m.kind === 'video' ? '影片' : '照片')) + '</span>';
+          return '<button type="button" class="adm-tile' + (fresh(k) ? ' fresh' : '') + '" data-mid="' + esc(m.id) + '" aria-label="打開' + (m.kind === 'video' ? '影片' : '照片') + '">' +
+            '<div class="adm-thumb">' + inner + (m.kind === 'video' ? '<span class="adm-play"></span>' : '') + '</div>' +
+            '<div class="adm-cap"><b>' + esc(m.nickname || '（沒有暱稱）') + '</b><span>' + esc(m.emailMasked) + '</span><span>' + esc(short(m.at)) + '</span></div></button>';
+        }).join('') + '</div>'
+      };
+    }
+    var ps = (data && data.participants) || [];
+    if (!ps.length) return { count: '0 人', html: '<div class="adm-empty">還沒有人</div>' };
+    return {
+      count: ps.length + ' 人',
+      html: '<table class="adm-t"><thead><tr><th>暱稱</th><th>步數</th><th>寄信</th><th>照片</th><th>更新</th></tr></thead><tbody>' +
+        ps.map(function (p) {
+          return '<tr><td><b>' + esc(p.nickname || '–') + '</b><br><span class="adm-count">' + esc(p.emailMasked) + '</span></td>' +
+            '<td>' + esc(p.maxStep) + '/34' + (p.finished ? ' ✓' : '') + '</td>' +
+            '<td>' + (p.finishSentAt ? esc(short(p.finishSentAt)) : '–') + '</td>' +
+            '<td>' + esc(p.photoCount || 0) + '</td>' +
+            '<td>' + esc(short(p.updatedAt)) + '</td></tr>';
+        }).join('') + '</tbody></table>'
+    };
+  }
+  function sectionTitle(sec) {
+    if (sec.kind === 'people') return '每個人的進度';
+    if (sec.kind === 'media') return '魚眼照片／影片';
+    return qText(sec.id);
+  }
+  function buildSkeleton() {
+    var root = $('sections'); root.innerHTML = '';
+    SECTIONS.forEach(function (sec) {
+      var el = document.createElement('section');
+      el.className = 'adm-sec'; el.id = 'sec-' + sec.id;
+      if (collapsed[sec.id] === undefined ? sec.id === 'people' : collapsed[sec.id]) el.classList.add('collapsed');
+      el.innerHTML = '<div class="adm-sec-h"><button type="button" class="adm-sec-toggle" aria-expanded="true">' +
+        '<span class="adm-no">' + (typeof sec.no === 'number' ? '#' + sec.no : esc(sec.no)) + '</span>' +
+        '<span class="adm-count"></span><span class="adm-caret">▾</span><span class="adm-q"></span></button>' +
+        '<button type="button" class="adm-btn ghost small adm-copy">複製文字</button></div><div class="adm-sec-b"></div>';
+      el.querySelector('.adm-sec-toggle').addEventListener('click', function () {
+        var c = el.classList.toggle('collapsed');
+        collapsed[sec.id] = c; saveCollapsed();
+        this.setAttribute('aria-expanded', String(!c));
+      });
+      el.querySelector('.adm-copy').addEventListener('click', function () { copyText(sectionPlain(sec)); });
+      root.appendChild(el);
+    });
+  }
+  function render() {
+    if (!$('sections').children.length) buildSkeleton();
+    var x = window.scrollX, y = window.scrollY;
+    var first = seen === null;
+    var nextSeen = new Set();
+    var fresh = function (k) { nextSeen.add(k); return !first && !seen.has(k); };
+    $('stTotal').textContent = data && data.totals ? data.totals.participants : '–';
+    $('stDone').textContent = data && data.totals ? data.totals.finished : '–';
+    $('stTime').textContent = '最後更新 ' + (data ? hms(Date.parse(data.generatedAt) || Date.now()) : '–');
+    SECTIONS.forEach(function (sec) {
+      var el = $('sec-' + sec.id);
+      var b = data ? sectionBody(sec, fresh) : { html: '<div class="adm-empty">讀取中…</div>', count: '' };
+      el.querySelector('.adm-q').textContent = sectionTitle(sec);
+      el.querySelector('.adm-count').textContent = b.count;
+      el.querySelector('.adm-sec-b').innerHTML = b.html;
+      el.querySelector('.adm-sec-toggle').setAttribute('aria-expanded', String(!el.classList.contains('collapsed')));
+    });
+    if (data) seen = nextSeen;
+    window.scrollTo(x, y);
+    loadThumbs();
+    setTimeout(function () {
+      document.querySelectorAll('.adm-item.fresh').forEach(function (n) { n.classList.remove('fresh'); });
+    }, 4000);
+  }
+
+  // ---------- media gallery ----------
+  function getJson(params) {
+    var q = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
+    var url = BACKEND + (BACKEND.indexOf('?') >= 0 ? '&' : '?') + q + '&key=' + encodeURIComponent(key) + '&t=' + Date.now();
+    return fetch(url, { method: 'GET', cache: 'no-store', redirect: 'follow', credentials: 'omit' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  }
+  function setTile(id) {
+    var el = document.querySelector('.adm-tile[data-mid="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"] .adm-thumb');
+    if (!el) return;
+    var th = thumbs[id]; var span = el.querySelector('span:not(.adm-play)');
+    if (th && th.st === 'ok') {
+      if (!el.querySelector('img')) { var im = new Image(); im.alt = ''; im.src = th.url; el.insertBefore(im, el.firstChild); }
+      if (span) span.remove();
+    } else if (span) {
+      var m = ((data && data.media) || []).filter(function (x) { return x.id === id; })[0];
+      span.textContent = th && th.st === 'loading' ? '讀取中…' : (m && m.kind === 'video' ? '影片' : '照片');
+    }
+  }
+  function pumpThumbs() {
+    while (thumbActive < THUMB_CONC && thumbQueue.length) {
+      (function (id) {
+        thumbActive++;
+        getJson({ action: 'thumb', id: id }).then(function (j) {
+          var th = thumbs[id];
+          if (j && j.ok && j.dataUrl) { th.st = 'ok'; th.url = j.dataUrl; }
+          else if (j && j.error === 'forbidden') { th.st = 'err'; }
+          else th.st = j && j.ok ? 'none' : 'err';
+        }, function () { thumbs[id].st = 'err'; }).then(function () { thumbActive--; setTile(id); pumpThumbs(); });
+      })(thumbQueue.shift());
+    }
+  }
+  function loadThumbs() {
+    if (!data || !Array.isArray(data.media) || !key) return;
+    data.media.forEach(function (m) {
+      var th = thumbs[m.id] || (thumbs[m.id] = { st: 'new', tries: 0 });
+      if (th.st === 'ok' || th.st === 'loading') return;
+      if (th.tries >= 4) return;            // video without Drive preview: keep the placeholder
+      th.tries++; th.st = 'loading'; thumbQueue.push(m.id); setTile(m.id);
+    });
+    pumpThumbs();
+  }
+  var lb = null;
+  function closeLb() {
+    if (!lb) return;
+    if (lb.blobUrl) { try { URL.revokeObjectURL(lb.blobUrl); } catch (e) {} }
+    var v = lb.el.querySelector('video'); if (v) { try { v.pause(); } catch (e) {} }
+    lb.el.remove(); lb = null;
+  }
+  function openMedia(id) {
+    closeLb();
+    var m = ((data && data.media) || []).filter(function (x) { return x.id === id; })[0] || { kind: 'photo' };
+    var el = document.createElement('div');
+    el.className = 'adm-lb'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+    el.innerHTML = '<button type="button" class="adm-lb-x" aria-label="關閉">×</button><div class="adm-lb-body"><div class="adm-lb-msg">讀取中…</div></div>' +
+      '<div class="adm-lb-foot">' + esc(m.nickname || '') + ' ' + esc(m.emailMasked || '') + ' ' + esc(short(m.at)) + '</div>';
+    document.body.appendChild(el);
+    var me = lb = { el: el, blobUrl: '' };
+    el.querySelector('.adm-lb-x').addEventListener('click', closeLb);
+    el.addEventListener('click', function (ev) { if (ev.target === el) closeLb(); });
+    var body = el.querySelector('.adm-lb-body'), foot = el.querySelector('.adm-lb-foot');
+    var link = function (url) {
+      if (!url || !/^https:\/\/drive\.google\.com\//.test(url)) return;
+      var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = '在 Google 雲端開啟';
+      foot.appendChild(document.createElement('br')); foot.appendChild(a);
+    };
+    getJson({ action: 'media', id: id }).then(function (j) {
+      if (lb !== me) return;
+      if (!j || !j.ok) { body.innerHTML = '<div class="adm-lb-msg">' + (j && j.error === 'forbidden' ? '金鑰錯誤' : '打不開這個檔案') + '</div>'; return; }
+      link(j.viewUrl);
+      if (!j.dataUrl) { body.innerHTML = '<div class="adm-lb-msg">檔案比較大，請按下方「在 Google 雲端開啟」</div>'; return; }
+      return fetch(j.dataUrl).then(function (r) { return r.blob(); }).then(function (b) {
+        if (lb !== me) return;
+        me.blobUrl = URL.createObjectURL(b);
+        body.innerHTML = '';
+        if (j.kind === 'video') {
+          var v = document.createElement('video'); v.controls = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.autoplay = true; v.src = me.blobUrl; body.appendChild(v);
+        } else {
+          var im = new Image(); im.alt = '照片'; im.src = me.blobUrl; body.appendChild(im);
+        }
+      });
+    }).catch(function () { if (lb === me) body.innerHTML = '<div class="adm-lb-msg">連線失敗，請再試一次</div>'; });
+  }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target && ev.target.closest ? ev.target.closest('.adm-tile') : null;
+    if (t) openMedia(t.getAttribute('data-mid'));
+  });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') closeLb(); });
+
+  // ---------- copy ----------
+  function sectionPlain(sec) {
+    if (!data) return '';
+    var Q = data.questions || {}; var out = [];
+    var who = function (it) { return (it.nickname || '（沒有暱稱）') + '（' + it.emailMasked + '）' + (it.at ? ' ' + short(it.at) : ''); };
+    if (sec.kind === 'qa') {
+      out.push('#' + sec.no + ' ' + qText(sec.id), '');
+      (Q[sec.id] || []).forEach(function (it) { out.push(who(it), answerText(it), ''); });
+    } else if (sec.kind === 'suitcase') {
+      var s = Q.suitcase || { counts: {}, items: [] }; var nm = names();
+      out.push('#11 ' + qText('suitcase'), '');
+      Object.keys(nm).forEach(function (id) { out.push(nm[id] + '：' + (s.counts[id] || 0)); });
+      out.push('');
+      (s.items || []).forEach(function (it) {
+        out.push(who(it), (it.packed || []).map(function (id) { return nm[id] || id; }).join('、') || '（空行李箱）', '');
+      });
+    } else if (sec.kind === 'yes') {
+      var y = Q.yes13 || { items: [] };
+      out.push('#13 ' + qText('yes13'), 'Yes：' + (y.count || 0) + ' 人，No 一共逃跑 ' + (y.totalNoDodges || 0) + ' 次', '');
+      (y.items || []).forEach(function (it) { out.push(who(it) + '：追著 No 跑了 ' + (it.noDodges || 0) + ' 次'); });
+    } else if (sec.kind === 'media') {
+      out.push('#29 魚眼照片／影片', '');
+      (data.media || []).forEach(function (m) {
+        out.push(who(m) + ' ' + (m.kind === 'video' ? '影片' : '照片') + ' https://drive.google.com/file/d/' + m.id + '/view');
+      });
+    } else {
+      out.push('每個人的進度', '');
+      (data.participants || []).forEach(function (p) {
+        out.push((p.nickname || '–') + '（' + p.emailMasked + '）步數 ' + p.maxStep + '/34' + (p.finishSentAt ? '，已寄信 ' + short(p.finishSentAt) : '') + '，照片 ' + (p.photoCount || 0));
+      });
+    }
+    return out.join('\n').trim() + '\n';
+  }
+  function copyText(text) {
+    var done = function () { toast('已複製'); };
+    var fallback = function () {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '-1000px';
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      toast(ok ? '已複製' : '複製失敗，請手動選取');
+    };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  }
+
+  // ---------- boot ----------
+  function start(k) {
+    key = k; seen = null; data = null;
+    $('keyErr').textContent = '';
+    $('keyBox').hidden = true; $('main').hidden = false;
+    render();
+    refresh(false);
+  }
+  window.addEventListener('hashchange', function () { var k = readHashKey(); if (k) start(k); });
+  var hk = readHashKey();
+  var k0 = hk || ss(true);
+  if (k0) start(k0); else showKeyBox('');
+})();
+</script>
+</body>
+</html>

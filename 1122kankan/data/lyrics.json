@@ -1,0 +1,125 @@
+{
+  "_note": "Kai 可直接改：lyrics 每段之間空一行；外語歌 translation 必須跟 lyrics 行數、空行位置完全一致（第 i 行翻第 i 行）。lyrics 空字串會顯示（歌詞待補）。",
+  "songs": [
+    {
+      "n": 4,
+      "title": "我消失了",
+      "artist": "吳志寧",
+      "lang": "zh",
+      "lyrics": "我消失了\n我消失了 地球依然轉動\n我消失了 朋友依舊生活\n\n只是在心裡那個小小小小記憶的黑點\n突然間 它消失不見\n沒有重量也沒有讓人流淚的悲傷\n\n像風的沙 像水裡的鹽巴 融化\n有點味道 好像是想念的味道\n可是我還是要回到 生活的軌道\n\n我消失了 你還記得嗎\n那些夜裡唱的歌 你輕輕的和\n沒有我 你會堅強嗎\n我知道 沒有永遠的肩膀",
+      "translation": ""
+    },
+    {
+      "n": 6,
+      "title": "飛鳥",
+      "artist": "魏如萱",
+      "lang": "zh",
+      "lyrics": "他的溫柔是一片片風景的羽毛\n修補我破了洞的偏見\n他的雙手是保持恆溫的蝴蝶結\n圍繞著我也牽著我走\n\n我們同時擁有快樂\n卻藏匿憂傷\n聽他說話的海浪\n我便慢慢遺忘\n\n我放肆的對他撒嬌\n任性躺在他懷抱\n我收集他對我的好\n放口袋塞進心臟\n我汲取他目角殘光\n渴望被溺愛豢養\n我盲目的橫衝直撞\n怎麼卻遍體鱗傷\n\n他的溫柔是一片片風景的羽毛\n修補我破了洞的偏見\n他的雙手是保持恆溫的蝴蝶結\n圍繞著我也牽著我走\n\n我們同時擁有快樂\n卻藏匿憂傷\n聽他說話的海浪\n我便慢慢遺忘\n\n我放肆的對他撒嬌\n任性躺在他懷抱\n我收集他對我的好\n放口袋塞進心臟\n我汲取他目角殘光\n渴望被溺愛豢養\n我盲目的橫衝直撞\n怎麼卻遍體鱗傷\n\n我那麼膽小\n他那麼勇敢\n那麼\n別丟下我呀\n請背著我飛",
+      "translation": ""
+    },
+    {
+      "n": 8,
+      "title": "回家",
+      "artist": "順子",
+      "lang": "zh",
+      "lyrics": "我還不明白 為什麼你離開了我\n沒有你的電話 沒有一封信\n我每天晚上在這裡 哪裡也不想去\n\n可是我好愛你 我覺得我會離不開你\n可惜我丟了你 慢慢我的眼淚流下來\n\n回家 回家 我需要你\n回家 回家 馬上來我的身邊\n\n別再哭 就讓他走\n再多痛苦的等候 相信我也能承受\n閉上眼 不再留戀\n你卻一遍又一遍 出現在想你的夜\n\n別說 不會有結果\n永遠永遠 別說分手\n而你 又怎麼能夠\n就這樣的放手 一去不再回頭\n\nBE HERE, JUST BE THERE,\nMY ONE AND ONLY LOVE\n回家 回家 我需要你\n\n回家 馬上回家 我需要你\n回家 回家 馬上來我的身邊\nBE HERE, JUST BE THERE,\nMY ONE AND ONLY LOVE\n回家 回家 馬上來我的身邊",
+      "translation": ""
+    },
+    {
+      "n": 10,
+      "title": "創作-太空人",
+      "artist": "Kai",
+      "lang": "zh",
+      "lyrics": "太陽風 吹亂了訊號 斷斷續續\n我聽見 一點點笑聲 又消失不見\n那是妳 還是 宇宙的 玩笑\n就算是玩笑 我會 聽到最後\n\n也許妳 正飛過某顆 安靜星球\n那裡 沒有晝與夜 也沒有時差\n收到請回答 收到請回答\n地球這裡 還有人在等\n\n親愛的太空人 別害怕黑夜太深\n月色朦朧 銀河無聲 為你留一盞 小小的燈\n呼叫 太空人 這裡是妳的地球\n沒有換台 沒有離開 沒有忘記 妳說過的話\n\n也許妳 正飛過某顆 安靜星球\n那裡 沒有晝與夜 也沒有時差\n收到請回答 收到請回答\n地球這裡 還有人在等\n\n親愛的太空人 別害怕黑夜太深\n月色朦朧 銀河無聲 為你留一盞 小小的燈\n呼叫 太空人 這裡是妳的地球\n沒有換台 沒有離開 沒有忘記 妳說過的話\n\n親愛的太空人 妳那邊會天亮嗎\n有沒有花 有沒有海 有沒有人陪 妳說說話\n喔～太空人 快回到你的地球\n就眨一眨 妳的星光 我會看見 我會找到你\n\n收到請回答 收到請回答\n收到請回答 收到請回答",
+      "translation": ""
+    },
+    {
+      "n": 12,
+      "title": "行李",
+      "artist": "丁世光",
+      "lang": "zh",
+      "lyrics": "該下班了\n走出電梯\n上了巴士\n在後排有一個空的座位\n家變很大\n安靜的沙發\n我開了一個罐頭\n沒留意是什麼口味\n\n黑夜慢慢地降臨\n紋絲不動的行李\n\n我已經用完所有的不安\n卻拼湊出一個絕望的片段\n既了無生趣\n就不必在意我愚蠢的報應\n\n當時間走完\n誰還要計算\n這輩子你傷我傷得有多深\n就到此為止\n怪我不懂事\n你需要憑空消失\n\n在懸崖邊\n閉上雙眼\n深吸大海的氣味\n是多麼自然無邪\n愛到終點\n一切要完結\n最後一次我親手跟你狠狠地告別\n\n黑夜慢慢地降臨\n墜入海底的行李\n\n我已經用完所有的不安\n卻拼湊出一個絕望的片段\n既了無生趣\n就不必在意愚蠢的報應\n\n當時間走完\n誰還要計算\n這輩子你傷我傷得有多深\n就到此為止\n怪我不懂事\n你需要憑空消失\n\n空氣瞬間變得滾燙\n洞穿世上所有慾望\n熄滅眼中最後一絲光\n原罪將愛變成扭曲的戰場\n得不到的\n是最真實的信仰\n\n當時間走完\n誰還要計算\n這輩子誰對誰傷得比較深\n就到此為止\n怪我不懂事\n你需要憑空\n消失\n\n就當作彼此\n沒有過這回事\n讓我們一起\n消失",
+      "translation": ""
+    },
+    {
+      "n": 14,
+      "title": "搬到合歡山上",
+      "artist": "雲端司機 CLOUDRIVER",
+      "lang": "zh",
+      "lyrics": "我們都只要一個擁抱\n你不給我 我不給你\n我們都躲在房間煩躁\n都市少女 抹著眼影\n我們都聚在路邊浮躁\n都市少男 製造煙蒂\n我們向自然乞求原諒\n工業革命 不該革命\n\n上個世紀的甜頭你們嚐盡了\n這個世紀的苦頭我們在等著\n漸漸瞭解到一切還是會發生的\n讓歷史重演吧 太平非永恆啊\n一年又一年這裡要沒冬天了\n一次又一次人們都還在鬥爭\n好人被人榨 壞人做不大\n我要把我全家搬到合歡山上\n\n我們都只要一個擁抱\n你不給我 我不給你\n我們都躲在房間煩躁\n都市少女 抹著眼影\n我們都聚在路邊浮躁\n都市少男 製造煙蒂\n我們向自然乞求原諒\n工業革命 不該革命\n\n上個世紀的揮霍我們嚐盡了\n這個世紀的資源我們要省著\n漸漸瞭解到一切還是會發生的\n讓歷史重演吧 太平非永恆啊\n一年又一年這裡要沒冬天了\n一次又一次人們都還在鬥爭\n好人被人榨 壞人做不大\n我要把我全家搬到合歡山上\n\n我們都只要一個擁抱\n你不給我 我不給你\n我們都躲在房間煩躁\n都市少女 抹著眼影\n我們都聚在路邊浮躁\n都市少男 製造煙蒂\n我們向自然乞求原諒\n工業革命 不該革命",
+      "translation": ""
+    },
+    {
+      "n": 16,
+      "title": "創作-毛毛雨",
+      "artist": "Kai",
+      "lang": "zh",
+      "lyrics": "單車騎過河堤 妳在前座踩著\n我坐在後座 抓著衣角\n\n午後悶得發慌 下了場毛毛雨\n你擋在前頭 我不慌張\n\n累了 靠妳肩膀 我們 哼著歌 一路回 家\n我還 天真以為 一路騎下去 沒有盡頭\n\n毛毛雨總下在剛好的時候\n雨中喧嘩的笑聲不曾停歇\n就這樣騎過了一年又一年\n時間像定格在永遠的晴天\n\n那天 雷聲很近 烏雲 從遠方 壓了過來\n前座 空了下來 風雨直直打在 我的臉上\n\n大暴雨不會預告來的時候\n擋著雨的人成了那場大雨\n腳踏車鎖在家裡不曾再騎\n時間就定格在四月的雨天\n\n有一天醒來 雨聲變小了\n推開窗 地還濕著 天已經 亮了\n我把 車上的 鎖打開了\n把車子 牽到巷口\n\n沒有人在前頭帶路的時候\n一個人努力騎上坡的時候\n\n一陣風從背後推我往前走\n不用回頭也認得那一雙手\n雨沒有停但太陽探了出頭\n毛毛雨會在心裡陪我很久\n\n從前 妳在前面 為我擋風\n現在 妳在後面 推我啟程\n我想 載著你呀 到處去看\n看看 這個世界 多麽美好\n\n午後悶得發慌 又下起毛毛雨\n喔～你在 你在這裡～",
+      "translation": ""
+    },
+    {
+      "n": 18,
+      "title": "Always",
+      "artist": "Daniel Caesar",
+      "lang": "en",
+      "lyrics": "Baby, baby\nThere will always be a space for you and me\nRight where you left it\nAnd just maybe\nEnough time will pass\nWe'll look back and laugh\nJust don't forget it\nAnd maybe I'm wrong\nFor writing this song\nLosing my head over you\n\nAnd I'll be here\n'Cause we both know how it goes\nI don't want things to change\nI pray they stay the same always\nAnd I don't care\nIf you're with somebody else\nI'll give you time and space\nJust know I'm not a phase\nI'm always, ways, ways\nAlways, ways, ways\nI'm always, ways, ways\n\nPretty lady, used to walk with me\nDown Bloor street, oh, what a time\nAnd I still remember the fussin', the fightin', the fuckin', the lyin'\nIt's all fine, you'll always be mine\nAnd maybe I'm wrong (hey, babe, you could)\nFor writing this song (write me a song)\nLosing my head over you\n\nAnd I'll be here\n'Cause we both know how it goes\nI don't want things to change\nI pray they stay the same always\nAnd I don't care\nIf you're with somebody else\nI'll give you time and space\nJust know I'm not a phase\nI'm always, ways, ways\nAlways, ways, ways\nI'm always, ways, ways\n\nAlways, can count on it sure as the stars in the sky\nAlways, you can count on it sure as the stars in the sky\nAlways, my love for you ain't goin' nowhere\nAlways, I will be here",
+      "translation": "寶貝 寶貝\n永遠會有個位置 留給你和我\n就在你離開的地方\n而也許\n等到時間過去\n回首時 我們會相視而笑\n只是別忘了\n也許是我錯了\n不該寫下這首歌\n為你神魂顛倒\n\n而我會在這裡\n因為我們都明白 事情就是這樣\n我不想讓一切改變\n我祈禱一切永遠不變\n而我不在乎\n就算你和別人在一起\n我會給你時間與空間\n只要你知道 我不是一時迷戀\n我永遠 永永 遠遠\n永遠 永永 遠遠\n我永遠 永永 遠遠\n\n漂亮的女孩 曾經與我並肩走過\n走在 Bloor 街上 多美好的時光\n我還記得那些爭吵 打鬧 纏綿 謊言\n一切都無妨 你永遠都是我的\n也許是我錯了（嘿 寶貝 你可以）\n不該寫下這首歌（為我寫首歌吧）\n為你神魂顛倒\n\n而我會在這裡\n因為我們都明白 事情就是這樣\n我不想讓一切改變\n我祈禱一切永遠不變\n而我不在乎\n就算你和別人在一起\n我會給你時間與空間\n只要你知道 我不是一時迷戀\n我永遠 永永 遠遠\n永遠 永永 遠遠\n我永遠 永永 遠遠\n\n永遠 你可以相信 如天上星星般確定\n永遠 你可以相信 如天上星星般確定\n永遠 我對你的愛 哪裡也不去\n永遠 我都會在這裡"
+    },
+    {
+      "n": 20,
+      "title": "滿ちてゆく",
+      "artist": "藤井風",
+      "lang": "ja",
+      "lyrics": "走り出した午後も\n重ね合う日々も\n避けがたく全て終わりが来る\n\nあの日のきらめきも\n淡いときめきも\nあれもこれもどこか置いてくる\n\nそれで良かったと\nこれで良かったと\n健やかに笑い合える日まで\n\n明けてゆく空も暮れてゆく空も\n僕らは超えてゆく\n変わりゆくものは仕方がないねと\n手を放す、軽くなる、満ちてゆく\n\n手にした瞬間に\n無くなる喜び\nそんなものばかり追いかけては\n\n無駄にしてた\"愛\"という言葉\n今なら本当の意味が分かるのかな\n\n愛される為に\n愛すのは悲劇\nカラカラな心にお恵みを\n\n晴れてゆく空も荒れてゆく空も\n僕らは愛でてゆく\n何もないけれど全て差し出すよ\n手を放す、軽くなる、満ちてゆく\n\n開け放つ胸の光\n闇を照らし道を示す\nやがて生死を超えて繋がる\n共に手を放す、軽くなる、満ちてゆく\n\n晴れてゆく空も荒れてゆく空も\n僕らは愛でてゆく\n何もないけれど全て差し出すよ\n手を放す、軽くなる、満ちてゆく",
+      "translation": "開始奔跑的午後也好\n彼此交疊的日子也罷\n一切都難免迎來終結\n\n那天的閃耀也好\n淡淡的心動也罷\n這些那些 都會遺落在某處\n\n那樣就好了啊\n這樣就好了啊\n直到能坦然相視而笑的那天\n\n漸亮的天空也好 漸暗的天空也罷\n我們都將一一越過\n會改變的 也只能無可奈何\n放開手、變輕盈、漸漸盈滿\n\n在到手的瞬間\n就消失的喜悅\n我總是追逐著這種東西\n\n被我白白浪費的「愛」這個字\n如今的我 能否懂得真正的意義\n\n為了被愛\n而去愛 是一場悲劇\n願乾涸的心 得到恩惠\n\n放晴的天空也好 風雨的天空也罷\n我們都將好好珍愛\n雖然一無所有 也願獻出一切\n放開手、變輕盈、漸漸盈滿\n\n敞開胸懷的光芒\n照亮黑暗 指引道路\n終將超越生死 緊緊相連\n一起放開手、變輕盈、漸漸盈滿\n\n放晴的天空也好 風雨的天空也罷\n我們都將好好珍愛\n雖然一無所有 也願獻出一切\n放開手、變輕盈、漸漸盈滿"
+    },
+    {
+      "n": 22,
+      "title": "Maybe maybe",
+      "artist": "椅子樂團",
+      "lang": "tw",
+      "lyrics": "藏在心內的你 甘會不小心不見\n躲在厝內想你 我 斟酌猜著你的心意\n噢 maybe, maybe 每一個暗暝\n\n甘講你會不甘阮沒人照顧 哪無你的生活哪會架呢艱苦\n愛你含伫嘴邊 定定吞落去\n將你的聲音留在這座城市\n\n藏在心內的你甘會不小心不見\n躲在厝內想你我 斟酌猜著你的心意\n哦 maybe, maybe 花謝嘛會開\n\n甘講你會不甘 阮沒人照顧\n哪無你的生活哪會架呢艱苦\n愛你含伫嘴邊定定吞落去\n\n分開了後阮將伊當作秘密 凡勢你會不甘 阮沒人照顧\n一個人的生活我也過得很好\n開始愛我自己 也敢說愛你 將阮的聲音留在這座城市",
+      "translation": ""
+    },
+    {
+      "n": 24,
+      "title": "大人中",
+      "artist": "盧廣仲",
+      "lang": "zh",
+      "lyrics": "安靜的人想很多 說話的人專心說\n上班的人在五樓 下班的人獲得自由\n勉強的人不快樂 快樂的人那就是我\n你也想跟我一樣 雨下起來唱了首歌\n\n遠方 遠方 哪裡才是遠方\n原來 愛人不在身邊就叫遠方 遠方\n還好我愛的人永遠住在我心臟\n\n長大後誰不是離家出走\n茫茫人海裡游\n抬起頭才發現 流眼淚的星星正在放棄我\n請擁抱我 萬一我不小心墜落\n\n不想勤勞想放空 太常失敗好想成功\n車水馬龍裡我抓著 支持我活著的快樂\n\n遠方 遠方 哪裡才是遠方\n原來 愛人不在身邊就叫遠方 遠方\n還好我愛的人永遠住在我心臟\n\n長大後誰不是離家出走\n茫茫人海裡游\n抬起頭才發現 流眼淚的星星正在放棄我\n請擁抱我 萬一我不小心墜落\n\n長大後我們都離家出走\n茫茫人海裡游\n抬起頭才發現 流眼淚的星星正在看著我\n他說加油 讓我為你感到光榮\n\n雨過天晴 涼涼的\n我不用再擔心什麼\n那些花都怒放了\n愛人的人獲得自由",
+      "translation": ""
+    },
+    {
+      "n": 26,
+      "title": "明日晴れるかな",
+      "artist": "桑田佳祐",
+      "lang": "ja",
+      "lyrics": "熱い涙や戀の叫びも\n輝ける日は何処へ消えたの？\n明日も宛なき道を彷徨うなら\nこれ以上元には戻れない\n耳を澄ませば心の聲は\n僕に何を語りかけるだろう\n\n今は汚れた街の片隅にいて\nあの頃の空を思うたびに\n神より給えし孤獨やtrouble\n泣きたいときは泣きなよ\nこれが運命(さだめ)でしょうか？\n諦めようか？\n季節は巡る\n魔法のように\n\nOh baby No maybe\n愛なくして情も無い\n嘆くようなフリ\n世の中の所為にするだけ\nOh Baby You are maybe\n哀なくして楽はない\n幸せのfeeling\n抱きしめて\nOne more time\n\n在りし日の己を愛する為に\n想い出は美しくあるのさ\n遠い過去よりまだ見ぬ人生は\n夢一つ葉える為にある\n奇跡のドアを開けるのは誰？\n微笑みよもう一度だけ\n君は気付くでしょうか\nその鍵はもう\n君の掌の上に\n\nWhy baby Oh tell me\n愛なくして憎もない\n見て見ないようなフリ\nその身を護るため？\nOh Baby You are maybe\nもう少しの勝負じゃない\n挫けそうなfeeling\n乗り越えて\nOne more chance\n\nI talk to my self Oh baby No maybe\n愛なくして情も無い\n嘆くようなフリ\n殘るのは後悔だけ\nOh baby Smile baby\nその生命(いのち)は永遠(とわ)じゃない\n\n誰もが一人ひとり胸の中でそっと\n囁いているよ\n明日晴れるかな\n遙か空の下...",
+      "translation": "熱淚與戀愛的吶喊\n那些閃耀的日子 都去了哪裡？\n若明天仍在無處可去的路上徘徊\n就再也回不到從前了\n側耳傾聽 心裡的聲音\n會對我訴說些什麼呢\n\n此刻我身在 污濁城市的一角\n每當想起那時的天空\n上天賜予的孤獨與煩惱\n想哭的時候 就哭出來吧\n這就是命運嗎？\n還是該就此放棄？\n季節流轉\n宛如魔法一般\n\n噢 寶貝 沒有也許\n沒有愛 也就沒有情\n只是裝作在嘆息的樣子\n不過是怪罪這個世界\n噢 寶貝 也許就是你\n沒有哀 也就沒有樂\n幸福的感覺\n緊緊擁抱\n再一次\n\n為了去愛 曾經的自己\n回憶才會如此美好\n比起遙遠的過去 未知的人生\n是為了實現一個夢想而存在\n是誰打開了奇蹟的門？\n微笑吧 就再一次\n你會發現嗎\n那把鑰匙\n早已在你的掌心上\n\n為什麼 寶貝 噢 告訴我\n沒有愛 也就沒有恨\n假裝視而不見\n是為了保護自己嗎？\n噢 寶貝 也許就是你\n勝負就只差一點點了\n快要被擊垮的感覺\n跨越過去吧\n再一次機會\n\n我對自己說 噢 寶貝 沒有也許\n沒有愛 也就沒有情\n只是裝作在嘆息的樣子\n留下的只有後悔\n噢 寶貝 微笑吧 寶貝\n生命並不是永恆的\n\n每個人都在心中悄悄地\n輕聲低語著\n明天會放晴嗎\n在遙遠的天空下..."
+    },
+    {
+      "n": 28,
+      "title": "Hey there Delilah",
+      "artist": "Plain White T's",
+      "lang": "en",
+      "lyrics": "Hey there, Delilah, what's it like in New York City?\nI'm a thousand miles away, but girl, tonight, you look so pretty\nYes, you do\nTimes Square can't shine as bright as you\nI swear it's true\n\nHey there, Delilah, don't you worry about the distance\nI'm right there if you get lonely, give this song another listen\nClose your eyes\nListen to my voice, it's my disguise\nI'm by your side\n\nOh, it's what you do to me\nOh, it's what you do to me\nOh, it's what you do to me\nOh, it's what you do to me\nWhat you do to me\n\nHey there, Delilah, I know times are getting hard\nBut just believe me, girl, someday I'll pay the bills with this guitar\nWe'll have it good\nWe'll have the life we knew we would\nMy word is good\n\nHey there, Delilah, I've got so much left to say\nIf every simple song I wrote to you would take your breath away\nI'd write it all\nEven more in love with me you'd fall\nWe'd have it all\n\nOh, it's what you do to me\nOh, it's what you do to me\nOh, it's what you do to me\nOh, it's what you do to me\n\nA thousand miles seems pretty far\nBut they've got planes, and trains, and cars\nI'd walk to you if I had no other way\n\nOur friends would all make fun of us\nAnd we'll just laugh along because\nWe know that none of them have felt this way\n\nDelilah, I can promise you\nThat by the time we get through\nThe world will never, ever be the same\nAnd you're to blame\n\nHey there, Delilah, you be good and don't you miss me\nTwo more years and you'll be done with school\nAnd I'll be making history like I do\nYou'll know it's all because of you\nWe can do whatever we want to\n\nHey there, Delilah, here's to you\nThis one's for you\n\nOh, it's what you do to me\nOh, it's what you do to me\nOh, it's what you do to me\nOh, it's what you do to me\nWhat you do to me\n\nOh, whoa, whoa\nOh, whoa, whoa, oh, whoa\nOh",
+      "translation": "嘿 Delilah 紐約那裡怎麼樣？\n我遠在千里之外 但女孩 今晚的妳好美\n是啊 妳真的好美\n連時代廣場都不及妳閃耀\n我發誓這是真的\n\n嘿 Delilah 別擔心這段距離\n寂寞時再聽一次這首歌 我就在妳身邊\n閉上眼睛\n聽著我的聲音 那是我的偽裝\n我就在妳身旁\n\n噢 都是妳讓我這樣\n噢 都是妳讓我這樣\n噢 都是妳讓我這樣\n噢 都是妳讓我這樣\n都是妳讓我這樣\n\n嘿 Delilah 我知道日子越來越難\n但相信我 女孩 有天這把吉他能付帳單\n我們會過得很好\n過上我們早就預見的生活\n我說到做到\n\n嘿 Delilah 我還有好多話想說\n若寫給妳的每首簡單的歌 都讓妳屏息\n我會全部寫下來\n妳會更加愛上我\n我們會擁有一切\n\n噢 都是妳讓我這樣\n噢 都是妳讓我這樣\n噢 都是妳讓我這樣\n噢 都是妳讓我這樣\n\n一千英里 看似很遠\n但有飛機 有火車 還有汽車\n如果別無他法 我會走路去找妳\n\n朋友們都會取笑我們\n而我們只會跟著笑 因為\n我們知道 他們都沒有過這種感覺\n\nDelilah 我可以向妳保證\n等我們熬過這一切\n世界將從此 再也不同\n而這都要怪妳\n\n嘿 Delilah 妳要乖 別太想我\n再兩年你就畢業了\n而我會像現在這樣創造歷史\n妳會知道 這一切都是因為妳\n我們想做什麼都可以\n\n嘿 Delilah 這首歌敬妳\n這首是為妳而唱\n\n噢 都是妳讓我這樣\n噢 都是妳讓我這樣\n噢 都是妳讓我這樣\n噢 都是妳讓我這樣\n都是妳讓我這樣\n\n噢 哇 哇\n噢 哇 哇 噢 哇\n噢"
+    },
+    {
+      "n": 30,
+      "title": "創作-記得我",
+      "artist": "Kai",
+      "lang": "zh",
+      "lyrics": "星期天 不想做事 的下午\n曬一曬 堆了一週 的衣服\n疊衣服 疊不走 我的壞心情\n離開你 我的眼睛 沒學會放晴\n\n想像著你 在那裡都過得好嗎\n今天 有沒有睡飽\n我好想妳 好怕哪天我會忘記\n妳 說話的聲音\n寫一首歌 祝福你能永遠年輕\n想做 什麼都可以\n記得偶爾 能來夢裡看看我們\n心肝寶貝 不要哭泣\n最愛你\n\n有時候 看見好笑的迷因\n還是會 下意識想傳給妳\n先記下來 每一天 好玩的事情\n到時候 我會一件一件 講給你聽\n\n想像著你 在那裡都過得好嗎\n今天 有沒有睡飽\n我好想妳 好怕哪天我會忘記\n妳 說話的聲音\n寫這首歌 祝福你能永遠年輕\n想做 什麼都可以\n記得偶爾 能來夢裡看看我們\n心肝寶貝 不要哭泣\n最愛你\n\n我們最愛你\n永遠的愛你\n永遠的想你\n永遠不會 忘記你",
+      "translation": ""
+    },
+    {
+      "n": 32,
+      "title": "我記得",
+      "artist": "趙雷",
+      "lang": "zh",
+      "lyrics": "我帶著比身體重的行李\n遊入尼羅河底 經過幾道閃電\n看到一堆光圈 不確定是不是這裡\n我看到幾個人站在一起\n他們拿著剪刀摘走我的行李\n擦拭我的腦袋 沒有機會返回去\n\n直到我聽見一個聲音\n我確定是你 可你怎記得我\n我帶來了另界的消息\n可我怎麼告知你 注定失憶著相遇\n\n我記得這裡是片樹林 後面有個山坡\n山坡上的棗樹每當秋天到來 我們把棗裝滿口袋\n我記得除了朋友我還 做過你的叔父\n你總喜歡跟在我的屁股後面 只是為了那幾個銅錢\n我記得我們曾是戀人 後來戰爭爆發 你上戰場後就\n再也沒有回來 直到收不到你的信\n我們總這樣重複分離 卻要重新開始 相互送別對方\n說著來世再見 再次失憶著相聚\n\n嗚 嗚 嗚 嗚…\n快來抱抱 快來抱抱我\n嗚 嗚 嗚 嗚…\n快來抱抱 快來抱抱我\n\n在路上我遇到了一位故去多年的人 她是如此年輕\n扎著過肩馬尾 露出和你一樣的笑\n她和我講了很多關於你成長的故事 在星空另一端\n思念從未停止 如同墓碑上的名字\n\n不要哭我最親愛的人 我最好的玩伴 時空是個圓圈\n直行或是轉彎 我們最終都會相見\n在城池的某個拐角處 在夕陽西下時\n在萬家燈火的某一扇窗紗裡 人們失憶著相聚\n\n嗚 快來抱抱 快來抱抱我\n嗚 快來抱抱 快來抱抱我 我終於找到你",
+      "translation": ""
+    }
+  ]
+}

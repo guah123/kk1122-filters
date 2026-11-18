@@ -1,0 +1,192 @@
+{
+ "kai": {
+  "kind": "mouse",
+  "outfit": {
+   "top": "#2F3E56",
+   "pattern": "stripe",
+   "bottom": "#C9A27A",
+   "hat": "beanie",
+   "hatColor": "#C2674E",
+   "accent": "#F2C66D"
+  },
+  "note": "placeholder — replace with Kai's real outfit"
+ },
+ "crowd": [
+  {
+   "id": "guest01",
+   "kind": "cat",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest02",
+   "kind": "dog",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest03",
+   "kind": "rabbit",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest04",
+   "kind": "bear",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest05",
+   "kind": "fox",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest06",
+   "kind": "panda",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest07",
+   "kind": "raccoon",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest08",
+   "kind": "deer",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest09",
+   "kind": "sheep",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest10",
+   "kind": "pig",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest11",
+   "kind": "owl",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest12",
+   "kind": "penguin",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest13",
+   "kind": "elephant",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest14",
+   "kind": "giraffe",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest15",
+   "kind": "koala",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest16",
+   "kind": "lion",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest17",
+   "kind": "tiger",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest18",
+   "kind": "monkey",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest19",
+   "kind": "hedgehog",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest20",
+   "kind": "otter",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest21",
+   "kind": "frog",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest22",
+   "kind": "duck",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest23",
+   "kind": "chicken",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest24",
+   "kind": "horse",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest25",
+   "kind": "cow",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest26",
+   "kind": "goat",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest27",
+   "kind": "squirrel",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest28",
+   "kind": "hamster",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest29",
+   "kind": "seal",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest30",
+   "kind": "crocodile",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest31",
+   "kind": "zebra",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest32",
+   "kind": "sloth",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest33",
+   "kind": "alpaca",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest34",
+   "kind": "capybara",
+   "label": "(待換成來賓照片)"
+  },
+  {
+   "id": "guest35",
+   "kind": "hippo",
+   "label": "(待換成來賓照片)"
+  }
+ ],
+ "_readme": "crowd[].img = optional image URL (relative, transparent PNG ~ 90px tall feet-at-bottom) replaces the procedural drawing. crowd[].outfit optional per-guest outfit. kai.outfit keys: top,pattern(stripe|dots|check|none),bottom,hat(beanie|cap|bow|flower|bucket|none),hatColor,accent,pcolor,scarf."
+}

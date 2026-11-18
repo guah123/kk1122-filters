@@ -1,0 +1,102 @@
+{
+ "_note": "v7. Kai and the quokka (sister) are PAINTED INTO each scene at the SAME size as neighbours, Kai off-centre and hard to find. Do not composite sprites. Boxes are [x0,y0,x1,y1] fractions of image width/height. Add ~15% padding for phone taps. 'quokka' is the secret bonus tap (no UI text, no counter).",
+ "s05-park.jpg": {
+  "kai": [
+   0.82,
+   0.44,
+   0.88,
+   0.54
+  ],
+  "quokka": [
+   0.07,
+   0.82,
+   0.14,
+   0.9
+  ]
+ },
+ "s07-escalator.jpg": {
+  "kai": [
+   0.57,
+   0.18,
+   0.65,
+   0.3
+  ],
+  "quokka": [
+   0.12,
+   0.76,
+   0.28,
+   0.93
+  ]
+ },
+ "s17-bridge.jpg": {
+  "kai": [
+   0.745,
+   0.14,
+   0.8,
+   0.21
+  ],
+  "quokka": [
+   0.17,
+   0.77,
+   0.34,
+   0.95
+  ]
+ },
+ "s19-moumoon.jpg": {
+  "kai": null,
+  "_note": "audience POV, no Kai; icon-only flip-camera button goes to selfie"
+ },
+ "s19-moumoon-selfie.jpg": {
+  "kai": [
+   0.0,
+   0.18,
+   0.62,
+   1.0
+  ],
+  "_note": "full-bleed selfie, NO phone frame; reaching this view counts as found; guitarist is a black cat"
+ },
+ "s23-office.jpg": {
+  "kai": [
+   0.195,
+   0.425,
+   0.3,
+   0.52
+  ],
+  "quokka": [
+   0.69,
+   0.88,
+   0.85,
+   0.99
+  ],
+  "_note": "2026-11-18: Kai's room swapped from 3F to 5F (counting from the bottom floor = 1F) to match the lyric 「上班的人在五樓」."
+ },
+ "s25-fireworks.jpg": {
+  "kai": [
+   0.65,
+   0.54,
+   0.755,
+   0.74
+  ],
+  "quokka": [
+   0.135,
+   0.55,
+   0.21,
+   0.65
+  ],
+  "_note": "Kai in striped yukata. SKY IS EMPTY on purpose (top ~0-38%): render animated canvas fireworks over the sky region, behind lanterns feel, with soft glow."
+ },
+ "s27-nyc.jpg": {
+  "kai": [
+   0.0,
+   0.527,
+   0.065,
+   0.635
+  ],
+  "quokka": [
+   0.325,
+   0.83,
+   0.44,
+   0.97
+  ]
+ }
+}
