@@ -562,6 +562,11 @@ window.DAYOF = window.DAYOF || {};
       if (typeof opts.onBonus === 'function') { try { opts.onBonus(B.id, info); } catch (e) { console.error(e); } }
       if (B.id === 'sister' && typeof opts.onSister === 'function') { try { opts.onSister(info); } catch (e) { console.error(e); } }
     }
+    // v=261118f (Kai): tapping the wombat again (after it was found / on a revisit) repeats the small surprise: stars + ONE little heart
+    function heartsAt(B) {
+      var sz = Math.max(14, Math.min(Math.min(B.x1 - B.x0, B.y1 - B.y0) * 0.22, S.W * 0.035));
+      twinkle((B.x0 + B.x1) / 2, (B.y0 + B.y1) / 2, sz, B.view, true);
+    }
     function twinkle(cx, cy, sz, viewName, heart) {
       var g = E('g', { class: 'twinkle', 'pointer-events': 'none' }, S.views[viewName || curView].layer.top), ps = [], i, n = 7;
       for (i = 0; i < n; i++) {
@@ -757,6 +762,9 @@ window.DAYOF = window.DAYOF || {};
       if (!done && K && K.view === curView && inBox(K, w, pad)) { found(); return; }
       if (!sisterFound && Si && Si.view === curView && inBox(Si, w, pad)) { foundSister(); return; }
       if (S.bonus) for (var bi = 0; bi < S.bonus.length; bi++) { var Bn = S.bonus[bi]; if (!Bn.found && Bn.view === curView && inBox(Bn, w, pad)) { foundBonus(Bn); return; } }
+      // v=261118f (Kai): the wombat always answers a tap with hearts, also after it was found / on a revisit
+      if (S.bonus) for (var bj = 0; bj < S.bonus.length; bj++) { var Bs = S.bonus[bj]; if (Bs.found && Bs.id === 'sister' && Bs.view === curView && inBox(Bs, w, pad)) { heartsAt(Bs); return; } }
+      if (sisterFound && Si && Si.view === curView && inBox(Si, w, pad)) { heartsAt(Si); return; }
       if (isDouble) { lastTap.t = 0; tweenZoom(sx, sy, c.k < minK * 2.2 ? Math.min(maxK, Math.max(c.k * 3, 0.62)) : minK); return; }
       // image mode: configured wrong-tap hotspots → bubble at the tap point
       if (S.hotspots) for (var hi = 0; hi < S.hotspots.length; hi++) {

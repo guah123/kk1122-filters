@@ -17,8 +17,15 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     '.page-lyrics .lyr-veil{position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(180deg,rgba(246,239,226,.55) 0%,rgba(246,239,226,.38) 45%,rgba(246,239,226,.18) 100%)}',
     '.page-lyrics.has-bg .lyr-head,.page-lyrics.has-bg .lyr-scroll{position:relative;z-index:1}',
     /* v=261116aa (Kai): outro — tapping 繼續看看 fades every UI layer + the veil, holds the bare illustration ~3s, then moves on */
-    '.page-lyrics.has-bg > *{transition:opacity 2s ease}',  /* v=261118e (Kai): fades 2.5x slower (.8s → 2s) */
-    '.page-lyrics.lyr-outro > *{opacity:0 !important;pointer-events:none !important}',
+    /* v=261118f (Kai): no fades — tapping 繼續看看 removes every UI layer at once (bare illustration) and puts ONE emoji
+       button tied to the song in the same spot; tapping it goes on */
+    '.page-lyrics.has-bg > *{transition:opacity .35s ease}',
+    '.page-lyrics.lyr-outro > :not(.lyr-go){opacity:0 !important;pointer-events:none !important}',
+    '.page-lyrics.lyr-outro .filter-stack *{pointer-events:none !important}',
+    '.page-lyrics .lyr-go{opacity:0}','.page-lyrics .lyr-go.on{opacity:1}',
+    '.page-lyrics .lyr-go{position:absolute;z-index:60;width:68px;height:68px;margin:-34px 0 0 -34px;padding:0;border:0;border-radius:50%;background:rgba(251,247,239,.94);box-shadow:0 4px 16px rgba(74,60,48,.28),0 0 0 2px var(--wood,#C9A27A) inset;font:34px/1 system-ui,"Apple Color Emoji","Noto Color Emoji",sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;animation:lyrGo 1.8s ease-in-out infinite}',
+    '@keyframes lyrGo{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}',
+    '@media (prefers-reduced-motion:reduce){.page-lyrics .lyr-go{animation:none}}',
     '.page-lyrics.has-bg .lyr-paper{background-color:rgba(251,247,239,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 18px rgba(74,60,48,.10)}',
     '.page-lyrics.has-bg .lyr-head{text-shadow:0 0 12px rgba(251,247,239,.95),0 0 3px rgba(251,247,239,.9)}',
     '.page-lyrics.has-stack .lyr-head{padding-right:80px}',
@@ -162,6 +169,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       container.appendChild(head); container.appendChild(scroll); container.appendChild(hint);
 
       // v=261116aa: picture-book background per lyrics step (x = horizontal focus so the subject survives the phone crop)
+      // v=261118f (Kai): emoji for the post-lyrics button, one per song
+      var SONG_EMOJI = { 4: '🫥', 6: '🕊️', 8: '🏠', 10: '🧑‍🚀', 12: '🧳', 14: '⛰️', 16: '🌧️', 18: '🫶', 20: '🎈', 22: '🌸', 24: '👔', 26: '🌤️', 28: '🗽', 30: '🌙', 32: '🕰️' };
       var BG_X = { 4: 50, 24: 62, 26: 34, 28: 58 };
       if (n >= 4 && n <= 32 && n % 2 === 0) {
         var nn = (n < 10 ? '0' : '') + n;
@@ -202,13 +211,16 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         st.scroll[n] = Math.round(scroll.scrollTop);
         if (!container.classList.contains('has-bg')) { ctx.next(); return; }
         outro = true;
-        var q = location.search, hold = /[?&]test=1/.test(q) && !/[?&]outro=1/.test(q) ? 150 : 4000; // 2s fade + 2s look (Kai)
-        container.classList.add('lyr-outro');
-        var done = false;
-        function go() { if (done || !alive) return; done = true; container.removeEventListener('click', skip, true); ctx.next(); }
-        function skip(e) { e.stopPropagation(); e.preventDefault(); go(); }   // tap during the hold = go now
-        setTimeout(function () { if (alive) container.addEventListener('click', skip, true); }, 300);
-        setTimeout(go, hold);
+        var r = btn.getBoundingClientRect(), cr = container.getBoundingClientRect();
+        var goBtn = document.createElement('button'); goBtn.type = 'button'; goBtn.className = 'lyr-go';
+        goBtn.textContent = SONG_EMOJI[n] || '👀'; goBtn.setAttribute('aria-label', '繼續看看');
+        goBtn.style.left = Math.round(r.left - cr.left + r.width / 2) + 'px'; goBtn.style.top = Math.round(r.top - cr.top + r.height / 2) + 'px';
+        // v=261118f (review #6): on these songs the button would sit on the painted suitcase / guitar → lower-left instead
+        if ({ 12: 1, 28: 1 }[n]) { goBtn.style.left = '58px'; goBtn.style.top = Math.round(cr.height - 70) + 'px'; }
+        if (n === 10) { goBtn.style.left = Math.round(cr.width - 58) + 'px'; goBtn.style.top = '64px'; }   // (Kai) astronaut: top-right, in the night sky
+        container.classList.add('lyr-outro'); container.appendChild(goBtn);
+        requestAnimationFrame(function () { requestAnimationFrame(function () { goBtn.classList.add('on'); }); });
+        goBtn.addEventListener('click', function () { if (goBtn.disabled || !alive) return; goBtn.disabled = true; ctx.next(); });
       });
 
       loadData().then(function (data) {

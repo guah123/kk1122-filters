@@ -44,7 +44,13 @@
  },
  "s19-moumoon.jpg": {
   "kai": null,
-  "_note": "audience POV, no Kai; icon-only flip-camera button goes to selfie"
+  "_note": "audience POV, no Kai; icon-only flip-camera button goes to selfie",
+  "quokka": [
+   0.215,
+   0.43,
+   0.325,
+   0.53
+  ]
  },
  "s19-moumoon-selfie.jpg": {
   "kai": [

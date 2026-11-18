@@ -150,6 +150,9 @@ async function waitHttp(url, ms) {
             const label = ((await btn.getAttribute("aria-label")) || (await btn.textContent()) || "").trim(); // icon-only eyes button (v=261116y) keeps its name in aria-label
             if (label !== row.btn) log(n, `lyric button label "${label}" != "${row.btn}"`);
             await btn.click({ timeout: 3000 });
+            // v=261118f: the lyrics outro leaves only the background + one song emoji button → tap it to go on
+            const go = curPage().locator('.lyr-go');
+            if (await go.count()) { await sleep(300); await go.click({ timeout: 3000, force: true }); }   // force: the button pulses forever
             ok = await advanced(n);
           }
           break;

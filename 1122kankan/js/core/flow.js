@@ -3,7 +3,7 @@ window.DAYOF = window.DAYOF || {};
 (function () {
   var W = '凱凱在哪裡？';
   function lyr(n, song) { return { n: n, type: 'lyrics', song: song, btn: '繼續看看👀' }; }  // v=261116aa (Kai): all lyrics pages
-  function where(n, scene, desc) { return { n: n, type: 'where', scene: scene, title: W, desc: desc, btn: '繼續看看' }; }
+  function where(n, scene, desc) { return { n: n, type: 'where', scene: scene, title: W, desc: desc, btn: '繼續看看👀' }; }
   function qa(n, q, buttons, note) {
     var r = { n: n, type: 'qa', key: 'q' + n, q: q, buttons: buttons };
     if (note) r.note = note;

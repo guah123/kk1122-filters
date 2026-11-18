@@ -33,10 +33,10 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     ':where(html,body){margin:0;height:100%}',
     ':where(body){background:var(--cream,#F6EFE2);color:var(--ink,#4A3C30);font-family:var(--font,-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif);-webkit-text-size-adjust:100%}',
     ':where(#app){position:relative;width:100%;min-height:100vh;min-height:100dvh}',
-    ':where(#app > .page){position:relative;width:100%;height:100vh;height:100dvh;max-width:480px;margin:0 auto;overflow:hidden;opacity:0;transition:opacity .7s ease}',
+    ':where(#app > .page){position:relative;width:100%;height:100vh;height:100dvh;max-width:480px;margin:0 auto;overflow:hidden;opacity:0;transition:opacity .28s ease}',  /* v=261118g (Kai): fades are back, at the normal short length */
+    '#app > .page.bg-reveal > :not(.lyr-veil):not(.popup-bg){transition:opacity .28s ease !important}',
     /* v=261118e (Kai): page fades 2.5x slower (.28s → .7s); a page with a background picture waits for it, fades in, THEN its components fade in */
     '#app > .page.bg-wait > :not(.lyr-veil):not(.popup-bg){opacity:0 !important}',
-    '#app > .page.bg-reveal > :not(.lyr-veil):not(.popup-bg){transition:opacity .7s ease !important}',
     ':where(#app > .page.is-in){opacity:1}',
     '#app > .page{z-index:1}',
     '#app > .page.is-out{position:absolute;top:0;left:0;right:0;z-index:0;opacity:0;pointer-events:none}',
@@ -368,7 +368,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var left = urls.length, done = false;
     function ready() {
       if (done) return; done = true; show();
-      setTimeout(function () { el.classList.add('bg-reveal'); el.classList.remove('bg-wait'); setTimeout(function () { el.classList.remove('bg-reveal'); }, 800); }, 700);
+      setTimeout(function () { el.classList.add('bg-reveal'); el.classList.remove('bg-wait'); setTimeout(function () { el.classList.remove('bg-reveal'); }, 360); }, 300);   // background first, then the components fade in
     }
     urls.forEach(function (u) { var im = new Image(); im.onload = im.onerror = function () { if (--left <= 0) ready(); }; im.src = u; });
     setTimeout(ready, 3000);
@@ -380,7 +380,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       if (typeof cur.cleanup === 'function') { try { cur.cleanup(); } catch (e) { console.error('[dayof] cleanup', e); } }
       var old = cur.el;
       old.classList.remove('is-in'); old.classList.add('is-out');
-      setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 760);
+      setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 320);
     }
     modals.slice().forEach(function (m) { m.close(); });
     if (bubbleEl && cur && cur.n !== n) hideBubble();

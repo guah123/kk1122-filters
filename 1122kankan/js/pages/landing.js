@@ -13,7 +13,9 @@ DAYOF.registerPage('landing', {
         '.page-landing .lp-title{font-family:var(--font-serif,serif);font-weight:700;font-size:58px;line-height:1;letter-spacing:.6em;margin:0 0 0 .6em}',
         '.page-landing .lp-tag{font-family:var(--font-serif,serif);font-size:13px;letter-spacing:.28em;color:#5a4636;margin:22px 0 0}',
         '.page-landing .lp-dot{display:block;width:4px;height:4px;border-radius:50%;background:#8A6545;margin:16px auto}',
-        '.page-landing .lp-info{font-family:var(--font-serif,serif);font-size:12px;letter-spacing:.14em;line-height:1.9;color:#6b5646;margin:0}',
+        '.page-landing .lp-info{font-family:var(--font-serif,serif);font-size:12px;letter-spacing:.14em;line-height:1.9;color:#6b5646;margin:10px 0 0}',  /* v=261118g (Kai): dot removed, date/place moved up */
+        /* short viewports (in-app browsers with tall bars): lift the title block so it stays on the wall above the curtain rod */
+        '@media (max-height:700px){.page-landing .lp-head{top:calc(env(safe-area-inset-top,0px) + 9%)}.page-landing .lp-title{font-size:50px}.page-landing .lp-tag{margin-top:16px}.page-landing .lp-info{margin-top:6px;line-height:1.7}}',
         '.page-landing .lp-body{position:absolute;left:0;right:0;top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 58px);padding:0;gap:6px}',
         '.page-landing.lp-resume .lp-body{bottom:calc(env(safe-area-inset-bottom,0px) + 80px)}',
         '.page-landing .lp-btn{min-width:200px}'
@@ -26,7 +28,6 @@ DAYOF.registerPage('landing', {
       '<div class="lp-head">' +
         '<h1 class="lp-title lp-in d1">看看</h1>' +
         '<p class="lp-tag lp-in d2">Kai 的生日音樂會</p>' +
-        '<span class="lp-dot lp-in d2"></span>' +
         '<p class="lp-info lp-in d3">2026・11・22（日）14:30<br>沐月書店｜大安區泰順街24號B1</p>' +
       '</div>' +
       '<div class="lp-body">' +

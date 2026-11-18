@@ -81,6 +81,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var stack = null; // v=261116y (Kai): no filter stack on 33 (lyrics pages only)
 
     function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
+    var NEXT_BG = 'assets/scenes/s05-park.jpg'; (new Image()).src = NEXT_BG;
 
     // ---- credits data ----
     var data = FALLBACK;
@@ -207,11 +208,12 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     }
     cont.addEventListener('click', function () {
       if (cont.disabled) return; cont.disabled = true;
+      // v=261118f (review #1): the curtains open onto the next page's picture (step 34 starts on the park scene), not blank paper
+      var under = el('div', 'cr-under'); under.style.backgroundImage = 'url("' + NEXT_BG + '")'; stage.insertBefore(under, stage.firstChild);
       cont.classList.remove('show'); page.classList.add('cr-opening');      // hide credits + walkers, curtains part (frames in reverse, 2s)
       page.classList.remove('cr-closed');
       if (reduce) showFrame(0); else playCurtain(CURTAIN_N - 1, 0, OPEN_MS);
-      later(function () { if (!cleaned) page.classList.add('cr-out'); }, 2300);
-      later(function () { if (!cleaned) ctx.next(); }, 2300 + 950);
+      later(function () { if (!cleaned) ctx.next(); }, 2300);   // v=261118f (Kai): no fade-out, go straight on once the curtains are open
     });
 
     // ---- curtain sequence ----

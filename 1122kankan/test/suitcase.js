@@ -72,7 +72,7 @@ const hull = b => CASE_HULL.map(([u, v]) => [b.x + u * b.w, b.y + v * b.h]);
   const st = await p.evaluate(() => DAYOF.debug.state().suitcase);
   if (!st || !st.closed || (st.packed || []).length !== 10) fails.push('state.suitcase ' + JSON.stringify(st));
   const btn = await p.evaluate(() => { const e = document.querySelector('.page-suitcase .sc-actions .btn'); return e && e.classList.contains('show') && (e.getAttribute('aria-label') || e.textContent); });
-  if (btn !== '繼續看看') fails.push('continue btn ' + btn);
+  if (btn !== '繼續看看👀') fails.push('continue btn ' + btn);
   await p.screenshot({ path: path.join(OUT, '11-closed' + TAG + '.png') });
   await p.evaluate(() => document.querySelector('.page-suitcase .sc-actions .btn').click()); await sleep(800);
   const step = await p.evaluate(() => DAYOF.debug.state().step);

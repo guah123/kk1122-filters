@@ -235,3 +235,6 @@
 .page-credits:not(.cr-css) .cr-curtain, .page-credits:not(.cr-css) .cr-valance { display: none; }
 .page-credits.cr-css .cr-curimg { display: none; }
 .page-credits:not(.cr-css) .cr-rollwrap { top: 13%; }   /* keep the roll clear of the swag valance */
+/* v=261118g (Kai): short normal fades */
+.page-egg { animation: eg-in .3s ease both; }
+.cr-under { position: absolute; inset: 0; z-index: 1; background: center / cover no-repeat; pointer-events: none; }

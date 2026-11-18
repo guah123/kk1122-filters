@@ -56,7 +56,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   // v=261118d (Kai): painted suitcase = Veo clip keyed into a sprite sheet (frame 0 open … last closed). Slots are
   // fractions of that picture, on the open case's inner floor (back row first, front row last → front overlaps back).
   var SLOTS = [[.258, .533], [.378, .563], [.498, .593], [.618, .623], [.738, .653], [.195, .605], [.315, .635], [.435, .665], [.555, .695], [.675, .725]];
-  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261118a', n: 39, cols: 8, rows: 5, land: 25 };
+  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261118b', n: 39, cols: 8, rows: 5, land: 25 };
   function sheetPos(k) { var c = k % SHEET.cols, r = Math.floor(k / SHEET.cols); return (c / (SHEET.cols - 1) * 100).toFixed(3) + '% ' + (r / (SHEET.rows - 1) * 100).toFixed(3) + '%'; }
   var ROT = [-7, 4, -3, 8, -5, 5, -8, 3, 7, -4];
 
@@ -134,7 +134,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         return '<div class="sc-item" data-id="' + it.id + '" role="img" aria-label="' + LABEL[it.id].replace(/"/g, '&quot;') + '" title="' + LABEL[it.id].replace(/"/g, '&quot;') + '" style="--r:' + q[2] + 'deg;--shx:' + shx + 'px;--shy:' + shy + 'px;--z:' + q[3] + ';--aw:' + AR[it.id][0] + ';--ah:' + AR[it.id][1] + '"><div class="sc-art">' + ART[it.id] + '</div></div>';
       }).join('');
       html += '<div class="sc-case" role="button" aria-label="行李箱"><div class="shadow"></div><div class="lay back sc-pic"></div><div class="sc-slots"></div><div class="lay front sc-pic"></div></div>';
-      html += '<div class="sc-under"><div class="sc-msg"></div><div class="sc-actions"><button class="btn sc-fallbackbtn" type="button">繼續看看</button></div></div>';
+      html += '<div class="sc-under"><div class="sc-msg"></div><div class="sc-actions"><button class="btn sc-fallbackbtn" type="button">繼續看看👀</button></div></div>';
       stage.innerHTML = html;
       container.appendChild(stage);
 
@@ -408,7 +408,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var stage = E('div', 'sc-stage sc-scene', container);
     stage.innerHTML = DEFS + '<div class="scs-bg"></div><div class="scs-img"></div><div class="scs-layer"></div>' +
       '<div class="sc-head"><h2 class="sc-title">上太空的行李箱你要帶什麼去？</h2><p class="sc-hint">把想帶的東西拖進行李箱，<br>拖完點一下行李箱，把它關起來</p></div>' +
-      '<div class="sc-under"><div class="sc-msg"></div><div class="sc-actions"><button class="btn sc-fallbackbtn" type="button">繼續看看</button></div></div>';
+      '<div class="sc-under"><div class="sc-msg"></div><div class="sc-actions"><button class="btn sc-fallbackbtn" type="button">繼續看看👀</button></div></div>';
     var $bg = stage.querySelector('.scs-bg'), $layer = stage.querySelector('.scs-layer');
     var $hint = stage.querySelector('.sc-hint'), $msg = stage.querySelector('.sc-msg'), $btn = stage.querySelector('.sc-actions .btn'), $under = stage.querySelector('.sc-under');
     var $img = stage.querySelector('.scs-img');

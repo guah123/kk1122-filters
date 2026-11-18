@@ -48,3 +48,6 @@
 .page-qa[data-step="21"] .qz-wrap{gap:12px}
 .page-qa[data-step="21"] .qz-area{min-height:92px;height:92px;max-height:92px;flex:0 0 auto}
 .page-qa[data-step="21"] .qz-nudge{min-height:0;height:0;overflow:visible;margin:-6px 0 0}
+
+/* v=261118f (Kai): the 「寫一點點也好」 nudge sits UNDER the buttons; it takes no space, so the buttons never move */
+.page-qa.qz-has-art .qz-nudge, .page-qa[data-step="21"] .qz-nudge { transform: translateY(72px); pointer-events: none; text-shadow: 0 0 6px rgba(251,247,239,.95), 0 0 2px rgba(251,247,239,.95); }
