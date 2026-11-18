@@ -242,3 +242,11 @@
 .eg-dl button.eg-bigbtn { background: #C9A27A; }
 .page-egg .eg-dl .eg-bubble { border-color: #C9A27A; }
 .page-egg .eg-dl .eg-bubble::after { border-color: #C9A27A; }
+/* v=261118m (Kai, iPhone screenshot): every fold button on ONE right-aligned column, bubbles always to the LEFT
+   (the short-screen rule used to drop them under the button, which widened the column and pushed buttons left) */
+.page-egg .eg-stack .eg-extra { align-items: flex-end !important; }
+.page-egg .eg-pop { align-items: flex-end; }
+.page-egg .eg-filters .filter-stack.eg-fs { align-items: flex-end; }
+.page-egg .eg-bubble { position: absolute !important; right: calc(100% + 8px) !important; top: 50% !important; transform: translateY(-50%); margin: 0 !important; }
+.page-egg .eg-bubble::after { display: block !important; top: 50% !important; margin-top: -4px; }
+@media (max-height: 700px) { .page-egg .eg-fold { padding: 4px 0 6px 140px; margin-left: -140px; scrollbar-width: none; } .page-egg .eg-fold::-webkit-scrollbar { display: none; } }
