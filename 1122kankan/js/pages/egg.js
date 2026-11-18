@@ -155,12 +155,72 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     });
     rsBox.appendChild(rsBtn); rsBox.appendChild(el('div', 'eg-bubble', '從頭開始'));   // v=261118e (Kai): bubble like 密碼
 
+    // v=261118i (Kai): one button to save every illustration of the evening (cover, lyrics pages, question pages, find-Kai scenes).
+    // Phones: Web Share with files → the system sheet offers 「儲存 N 張影像」 (needs a fresh tap, so the files are fetched
+    // first and the tap that finds them ready shares at once). No file-share support → one zip download (store-only, built here).
+    var SVG_DL = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 9v20"/><path d="M15 21l9 9 9-9"/><path d="M10 37h28"/></svg>';
+    var DL_LIST = [['00-看看', 'assets/cover-illust.jpg']];
+    [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].forEach(function (n) { DL_LIST.push([(n < 10 ? '0' : '') + n + '-歌詞', 'assets/lyrics-bg/' + (n < 10 ? '0' : '') + n + '.jpg']); });
+    [9, 13, 15, 21, 29, 31].forEach(function (n) { DL_LIST.push([(n < 10 ? '0' : '') + n + '-問答', 'assets/page-bg/' + (n < 10 ? '0' : '') + n + '.jpg']); });
+    [[5, 's05-park'], [7, 's07-escalator'], [17, 's17-bridge'], [19, 's19-moumoon'], [23, 's23-office'], [25, 's25-fireworks'], [27, 's27-nyc']].forEach(function (x) { DL_LIST.push([(x[0] < 10 ? '0' : '') + x[0] + '-凱凱在哪裡', 'assets/scenes/' + x[1] + '.jpg']); });
+    DL_LIST.sort(function (a, b) { return a[0] < b[0] ? -1 : 1; });
+    var dlFiles = null, dlBusy = false;
+    function dlFetch() {
+      if (dlFiles || dlBusy) return Promise.resolve(dlFiles);
+      dlBusy = true;
+      return Promise.all(DL_LIST.map(function (it) {
+        return fetch(it[1]).then(function (r) { if (!r.ok) throw new Error(it[1]); return r.blob(); }).then(function (b) { return { name: '看看-' + it[0] + '.jpg', blob: b }; });
+      })).then(function (fs) { dlFiles = fs; dlBusy = false; return fs; }, function (e) { dlBusy = false; throw e; });
+    }
+    function crcTable() { var t = [], c, n, k; for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; }
+    function zipStore(files) {   // files: [{name, bytes:Uint8Array}] → Blob (no compression; JPEGs don't shrink anyway)
+      var T = crcTable(), enc = new TextEncoder(), parts = [], cen = [], off = 0;
+      files.forEach(function (f) {
+        var nm = enc.encode(f.name), d = f.bytes, c = 0xFFFFFFFF, i; for (i = 0; i < d.length; i++) c = T[(c ^ d[i]) & 255] ^ (c >>> 8); c = (c ^ 0xFFFFFFFF) >>> 0;
+        var h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint32(14, c, true); h.setUint32(18, d.length, true); h.setUint32(22, d.length, true); h.setUint16(26, nm.length, true);
+        var e = new DataView(new ArrayBuffer(46)); e.setUint32(0, 0x02014b50, true); e.setUint16(4, 20, true); e.setUint16(6, 20, true); e.setUint16(8, 0x0800, true); e.setUint32(16, c, true); e.setUint32(20, d.length, true); e.setUint32(24, d.length, true); e.setUint16(28, nm.length, true); e.setUint32(42, off, true);
+        parts.push(h.buffer, nm, d); cen.push(e.buffer, nm); off += 30 + nm.length + d.length;
+      });
+      var cs = 0; cen.forEach(function (x) { cs += x.byteLength; });
+      var z = new DataView(new ArrayBuffer(22)); z.setUint32(0, 0x06054b50, true); z.setUint16(8, files.length, true); z.setUint16(10, files.length, true); z.setUint32(12, cs, true); z.setUint32(16, off, true);
+      return new Blob(parts.concat(cen, [z.buffer]), { type: 'application/zip' });
+    }
+    function dlZip(fs) {
+      return Promise.all(fs.map(function (f) { return f.blob.arrayBuffer().then(function (ab) { return { name: f.name, bytes: new Uint8Array(ab) }; }); })).then(function (list) {
+        var url = URL.createObjectURL(zipStore(list)), a = document.createElement('a'); a.href = url; a.download = '看看-插畫.zip'; document.body.appendChild(a); a.click();
+        later(function () { if (a.parentNode) a.parentNode.removeChild(a); URL.revokeObjectURL(url); }, 4000);
+      });
+    }
+    var dlBox = el('div', 'eg-pop eg-dl');
+    var dlBtn = el('button', 'eg-bigbtn'); dlBtn.type = 'button'; dlBtn.setAttribute('aria-label', '下載圖片');
+    dlBtn.appendChild(iconNode('download', SVG_DL));
+    var dlBubble = el('div', 'eg-bubble', '點我下載圖片');
+    function dlSay(t) { dlBubble.textContent = t; }
+    dlBtn.addEventListener('click', function () {
+      if (dlBusy) return;
+      if (!dlFiles) {   // not fetched yet: fetch now; sharing needs a fresh tap afterwards
+        dlSay('準備中…');
+        dlFetch().then(function () { if (!cleaned) dlSay('好了，再點一次'); }, function () { if (!cleaned) { dlSay('點我下載圖片'); if (ctx.toast) ctx.toast('圖片載入失敗，請再試一次'); } });
+        return;
+      }
+      var files = []; try { files = dlFiles.map(function (f) { return new File([f.blob], f.name, { type: 'image/jpeg' }); }); } catch (e) { files = []; }
+      if (files.length && navigator.canShare && navigator.share && navigator.canShare({ files: files })) {
+        navigator.share({ files: files }).then(function () { if (!cleaned) dlSay('點我下載圖片'); }, function (e) {
+          if (cleaned) return; dlSay('點我下載圖片');
+          if (!e || e.name !== 'AbortError') dlZip(dlFiles).catch(function () { if (ctx.toast) ctx.toast('下載失敗，請再試一次'); });
+        });
+      } else {
+        dlZip(dlFiles).then(function () { if (!cleaned) { dlSay('點我下載圖片'); if (ctx.toast) ctx.toast('已下載「看看-插畫.zip」'); } }, function () { if (ctx.toast) ctx.toast('下載失敗，請再試一次'); });
+      }
+    });
+    dlBox.appendChild(dlBtn); dlBox.appendChild(dlBubble);
+
     // v=261116aa (Kai): the ⋯ fold holds ALL unlocked filters again (same DAYOF.FilterStack as the lyrics pages, so the
     // camera opens exactly the same way) + LINE / Coffee / 從頭開始 in a row underneath. Filters mount lazily on first expand.
     var own = el('div', 'eg-stack');
     var fold = el('div', 'eg-fold');
     var fsHost = el('div', 'eg-filters');
-    var ex = el('div', 'eg-extra'); ex.appendChild(lineBox); ex.appendChild(cofBox); ex.appendChild(rsBox);
+    var ex = el('div', 'eg-extra'); ex.appendChild(lineBox); ex.appendChild(cofBox); ex.appendChild(dlBox); ex.appendChild(rsBox);
     fold.appendChild(fsHost); fold.appendChild(ex); own.appendChild(fold);
     page.appendChild(own);
     var fstack = null;
@@ -213,6 +273,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         if (st) { st.eggToggleSeen = true; try { ctx.save(); } catch (er) {} }
       }
       setOpen(stack.el.classList.contains('eg-collapsed'));
+      dlFetch().catch(function () {});   // warm the pictures while the fold is open so one tap can share them
     });
     stack.el.insertBefore(tog, stack.el.firstChild);
     setOpen(false);

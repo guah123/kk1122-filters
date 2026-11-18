@@ -1,6 +1,7 @@
 // 濾鏡截圖＋互動驗證：node test/filters.js [fake-cam.mjpeg]
 //   → ../verify/y/*.png（16-rain*、sun*、cam-nonumber）（390×844、deviceScaleFactor 2、?test=1）
-//   檢查：console／page error、assets/filters/* 回應 200、〈太陽〉左下抹開後出現散步兩人、
+//   檢查：console／page error、assets/filters/* 回應 200、〈太陽〉左下抹開後露出底部石板地（r8 方案 B；原本是散步兩人）、
+//         〈下雨〉點雲下一陣小雨（r8 方案 C）、〈太空人〉點一下放天燈（r8 方案 D）截圖、
 //         「重新佈滿烏雲」用真實觸控點擊（touchscreen.tap 走 hit-test）＋像素取樣確認烏雲回來。
 const { chromium } = require('playwright'); const { spawn } = require('child_process'); const path = require('path'); const fs = require('fs');
 const CAM = process.argv[2]; const OUT = path.join(__dirname, '..', '..', 'verify', 'y'); fs.mkdirSync(OUT, { recursive: true });
@@ -41,8 +42,13 @@ const diff = (a, b) => Math.round(Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) 
     if (id === 'rain') {
       await sleep(1500); await shot(p, '16-rain-1');
       for (const [x, y] of [[120, 320], [260, 420], [180, 560]]) { await p.touchscreen.tap(x, y); await sleep(120); } await sleep(200); await shot(p, '16-rain-2-tap');
+      { const R = await box(p); await p.touchscreen.tap(R.x + R.w * 0.6, R.y + R.h * 0.08); await sleep(900); await shot(p, '16-rain-2b-cloudtap'); }   // r8：點雲 → 一陣小雨
       await sleep(3500); await shot(p, '16-rain-3');
-    } else if (id === 'helmet') { await sleep(1500); await shot(p, 'cam-nonumber'); }
+    } else if (id === 'helmet') {
+      await sleep(1500); await shot(p, 'cam-nonumber');
+      const R = await box(p); for (const [fx, fy] of [[0.5, 0.6], [0.3, 0.4]]) { await p.touchscreen.tap(R.x + R.w * fx, R.y + R.h * fy); await sleep(500); }
+      await sleep(800); await shot(p, 'helmet-lamps');   // r8：點一下放天燈飛向月亮
+    }
     else await sleep(1500);
     report.push(id + ' ok'); await p.close();
   }

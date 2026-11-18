@@ -24,7 +24,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     '.page-lyrics.lyr-outro > :not(.lyr-go){opacity:0 !important;pointer-events:none !important}',
     '.page-lyrics.lyr-outro .filter-stack *{pointer-events:none !important}',
     '.page-lyrics .lyr-go{position:absolute;z-index:60;width:68px;height:68px;margin:-34px 0 0 -34px;padding:0;border:0;border-radius:50%;background:rgba(251,247,239,.94);box-shadow:0 4px 16px rgba(74,60,48,.28),0 0 0 2px var(--wood,#C9A27A) inset;font:34px/1 system-ui,"Apple Color Emoji","Noto Color Emoji",sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;animation:lyrGo 1.8s ease-in-out infinite}',
-    '@keyframes lyrGo{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}',
+    '@keyframes lyrGo{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}',
     '@media (prefers-reduced-motion:reduce){.page-lyrics .lyr-go{animation:none}}',
     '.page-lyrics.has-bg .lyr-paper{background-color:rgba(251,247,239,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 18px rgba(74,60,48,.10)}',
     '.page-lyrics.has-bg .lyr-head{text-shadow:0 0 12px rgba(251,247,239,.95),0 0 3px rgba(251,247,239,.9)}',
@@ -215,7 +215,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var goBtn = document.createElement('button'); goBtn.type = 'button'; goBtn.className = 'lyr-go';
         goBtn.textContent = SONG_EMOJI[n] || '👀'; goBtn.setAttribute('aria-label', '繼續看看');
         // v=261118h (Kai): the emoji button always sits top-right
-        goBtn.style.left = Math.round(cr.width - 58) + 'px'; goBtn.style.top = 'calc(env(safe-area-inset-top, 0px) + 64px)';
+        goBtn.style.left = Math.round(cr.width - 34) + 'px'; goBtn.style.top = 'calc(env(safe-area-inset-top, 0px) + 34px)';   // same row + inset as the back button
         container.classList.add('lyr-outro'); container.appendChild(goBtn);
         goBtn.addEventListener('click', function () { if (goBtn.disabled || !alive) return; goBtn.disabled = true;
           var fast = /[?&]test=1/.test(location.search) && !/[?&]outro=1/.test(location.search);

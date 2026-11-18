@@ -275,3 +275,33 @@ a{color:var(--sky-deep)}
 
 /* v=261116aa: let the page-bg picture show through the photo page's paper (step 29) */
 .page.has-pbg > .photo-wrap.paper-bg{background-color:rgba(246,239,226,.28);background-image:none}
+
+/* ============================================================
+   v=261118j (Kai + UI review): ONE round button — 48px, same paper face, border and shadow everywhere.
+   Top row inset 10px (back button left, filter / emoji / ⋯ right, same line). Icons 26px (single-stroke
+   symbols 20px), emoji 25px. Exception by design: pill text buttons (繼續看看 / 開始找 / 送出) are not round buttons.
+   ============================================================ */
+:root{ --rb: 48px; --rb-in: 10px; --rb-bg: rgba(251,247,239,.92); --rb-bd: 1px solid rgba(74,60,48,.14); --rb-sh: 0 2px 8px rgba(74,60,48,.16); }
+#app > .step-back,#app .filter-stack .round-btn,#app .page-lyrics .lyr-go,#app .page-egg .eg-stack .eg-toggle,
+#app .eg-pop button.eg-bigbtn,#app .where-zoom,#app .where-flip,#app .page-credits .cr-opencurtain{
+  width:var(--rb);height:var(--rb);min-width:var(--rb);min-height:var(--rb);padding:0;border-radius:50%;
+  border:var(--rb-bd);box-shadow:var(--rb-sh);box-sizing:border-box; }
+#app > .step-back,#app .page-lyrics .lyr-go,#app .page-egg .eg-stack .eg-toggle,#app .where-zoom,#app .where-flip,#app .page-credits .cr-opencurtain{ background:var(--rb-bg); }
+#app .filter-stack .round-btn:not(.fs-toggle){ background-color:var(--rb-bg); }
+#app .filter-stack .fs-toggle{ background:var(--rb-bg); }
+#app > .step-back{ top:calc(var(--rb-in) + var(--safe-top,0px));left:calc(var(--rb-in) + var(--safe-left,0px)); }
+#app > .step-back svg,#app > .step-back .ico{ width:20px;height:20px; }
+#app .filter-stack .round-btn .ico,#app .filter-stack .round-btn svg,#app .page-egg .eg-stack .eg-toggle svg,#app .page-egg .eg-stack .eg-toggle .ico,
+#app .eg-pop button.eg-bigbtn .ico,#app .eg-pop button.eg-bigbtn svg{ width:26px !important;height:26px !important; }
+#app .filter-stack .fs-toggle .fs-chev svg{ width:10px !important;height:10px !important; }
+#app .where-zoom{ font-size:20px; }
+#app .where-flip svg,#app .where-flip .ico{ width:26px;height:26px; }
+#app .page-lyrics > .filter-stack,#app .page-egg .eg-stack{ top:calc(env(safe-area-inset-top,0px) + var(--rb-in));right:var(--rb-in);gap:8px; }
+#app .page-lyrics .lyr-go{ margin:calc(var(--rb) / -2) 0 0 calc(var(--rb) / -2);font-size:25px; }
+#app .page-egg .eg-fold{ gap:8px; }
+#app .page-egg .eg-stack .eg-extra,#app .page-egg .eg-filters .filter-stack.eg-fs{ gap:8px; }
+#app .page-egg .eg-hint{ right:66px; }
+#app .page-credits .cr-opencurtain{ font-size:25px;display:flex;align-items:center;justify-content:center; }
+/* the gold ring is reserved for the few seconds a filter is NEW; an open fold shows a quiet wood ring */
+#app .filter-stack .round-btn.is-new{ box-shadow:0 0 0 3px rgba(242,198,109,.55),0 2px 10px rgba(201,162,122,.55); }
+#app .filter-stack.fs-open .fs-toggle{ box-shadow:0 0 0 3px rgba(138,101,69,.28),var(--rb-sh); }

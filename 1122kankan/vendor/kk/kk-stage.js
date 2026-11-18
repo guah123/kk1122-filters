@@ -37,6 +37,13 @@
    * 開啟後畫布固定為 720×1280（不論手機方向、桌機或手機），相機畫面「置中裁切填滿」，沒有黑邊。
    * 呼叫端（app／camera 頁）負責把 canvas 元素用 CSS 排成 9:16（例如 height:100dvh; aspect-ratio:9/16）。 */
   Stage.PORTRAIT = [720, 1280];
+  Stage.PORTRAIT_HD = [1080, 1920];
+  /* v=261118k: output size follows the camera — 1080×1920 when the camera really delivers ≥1080p, else 720×1280.
+     Call again once the video has its size (camera.js does). */
+  Stage.prototype.autoPortraitSize = function () {
+    const v = this.video, a = v && v.videoWidth ? Math.max(v.videoWidth, v.videoHeight) : 0, b = v && v.videoWidth ? Math.min(v.videoWidth, v.videoHeight) : 0;
+    return (a >= 1600 && b >= 900 && !this.lowPerf) ? Stage.PORTRAIT_HD : Stage.PORTRAIT;
+  };
   Stage.prototype.setPortraitOutput = function (on, size) {
     this.portrait = !!on;
     this.fixedSize = on ? (size || Stage.PORTRAIT) : null;
@@ -219,8 +226,8 @@
       return {
         video: {
           facingMode: { ideal: facing || 'environment' },
-          width: { ideal: 720 },   // 直式，與 261112-proto 一致
-          height: { ideal: 1280 },
+          width: { ideal: 1080 },   // v=261118k (Kai): ask for full-HD portrait so recordings are close to the native camera
+          height: { ideal: 1920 },
           aspectRatio: { ideal: 9 / 16 }, // 不支援或給回橫向時，由 drawBg 置中裁切成 9:16
           frameRate: { ideal: 30 },
         },
@@ -285,8 +292,8 @@
         let pair = null;
         try {
           const alt = KK.Camera.constraints(facing);
-          alt.video.width = { ideal: 1280 };
-          alt.video.height = { ideal: 720 };
+          alt.video.width = { ideal: 1920 };
+          alt.video.height = { ideal: 1080 };
           delete alt.video.aspectRatio;
           pair = await open(alt);
           KK.Camera.log.push('對調約束重試：' + pair[1].videoWidth + '×' + pair[1].videoHeight);

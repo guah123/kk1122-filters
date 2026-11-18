@@ -6,12 +6,20 @@
  *  3. t=9–11   越跑越近，門口亮起暖光，t≈11 兩人一起跑進門、淡出。
  *  4. t=11–13  窗戶變亮（回家吃飯了），只剩房子與炊煙。
  *  5. t=13–14  燈光慢慢回到平常的亮度，與 t=0 接得起來。
- * 炊煙每 1 秒一團、壽命 7 秒（7 整除 14）；蜻蜓、小鳥、窗光呼吸都轉整數圈。 */
+ * 炊煙每 1 秒一團、壽命 7 秒（7 整除 14）；蜻蜓、小鳥、窗光呼吸都轉整數圈。
+ *
+ * r8（Kai 選定方案 A「原脈絡」）：底部一張夕陽草坡小畫（remember-a-hill.webp：晚霞、草坡、亮燈冒煙的小屋、姊弟跑回家），
+ *   只佔下緣約 27% 高、中央淨空。動態只留：窗光呼吸（11–14 秒孩子到家時更亮）、落日微光、兩隻歸巢小鳥。
+ *   原本的大片左上夕陽光暈、點陣草坡／房子／奔跑姊弟／遠方散步的人、紅蜻蜓都不畫（沒有 r8 圖時才回到舊畫法）。
+ *   螢火蟲互動完全不變：點一下放 5 隻、按住滑過一路放。 */
 (function () {
   'use strict';
   const KK = window.KK, P = KK.PAL, TAU = KK.TAU;
   /* DAYOF：水彩點陣素材掛點（assets/filters/remember-*.png；沒有檔案就用原本向量畫法）。奔跑的姊弟維持「人類」。 */
   const ART = (n) => (KK.art ? KK.art(n) : null);
+
+  /* r8 方案 A 素材擺位（1080×1920 設計稿比例）：小畫範圍；畫內的兩扇窗、落日 */
+  const HILL_BOX = [0.0296, 0.7271, 0.9694, 1], HILL_WIN = [[0.742, 0.476], [0.907, 0.483]], HILL_SUN = [0.3, 0.555];
 
   KK.defineFilter({
     id: 'remember',
@@ -21,7 +29,7 @@
     mood: '懷念・奔跑・被等待',
     duration: 14,
     hint: '點一下或滑過畫面，放出螢火蟲',
-    critterHint: '只有人類：姊弟沿草坡稜線跑回家（不畫小動物）',
+    critterHint: '只有人類：底部夕陽草坡上，姊弟跑回亮著燈的小屋（不畫小動物）',
     create() {
       const st = { back: null, front: null, flies: [], lastSpawn: 0, runX: null, runFace: 1, crest: null, crestKey: '' };
 
@@ -291,147 +299,174 @@
           g.save();
           g.globalCompositeOperation = 'screen';
           const sk = g.createLinearGradient(0, 0, 0, h * 0.32);
-          sk.addColorStop(0, KK.rgba(P.apricot, 0.3));
+          sk.addColorStop(0, KK.rgba(P.apricot, ART('remember-a-hill.webp') ? 0.16 : 0.3));
           sk.addColorStop(1, KK.rgba(P.apricot, 0));
           g.fillStyle = sk;
           g.fillRect(0, 0, w, h * 0.32);
-          // 左上角低垂的夕陽
+          // 左上角低垂的夕陽（r8 有小畫時不畫：落日在小畫裡）
           const br = 1 + 0.04 * Math.sin(ph * TAU * 2);
-          KK.drawSprite(g, KK.glow(P.apricot, 256), w * 0.1, u * 0.1, u * 1.6 * br, 0.75);
-          KK.drawSprite(g, KK.glow(P.cream, 128), w * 0.1, u * 0.1, u * 0.3 * br, 0.4);
-          g.restore();
-
-          // 草坡＋房子（點陣：remember-hill.png 貼齊底部、remember-house.png 放在山丘上）
-          const aHill = ART('remember-hill.png'), aHouse = ART('remember-house.png'), aSmoke = ART('remember-smoke.png');
-          const aRunA = ART('remember-runner-a.png'), aRunB = ART('remember-runner-b.png');
-          const bmHouse = !!(aHill && aHouse);
-          if (aHill) g.drawImage(aHill, 0, h - w * aHill.naturalHeight / aHill.naturalWidth, w, w * aHill.naturalHeight / aHill.naturalWidth);
-          else g.drawImage(st.back[bi], 0, 0);
-          if (bmHouse) {
-            // 點陣房子（remember-house.png 256×256）：坐在點陣稜線上；窗光、門光、煙囪位置改用素材上的實際位置
-            const hs = b * 0.4, base = crestY(G.hx, aHill), top = base + b * 0.012 - hs, left = G.hx - hs / 2;
-            g.drawImage(aHouse, left, top, hs, hs);
-            G = Object.assign({}, G, {
-              base: top + hs * 0.94, doorH: hs * 0.2,
-              win: [[left + hs * 0.252, top + hs * 0.689], [left + hs * 0.751, top + hs * 0.696]],
-              chx: left + hs * 0.754, chTop: top + hs * 0.15,
-            });
+          if (!ART('remember-a-hill.webp')) {
+            KK.drawSprite(g, KK.glow(P.apricot, 256), w * 0.1, u * 0.1, u * 1.6 * br, 0.75);
+            KK.drawSprite(g, KK.glow(P.cream, 128), w * 0.1, u * 0.1, u * 0.3 * br, 0.4);
           }
-
-          // 窗光與門光
-          const boost = 0.3 * KK.smooth(11.2, 12, t) * (1 - KK.smooth(13, 14, t));
-          const winA = 0.68 + 0.1 * Math.sin(ph * TAU * 3) + boost;
-          const doorA = KK.smooth(10.3, 11.2, t) * (1 - KK.smooth(12, 13.6, t));
-          const open = KK.smooth(10.6, 11, t) * (1 - KK.smooth(11.9, 12.6, t));
-          g.save();
-          g.globalCompositeOperation = 'screen';
-          G.win.forEach((p) => {
-            KK.drawSprite(g, KK.glow(P.apricot, 96), p[0], p[1], b * 0.2, winA * 0.8);
-            KK.drawSprite(g, KK.glow(P.cream, 48), p[0], p[1], b * 0.06, winA * 0.7);
-          });
-          KK.drawSprite(g, KK.glow(P.apricot, 128), G.hx, G.base - G.doorH * 0.4, b * 0.34, doorA * 0.9);
-          KK.drawSprite(g, KK.glow(P.apricot, 64), G.hx, G.base - G.doorH * 0.4, b * 0.08, 0.3 + 0.5 * open);
           g.restore();
-          g.fillStyle = KK.rgba(P.page, 0.95);
-          if (!bmHouse) G.win.forEach((p) => {
-            g.globalAlpha = Math.min(1, winA);
-            g.fillRect(p[0] - G.winS / 2, p[1] - G.winS / 2, G.winS, G.winS);
-            g.globalAlpha = Math.min(1, winA) * 0.7;
-            g.fillStyle = KK.rgba(P.umber, 0.8);
-            g.fillRect(p[0] - G.winS * 0.04, p[1] - G.winS / 2, G.winS * 0.08, G.winS);
+
+          // r8 方案 A：底部夕陽草坡小畫＋窗光呼吸＋落日微光＋歸巢小鳥
+          const aA = ART('remember-a-hill.webp');
+          if (aA && KK.placeArt) {
+            const R = KK.placeArt(aA, S, HILL_BOX, { landScale: 1.2 });
+            g.drawImage(aA, R.x, R.y, R.w, R.h);
+            const boostA = 0.3 * KK.smooth(11.2, 12, t) * (1 - KK.smooth(13, 14, t));
+            const wA = 0.6 + 0.12 * Math.sin(ph * TAU * 3) + boostA;
+            g.save();
+            g.globalCompositeOperation = 'screen';
+            KK.drawSprite(g, KK.glow(P.apricot, 128), R.x + R.w * HILL_SUN[0], R.y + R.h * HILL_SUN[1], R.w * 0.22 * br, 0.32);
+            HILL_WIN.forEach((p) => {
+              KK.drawSprite(g, KK.glow(P.apricot, 96), R.x + R.w * p[0], R.y + R.h * p[1], R.w * 0.1, wA * 0.6);
+              KK.drawSprite(g, KK.glow(P.cream, 48), R.x + R.w * p[0], R.y + R.h * p[1], R.w * 0.035, wA * 0.5);
+            });
+            g.restore();
+            for (let i = 0; i < 2; i++) {
+              const k = KK.mod(ph + i * 0.37 + 0.1, 1);
+              const x = KK.lerp(-b * 0.1, w + b * 0.1, k);
+              const y = u * (0.16 + i * 0.05) + Math.sin(k * TAU) * b * 0.02 + KK.smooth(0.5, 1, k) * b * 0.08;
+              drawBird(g, x, y, b * 0.016, t * TAU * 3 + i * 2, 0.75);
+            }
+          } else {
+
+            // 草坡＋房子（點陣：remember-hill.png 貼齊底部、remember-house.png 放在山丘上）
+            const aHill = ART('remember-hill.png'), aHouse = ART('remember-house.png'), aSmoke = ART('remember-smoke.png');
+            const aRunA = ART('remember-runner-a.png'), aRunB = ART('remember-runner-b.png');
+            const bmHouse = !!(aHill && aHouse);
+            if (aHill) g.drawImage(aHill, 0, h - w * aHill.naturalHeight / aHill.naturalWidth, w, w * aHill.naturalHeight / aHill.naturalWidth);
+            else g.drawImage(st.back[bi], 0, 0);
+            if (bmHouse) {
+              // 點陣房子（remember-house.png 256×256）：坐在點陣稜線上；窗光、門光、煙囪位置改用素材上的實際位置
+              const hs = b * 0.4, base = crestY(G.hx, aHill), top = base + b * 0.012 - hs, left = G.hx - hs / 2;
+              g.drawImage(aHouse, left, top, hs, hs);
+              G = Object.assign({}, G, {
+                base: top + hs * 0.94, doorH: hs * 0.2,
+                win: [[left + hs * 0.252, top + hs * 0.689], [left + hs * 0.751, top + hs * 0.696]],
+                chx: left + hs * 0.754, chTop: top + hs * 0.15,
+              });
+            }
+
+            // 窗光與門光
+            const boost = 0.3 * KK.smooth(11.2, 12, t) * (1 - KK.smooth(13, 14, t));
+            const winA = 0.68 + 0.1 * Math.sin(ph * TAU * 3) + boost;
+            const doorA = KK.smooth(10.3, 11.2, t) * (1 - KK.smooth(12, 13.6, t));
+            const open = KK.smooth(10.6, 11, t) * (1 - KK.smooth(11.9, 12.6, t));
+            g.save();
+            g.globalCompositeOperation = 'screen';
+            G.win.forEach((p) => {
+              KK.drawSprite(g, KK.glow(P.apricot, 96), p[0], p[1], b * 0.2, winA * 0.8);
+              KK.drawSprite(g, KK.glow(P.cream, 48), p[0], p[1], b * 0.06, winA * 0.7);
+            });
+            KK.drawSprite(g, KK.glow(P.apricot, 128), G.hx, G.base - G.doorH * 0.4, b * 0.34, doorA * 0.9);
+            KK.drawSprite(g, KK.glow(P.apricot, 64), G.hx, G.base - G.doorH * 0.4, b * 0.08, 0.3 + 0.5 * open);
+            g.restore();
             g.fillStyle = KK.rgba(P.page, 0.95);
-          });
-          g.globalAlpha = bmHouse ? 0 : open;
-          g.fillStyle = KK.rgba(P.cream, 0.95);
-          g.fillRect(G.hx - G.doorW / 2, G.base - G.doorH, G.doorW, G.doorH + b * 0.01);
-          g.globalAlpha = 1;
-
-          // 炊煙：細細一縷、S 形捲曲；每 0.5 秒一團、壽命 7 秒（整除 14）
-          const smk = KK.glow(P.cream, 64, 0.1);
-          const wind = 0.7 * Math.sin(ph * TAU);
-          if (aSmoke) {                               // 點陣炊煙：3 縷依序往上飄、輕晃（7 秒一輪，整除 14）
-            for (let i = 0; i < 3; i++) {
-              const k = KK.mod(t / 7 + i / 3, 1), env = KK.smooth(0, 0.1, k) * (1 - KK.smooth(0.45, 1, k));
-              if (env <= 0.01) continue;
-              const sw = b * 0.085 * (0.85 + 0.3 * k), sh = sw * 2;   // 從煙囪口冒出、邊升邊散（升高約 0.13b，不脫離煙囪）
-              const x = G.chx - b * 0.006 + Math.sin(k * TAU + wind) * b * 0.008 + k * b * 0.02, y = G.chTop + b * 0.035 - k * b * 0.12;
-              g.globalAlpha = env * 0.85; g.drawImage(aSmoke, x - sw * 0.3, y - sh, sw, sh);   // 素材的煙根在 x≈0.30 處 → 對準煙囪口
-            }
-            g.globalAlpha = 1;
-          }
-          for (let i = 0; i < (aSmoke ? 0 : 14); i++) {
-            const age = KK.mod(t - i * 0.5, 7), k = age / 7;
-            const env = KK.smooth(0, 0.1, k) * (1 - KK.smooth(0.3, 1, k));
-            if (env <= 0.01) continue;
-            const sway = b * 0.03 * (0.3 + 1.6 * k) * Math.sin(k * TAU * 1.3 + wind);
-            const x = G.chx + sway + k * b * 0.05 + Math.sin(age * 2.6 + i) * b * 0.004;
-            const y = G.chTop - k * b * 0.45;
-            const r = b * (0.006 + 0.024 * k);
-            KK.drawSprite(g, smk, x, y, r * 6.5, env * 0.42);
-          }
-
-          // 歸巢的小鳥
-          for (let i = 0; i < 2; i++) {
-            const k = KK.mod(ph + i * 0.37 + 0.1, 1);
-            const x = KK.lerp(-b * 0.1, w + b * 0.1, k);
-            const y = u * (0.16 + i * 0.05) + Math.sin(k * TAU) * b * 0.02 + KK.smooth(0.5, 1, k) * b * 0.08;
-            drawBird(g, x, y, b * 0.016, t * TAU * 3 + i * 2, 0.75);
-          }
-
-          // 紅蜻蜓（上方與側邊盤旋）
-          [[0.7, 0.07, 0.14, 2, 3, 0], [0.12, 0.33, 0.12, 3, 2, 2], [0.9, 0.3, 0.1, 2, 3, 4]].forEach((d) => {
-            const cx = w * d[0], cy = d[1] * h > u * 0.42 && h > w ? d[1] * h : Math.min(d[1] * h, h * 0.4) + (h > w ? 0 : u * 0.08);
-            const A = u * d[2] * 0.6;
-            const ax = ph * TAU * d[3] + d[5], ay = ph * TAU * d[4] + d[5] * 2;
-            const x = cx + Math.sin(ax) * A, y = cy + Math.sin(ay) * A * 0.55;
-            const vx = Math.cos(ax) * d[3] * A, vy = Math.cos(ay) * d[4] * A * 0.55;
-            drawDragonfly(g, x, y, Math.atan2(vy, vx), u * 0.048, t);
-          });
-
-          // 遠方散步的三個人（remember-far-walkers.png 207×256：大人＋小孩＋大人，人類，原圖面朝右；Kai step 32 不要小動物）
-          //   取代原本遠坡的小動物彩蛋：很小（高約 w×0.1）、略淡（距離感），沿草坡稜線慢慢往右走向小屋，
-          //   整個 loop（14 秒）走一趟、頭尾淡入淡出 → 無縫；只往前走，不倒退；若方向改變就水平翻轉。先畫，姊弟蓋在前面。
-          const aFar = ART('remember-far-walkers.png');
-          if (aFar && aHill) {
-            const fh = w * 0.1, fw = fh * aFar.naturalWidth / aFar.naturalHeight;
-            const x0 = -fw * 0.6, x1 = G.hx - b * 0.2 - fw * 0.5;           // 走到小屋左邊就淡出
-            const fx = KK.lerp(x0, x1, ph);
-            const fal = 0.78 * KK.smooth(0.0, 0.08, ph) * (1 - KK.smooth(0.88, 0.99, ph));
-            const fface = x1 >= x0 ? 1 : -1;
-            const fhop = Math.abs(Math.sin(t * TAU * 1.5)) * fh * 0.015;
-            if (fal > 0.01) {
-              g.save(); g.globalAlpha = fal; g.translate(fx, crestY(fx, aHill) + fh * 0.03 - fhop); g.scale(fface, 1);
-              g.drawImage(aFar, -fw / 2, -fh, fw, fh); g.restore();
-            }
-          }
-
-          // 姊弟追逐
-          const RUN = 11, k = Math.min(t / RUN, 1);
-          if (t < RUN + 0.5) {
-            const fade = 1 - KK.smooth(10.8, 11.3, t);
-            const base = KK.lerp(-b * 0.32, G.hx - b * 0.02, k);
-            const sep = b * 0.11 * Math.sin(k * TAU * 1.5 + 1) * (1 - KK.smooth(0.8, 1, k));
-            const Hs = u * 0.13, Hb = u * 0.11;
-            const f = t * TAU / 0.52;
-            const xb = base - sep / 2, xs = base + sep / 2;
-            // 離房子近時兩人略分層，弟弟在前（先到門口）
-            const order = sep > 0 ? [[xb, Hb, f + 1.2, false], [xs, Hs, f, true]] : [[xs, Hs, f, true], [xb, Hb, f + 1.2, false]];
-            if (aRunA) {                              // 點陣姊弟（一張圖含兩人，a/b 交替成跑步動畫，原圖面朝右；往左跑時水平翻轉）
-              if (st.runX != null && Math.abs(base - st.runX) > 0.5) st.runFace = base >= st.runX ? 1 : -1;
-              st.runX = base;
-              const fr = (aRunB && Math.floor(t / 0.14) % 2) ? aRunB : aRunA, sz = u * 0.26;
-              const hop = Math.abs(Math.sin(f)) * sz * 0.02;
-              if (fade > 0.01 && base > -sz && base < w + sz) {
-                g.save(); g.globalAlpha = fade; g.translate(base, crestY(base, aHill) - hop); g.scale(st.runFace, 1);
-                g.drawImage(fr, -sz / 2, -sz * 0.95, sz, sz); g.restore();
-              }
-            } else order.forEach((o) => {
-              if (o[0] > -b * 0.1 && o[0] < w + b * 0.1 && fade > 0.01) drawKid(g, o[0], runY(o[0]), o[1], o[2], o[3], fade, t);
+            if (!bmHouse) G.win.forEach((p) => {
+              g.globalAlpha = Math.min(1, winA);
+              g.fillRect(p[0] - G.winS / 2, p[1] - G.winS / 2, G.winS, G.winS);
+              g.globalAlpha = Math.min(1, winA) * 0.7;
+              g.fillStyle = KK.rgba(P.umber, 0.8);
+              g.fillRect(p[0] - G.winS * 0.04, p[1] - G.winS / 2, G.winS * 0.08, G.winS);
+              g.fillStyle = KK.rgba(P.page, 0.95);
             });
-          }
+            g.globalAlpha = bmHouse ? 0 : open;
+            g.fillStyle = KK.rgba(P.cream, 0.95);
+            g.fillRect(G.hx - G.doorW / 2, G.base - G.doorH, G.doorW, G.doorH + b * 0.01);
+            g.globalAlpha = 1;
 
-          // 前景草叢（蓋住小動物的身體）
-          if (!aHill) g.drawImage(st.front[bi], 0, 0);
+            // 炊煙：細細一縷、S 形捲曲；每 0.5 秒一團、壽命 7 秒（整除 14）
+            const smk = KK.glow(P.cream, 64, 0.1);
+            const wind = 0.7 * Math.sin(ph * TAU);
+            if (aSmoke) {                               // 點陣炊煙：3 縷依序往上飄、輕晃（7 秒一輪，整除 14）
+              for (let i = 0; i < 3; i++) {
+                const k = KK.mod(t / 7 + i / 3, 1), env = KK.smooth(0, 0.1, k) * (1 - KK.smooth(0.45, 1, k));
+                if (env <= 0.01) continue;
+                const sw = b * 0.085 * (0.85 + 0.3 * k), sh = sw * 2;   // 從煙囪口冒出、邊升邊散（升高約 0.13b，不脫離煙囪）
+                const x = G.chx - b * 0.006 + Math.sin(k * TAU + wind) * b * 0.008 + k * b * 0.02, y = G.chTop + b * 0.035 - k * b * 0.12;
+                g.globalAlpha = env * 0.85; g.drawImage(aSmoke, x - sw * 0.3, y - sh, sw, sh);   // 素材的煙根在 x≈0.30 處 → 對準煙囪口
+              }
+              g.globalAlpha = 1;
+            }
+            for (let i = 0; i < (aSmoke ? 0 : 14); i++) {
+              const age = KK.mod(t - i * 0.5, 7), k = age / 7;
+              const env = KK.smooth(0, 0.1, k) * (1 - KK.smooth(0.3, 1, k));
+              if (env <= 0.01) continue;
+              const sway = b * 0.03 * (0.3 + 1.6 * k) * Math.sin(k * TAU * 1.3 + wind);
+              const x = G.chx + sway + k * b * 0.05 + Math.sin(age * 2.6 + i) * b * 0.004;
+              const y = G.chTop - k * b * 0.45;
+              const r = b * (0.006 + 0.024 * k);
+              KK.drawSprite(g, smk, x, y, r * 6.5, env * 0.42);
+            }
+
+            // 歸巢的小鳥
+            for (let i = 0; i < 2; i++) {
+              const k = KK.mod(ph + i * 0.37 + 0.1, 1);
+              const x = KK.lerp(-b * 0.1, w + b * 0.1, k);
+              const y = u * (0.16 + i * 0.05) + Math.sin(k * TAU) * b * 0.02 + KK.smooth(0.5, 1, k) * b * 0.08;
+              drawBird(g, x, y, b * 0.016, t * TAU * 3 + i * 2, 0.75);
+            }
+
+            // 紅蜻蜓（上方與側邊盤旋）
+            [[0.7, 0.07, 0.14, 2, 3, 0], [0.12, 0.33, 0.12, 3, 2, 2], [0.9, 0.3, 0.1, 2, 3, 4]].forEach((d) => {
+              const cx = w * d[0], cy = d[1] * h > u * 0.42 && h > w ? d[1] * h : Math.min(d[1] * h, h * 0.4) + (h > w ? 0 : u * 0.08);
+              const A = u * d[2] * 0.6;
+              const ax = ph * TAU * d[3] + d[5], ay = ph * TAU * d[4] + d[5] * 2;
+              const x = cx + Math.sin(ax) * A, y = cy + Math.sin(ay) * A * 0.55;
+              const vx = Math.cos(ax) * d[3] * A, vy = Math.cos(ay) * d[4] * A * 0.55;
+              drawDragonfly(g, x, y, Math.atan2(vy, vx), u * 0.048, t);
+            });
+
+            // 遠方散步的三個人（remember-far-walkers.png 207×256：大人＋小孩＋大人，人類，原圖面朝右；Kai step 32 不要小動物）
+            //   取代原本遠坡的小動物彩蛋：很小（高約 w×0.1）、略淡（距離感），沿草坡稜線慢慢往右走向小屋，
+            //   整個 loop（14 秒）走一趟、頭尾淡入淡出 → 無縫；只往前走，不倒退；若方向改變就水平翻轉。先畫，姊弟蓋在前面。
+            const aFar = ART('remember-far-walkers.png');
+            if (aFar && aHill) {
+              const fh = w * 0.1, fw = fh * aFar.naturalWidth / aFar.naturalHeight;
+              const x0 = -fw * 0.6, x1 = G.hx - b * 0.2 - fw * 0.5;           // 走到小屋左邊就淡出
+              const fx = KK.lerp(x0, x1, ph);
+              const fal = 0.78 * KK.smooth(0.0, 0.08, ph) * (1 - KK.smooth(0.88, 0.99, ph));
+              const fface = x1 >= x0 ? 1 : -1;
+              const fhop = Math.abs(Math.sin(t * TAU * 1.5)) * fh * 0.015;
+              if (fal > 0.01) {
+                g.save(); g.globalAlpha = fal; g.translate(fx, crestY(fx, aHill) + fh * 0.03 - fhop); g.scale(fface, 1);
+                g.drawImage(aFar, -fw / 2, -fh, fw, fh); g.restore();
+              }
+            }
+
+            // 姊弟追逐
+            const RUN = 11, k = Math.min(t / RUN, 1);
+            if (t < RUN + 0.5) {
+              const fade = 1 - KK.smooth(10.8, 11.3, t);
+              const base = KK.lerp(-b * 0.32, G.hx - b * 0.02, k);
+              const sep = b * 0.11 * Math.sin(k * TAU * 1.5 + 1) * (1 - KK.smooth(0.8, 1, k));
+              const Hs = u * 0.13, Hb = u * 0.11;
+              const f = t * TAU / 0.52;
+              const xb = base - sep / 2, xs = base + sep / 2;
+              // 離房子近時兩人略分層，弟弟在前（先到門口）
+              const order = sep > 0 ? [[xb, Hb, f + 1.2, false], [xs, Hs, f, true]] : [[xs, Hs, f, true], [xb, Hb, f + 1.2, false]];
+              if (aRunA) {                              // 點陣姊弟（一張圖含兩人，a/b 交替成跑步動畫，原圖面朝右；往左跑時水平翻轉）
+                if (st.runX != null && Math.abs(base - st.runX) > 0.5) st.runFace = base >= st.runX ? 1 : -1;
+                st.runX = base;
+                const fr = (aRunB && Math.floor(t / 0.14) % 2) ? aRunB : aRunA, sz = u * 0.26;
+                const hop = Math.abs(Math.sin(f)) * sz * 0.02;
+                if (fade > 0.01 && base > -sz && base < w + sz) {
+                  g.save(); g.globalAlpha = fade; g.translate(base, crestY(base, aHill) - hop); g.scale(st.runFace, 1);
+                  g.drawImage(fr, -sz / 2, -sz * 0.95, sz, sz); g.restore();
+                }
+              } else order.forEach((o) => {
+                if (o[0] > -b * 0.1 && o[0] < w + b * 0.1 && fade > 0.01) drawKid(g, o[0], runY(o[0]), o[1], o[2], o[3], fade, t);
+              });
+            }
+
+            // 前景草叢（蓋住小動物的身體）
+            if (!aHill) g.drawImage(st.front[bi], 0, 0);
+
+          }
 
           // 螢火蟲
           g.save();

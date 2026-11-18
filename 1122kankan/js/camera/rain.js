@@ -1,9 +1,13 @@
 /* 16〈創作-毛毛雨〉下雨（id 'rain'）：隔著淡淡起霧、沾著雨珠的鏡頭看世界；雨絲一直落、畫出來的水珠沿鏡頭滑下。
  * 與 KK 濾鏡同一套 API／手繪風格／暖色盤（KK.PAL），loop 12 秒無縫。
  * 圖層（由下而上）：相機畫面 → 暖米色薄罩 → 靜態薄霧（半解析度離屏 C，只挖掉水珠滑落痕）
- *   → 玻璃上的水珠＋滑落中的大水珠 → 細斜雨絲 → 下緣水窪漣漪 → 手指點出的漣漪＋小水花
- *   → 紅傘下的兩個人（人類：大人牽小孩）每 12 秒沿下緣走過一次 → 紙張顆粒＋暗角。
- * 互動（Kai 02:47：與〈太陽〉的抹開烏雲區隔）：點一下／按住滑動 → 在手指處出現漣漪圈＋小水花（可多指）。不再抹霧。
+ *   → 玻璃上的水珠＋滑落中的大水珠 → 細斜雨絲 → 點雲落下的小雨 → 頂部雲帶 → 左下單車母子與水窪漣漪
+ *   → 小雨落地漣漪 → 手指點出的漣漪＋小水花 → 紙張顆粒＋暗角。
+ * 互動（Kai 02:47：與〈太陽〉的抹開烏雲區隔）：點下方／按住滑動 → 在手指處出現漣漪圈＋小水花（可多指）。不再抹霧。
+ * r8（Kai 選定方案 C「自由發想」：毛毛雨總下在剛好的時候）：頂部一大片雨雲（rain-c-clouds.webp）、左下角水窪裡騎單車的母子
+ *   （rain-c-bike.webp，車頭一盞小燈）。原本的下緣水窪條與紅傘兩人拿掉；薄霧、鏡頭水珠、毛毛雨照舊。
+ *   新互動：點雲（雲帶以下約 0.12h 以內都算）→ 雲抖一下，在那個 x 位置落下 1.5 秒比較密的一陣雨，落地處起漣漪；
+ *   點在下方其他地方 → 照舊出現漣漪圈＋小水花。
  * 點陣素材（有檔就用）：rain-mist（靜態薄霧）、rain-drop-1..4、rain-puddle、rain-umbrella-walkers、rain-splash、rain-ripple。
  * 載入：KK 還沒載入時本檔只登記到 DAYOF.kkPlugins，由 camera.js 在 KK 載入後執行註冊。 */
 (function () {
@@ -29,10 +33,14 @@
     ];
     /* 毛毛雨參數（Kai 2026-11-16：原本像暴雨）：雨絲約 200 → 48 條、更短更細更淡更慢；鏡頭水珠 70 → 23 */
     var STREAKS = 48, STREAK_ALPHA = 0.5, STREAK_TILES_PER_LOOP = 4, BEADS = 23;
-    /* 水窪漣漪：x 比例、y 比例、每 loop 次數、偏移 */
+    /* r8 方案 C 素材擺位（1080×1920 設計稿比例）：雲帶、單車母子＋水窪、車燈（單車圖內比例） */
+    var CLOUD_BOX = [0, 0, 1, 0.2964], BIKE_BOX = [0, 0.7948, 0.5426, 1], BIKE_LAMP = [0.486, 0.412];
+    /* 水窪漣漪（單車圖內比例）：x、y、每 loop 次數、偏移 */
     var RIPPLES = [
-      [0.14, 0.955, 3, 0.0], [0.36, 0.975, 2, 0.3], [0.58, 0.95, 3, 0.55], [0.8, 0.97, 2, 0.15], [0.68, 0.985, 4, 0.8], [0.27, 0.94, 2, 0.7],
+      [0.12, 0.62, 3, 0.0], [0.3, 0.88, 2, 0.3], [0.66, 0.7, 3, 0.55], [0.8, 0.9, 2, 0.15], [0.86, 0.6, 2, 0.8], [0.5, 0.95, 3, 0.7],
     ];
+    /* 點雲下的小雨：每陣雨滴數、持續秒數、落速（畫面高／秒）、同時最多幾陣、斜率（同毛毛雨） */
+    var SHOWER_N = 44, SHOWER_T = 1.5, SHOWER_V = 1.6, SHOWER_MAX = 5, SLOPE = 0.14;
 
     KK.defineFilter({
       id: 'rain',
@@ -41,10 +49,10 @@
       title: '下雨',
       mood: '毛毛雨・起霧的窗・慢慢看清楚',
       duration: 12,
-      hint: '點一下畫面，看雨滴濺起來',
-      critterHint: '下緣偶爾有紅傘下的兩個人（大人牽小孩，人類）走過水窪',
+      hint: '點點上面的雲，下一陣小雨',
+      critterHint: '左下角水窪裡，媽媽騎單車載著小孩（人類），車頭一盞小燈',
       create: function () {
-        var st = { C: null, cg: null, fog: null, rain: null, bead: null, beads: [], fingers: {}, taps: [], key: '' };
+        var st = { C: null, cg: null, fog: null, rain: null, bead: null, beads: [], fingers: {}, taps: [], showers: [], cloudBase: 0, tapLimit: 0, key: '' };
 
         function makeFog(Cw, Ch, U) {
           var t = KK.canvas(Cw, Ch), g = t.getContext('2d');
@@ -120,13 +128,71 @@
         }
         function pointer(S, ev) {
           if (S.autoDemo) return;
-          if (ev.type === 'down') { st.fingers[ev.id] = { x: ev.x, y: ev.y, t: S.now }; splash(S, ev.x, ev.y); }
+          if (ev.type === 'down') {
+            if (ev.y < (st.tapLimit || S.h * 0.4)) { addShower(S, ev.x); st.fingers[ev.id] = { sky: true }; }   // r8：點雲 → 一陣小雨
+            else { st.fingers[ev.id] = { x: ev.x, y: ev.y, t: S.now }; splash(S, ev.x, ev.y); }
+          }
           else if (ev.type === 'move') {
             var f = st.fingers[ev.id];
-            if (f && Math.hypot(ev.x - f.x, ev.y - f.y) > S.u * 0.08 && S.now - f.t > 0.12) { f.x = ev.x; f.y = ev.y; f.t = S.now; splash(S, ev.x, ev.y); }
+            if (f && !f.sky && Math.hypot(ev.x - f.x, ev.y - f.y) > S.u * 0.08 && S.now - f.t > 0.12) { f.x = ev.x; f.y = ev.y; f.t = S.now; splash(S, ev.x, ev.y); }
           } else delete st.fingers[ev.id];
         }
-        function reset() { st.taps = []; st.fingers = {}; }
+        function reset() { st.taps = []; st.fingers = {}; st.showers = []; }
+        /* ---------- r8：點雲下一陣小雨 ----------
+         * 點在雲帶（或上方區域）→ 在那個 x 位置 SHOWER_T 秒內落下 SHOWER_N 滴比較密的雨，各自落到下緣（0.86–0.96h），
+         * 落地處起一圈漣漪。雨滴參數在點的當下就算好（每幀只算位置），同時最多 SHOWER_MAX 陣。 */
+        function addShower(S, x) {
+          var r = KK.rng(Math.floor(Math.random() * 1e6) + 1), drops = [], u = S.u;
+          for (var i = 0; i < SHOWER_N; i++) {
+            var spread = (r() + r() - 1) * u * 0.13;                       // 中間密、兩邊疏
+            drops.push({ dx: spread, delay: r() * SHOWER_T, y0: r() * u * 0.06, yEnd: S.h * (0.86 + r() * 0.1), len: u * (0.06 + r() * 0.045), a: 0.55 + r() * 0.4 });
+          }
+          st.showers.push({ x: x, born: S.now, drops: drops });
+          if (st.showers.length > SHOWER_MAX) st.showers.shift();
+        }
+        function dropAt(sh, d, S, age) {
+          var y0 = st.cloudBase + d.y0, fall = (d.yEnd - y0) / (S.h * SHOWER_V), ta = age - d.delay;
+          return { ta: ta, fall: fall, y: y0 + ta * S.h * SHOWER_V, x0: sh.x + d.dx, y0: y0 };
+        }
+        function drawShowers(g, S) {
+          if (!st.showers.length) return;
+          var u = S.u, keep = [], col = KK.mix(P.cream, P.mist, 0.4);
+          g.lineCap = 'round';
+          for (var i = 0; i < st.showers.length; i++) {
+            var sh = st.showers[i], age = S.now - sh.born;
+            if (age < 0 || age > SHOWER_T + 1.6) continue;
+            keep.push(sh);
+            // 雲底在那裡暗一點（雨雲聚起來）
+            KK.drawSprite(g, KK.glow(KK.mix(P.mist, P.slate, 0.5), 96), sh.x, st.cloudBase, u * 0.34, 0.22 * KK.smooth(0, 0.2, age) * (1 - KK.smooth(SHOWER_T, SHOWER_T + 0.6, age)));
+            g.beginPath();
+            for (var j = 0; j < sh.drops.length; j++) {
+              var d = sh.drops[j], p = dropAt(sh, d, S, age);
+              if (p.ta <= 0 || p.ta >= p.fall) continue;
+              var y = p.y, x = p.x0 - (y - p.y0) * SLOPE, L = d.len;
+              g.moveTo(x, y); g.lineTo(x - L * SLOPE, y + L);
+            }
+            // 兩層筆觸：淡藍灰的邊（亮牆上也看得到）＋米白的芯（暗處看得到）
+            g.strokeStyle = KK.rgba(KK.mix(P.mist, P.slate, 0.55), 0.32); g.lineWidth = Math.max(2, u * 0.0075); g.stroke();
+            g.strokeStyle = KK.rgba(col, 0.9); g.lineWidth = Math.max(1.2, u * 0.0034); g.stroke();
+          }
+          st.showers = keep;
+        }
+        function drawShowerRipples(g, S) {
+          if (!st.showers.length) return;
+          var u = S.u;
+          g.lineWidth = Math.max(1, u * 0.0028);
+          for (var i = 0; i < st.showers.length; i++) {
+            var sh = st.showers[i], age = S.now - sh.born;
+            for (var j = 0; j < sh.drops.length; j++) {
+              var d = sh.drops[j], p = dropAt(sh, d, S, age), k = (p.ta - p.fall) / 0.9;
+              if (k <= 0 || k >= 1) continue;
+              var x = p.x0 - (d.yEnd - p.y0) * SLOPE, rx = u * (0.012 + 0.05 * Math.sqrt(k));
+              g.strokeStyle = KK.rgba(P.cream, (1 - k) * 0.75 * d.a);
+              g.beginPath(); g.ellipse(x, d.yEnd + d.len, rx, rx * 0.3, 0, 0, TAU); g.stroke();
+            }
+          }
+        }
+
         /* 漣漪圈＋小水花（點陣 rain-ripple.png／rain-splash.png，沒有就手繪） */
         function drawTaps(g, S) {
           if (!st.taps.length) return;
@@ -174,52 +240,6 @@
           var x = S.w * rn.x + Math.sin(k * TAU * 2 + rn.off * 9) * S.u * 0.006;
           var a = KK.smooth(0, 0.08, k) * (1 - KK.smooth(0.9, 1, k));
           return { x: x, y: y, k: k, a: a, top: S.h * rn.y0 };
-        }
-
-        function drawUmbrella(g, x, y, s, t, a) {
-          // 小雨傘：磚紅傘面＋計程車黃滾邊，傘柄往下到大人手邊（手繪抖動）
-          g.globalAlpha = a;
-          var w = s * 0.95, top = y - s * 1.55;
-          var pts = [];
-          for (var i = 0; i <= 10; i++) { var ang = Math.PI + (i / 10) * Math.PI; pts.push([x + Math.cos(ang) * w, top + Math.sin(ang) * w * 0.55]); }
-          for (var j = 4; j >= 0; j--) { var xx = x - w + (j + 0.5) * (2 * w / 5); pts.push([xx + w / 10, top + s * 0.06]); pts.push([xx - w / 10, top]); }
-          KK.wobPath(g, pts, true, s * 0.02, 51, t);
-          g.fillStyle = KK.rgba(P.brick, 0.92); g.fill();
-          g.strokeStyle = KK.rgba(P.umber, 0.9); g.lineWidth = Math.max(1.2, s * 0.05); g.lineJoin = 'round'; g.stroke();
-          g.strokeStyle = KK.rgba(P.ochre, 0.9); g.lineWidth = Math.max(1, s * 0.035);
-          KK.wobPath(g, [[x - w * 0.5, top - w * 0.45], [x - w * 0.15, top - w * 0.53]], false, s * 0.015, 61, t); g.stroke();
-          g.strokeStyle = KK.rgba(P.umber, 0.9); g.lineWidth = Math.max(1.2, s * 0.045); g.lineCap = 'round';
-          g.beginPath(); g.moveTo(x, top - w * 0.55); g.lineTo(x, top - w * 0.68); g.stroke();
-          KK.wobPath(g, [[x, top], [x + s * 0.02, y - s * 0.62], [x + s * 0.12, y - s * 0.5]], false, s * 0.012, 71, t); g.stroke();
-          g.globalAlpha = 1;
-        }
-
-        /* 紅傘下的兩個人（人類，同〈家〉的姊弟剪影風格）：大人撐傘、牽著小孩；面朝右走。x,y = 大人腳底 */
-        function person(g, x, y, H, p, body, head, alpha, t, seed, armUp) {
-          var sw = Math.sin(p);
-          g.save(); g.translate(x, y - Math.abs(sw) * H * 0.04); g.globalAlpha = alpha;
-          g.lineCap = 'round'; g.lineJoin = 'round';
-          g.strokeStyle = KK.rgba(P.umber, 0.9); g.lineWidth = Math.max(1.5, H * 0.075);
-          g.beginPath(); g.moveTo(0, -H * 0.45); g.lineTo(sw * H * 0.16, 0); g.moveTo(0, -H * 0.45); g.lineTo(-sw * H * 0.16, 0); g.stroke();
-          g.fillStyle = body;
-          KK.wobPath(g, [[-H * 0.13, -H * 0.42], [-H * 0.09, -H * 0.8], [H * 0.09, -H * 0.8], [H * 0.15, -H * 0.42]], true, H * 0.008, seed, t); g.fill();
-          g.strokeStyle = body; g.lineWidth = Math.max(1.5, H * 0.07);
-          g.beginPath(); g.moveTo(H * 0.04, -H * 0.74);
-          if (armUp) g.lineTo(H * 0.14, -H * 0.98); else g.lineTo(-H * 0.2, -H * 0.5);
-          g.stroke();
-          g.fillStyle = head;
-          KK.wobCircle(g, 0, -H * 0.9, H * 0.11, H * 0.006, seed + 3, t, 10); g.fill();
-          g.fillStyle = KK.rgba(P.umber, 0.85);                     // 頭髮
-          g.beginPath(); g.arc(-H * 0.015, -H * 0.93, H * 0.105, Math.PI * 0.95, Math.PI * 2.05); g.fill();
-          g.restore();
-        }
-        function drawPair(g, x, y, s, t, a, k) {
-          var p = k * TAU * 6;
-          person(g, x - s * 0.42, y, s * 0.78, p + 1.3, KK.mix(P.ochre, P.apricot, 0.3), KK.mix(P.cream, P.apricot, 0.35), a, t, 81, false);   // 小孩（黃雨衣）
-          person(g, x, y, s * 1.22, p, KK.mix(P.mist, P.slate, 0.35), KK.mix(P.cream, P.apricot, 0.35), a, t, 91, true);                  // 大人（藍灰外套）
-          g.globalAlpha = a; g.strokeStyle = KK.rgba(P.umber, 0.8); g.lineWidth = Math.max(1.2, s * 0.05); g.lineCap = 'round';
-          g.beginPath(); g.moveTo(x - s * 0.24, y - s * 0.62); g.quadraticCurveTo(x - s * 0.3, y - s * 0.5, x - s * 0.4, y - s * 0.44); g.stroke();   // 牽手
-          g.globalAlpha = 1;
         }
 
         var inst = {
@@ -289,48 +309,52 @@
             g.drawImage(st.rain, 0, Ch - KK.mod(ph * STREAK_TILES_PER_LOOP, 1) * Ch, Cw, Ch, 0, 0, w, h);
             g.globalAlpha = 1;
 
-            // 4. 下緣水窪：淡淡的水面＋漣漪（手繪橢圓，整數圈擴散）
-            var pg = g.createLinearGradient(0, h * 0.9, 0, h);
-            pg.addColorStop(0, KK.rgba(P.mist, 0)); pg.addColorStop(1, KK.rgba(KK.mix(P.mist, P.slate, 0.4), 0.35));
-            var aPd = ART('rain-puddle.png');
-            if (aPd) { var ph2 = w * aPd.naturalHeight / aPd.naturalWidth; g.drawImage(aPd, 0, h - ph2, w, ph2); }
-            else { g.fillStyle = pg; g.fillRect(0, h * 0.9, w, h * 0.1); }
-            g.lineWidth = Math.max(1.2, u * 0.0035);
-            for (var k2 = 0; k2 < RIPPLES.length; k2++) {
-              var rp = RIPPLES[k2];
-              var kk = KK.mod(ph * rp[2] + rp[3], 1);
-              for (var ring = 0; ring < 2; ring++) {
-                var kr = kk - ring * 0.18;
-                if (kr <= 0) continue;
-                var rx = u * 0.11 * kr, al = (1 - kr) * 0.75;
-                g.strokeStyle = KK.rgba(P.cream, al);
-                g.beginPath(); g.ellipse(w * rp[0], h * rp[1], rx, rx * 0.28, 0, 0, TAU); g.stroke();
+            // 3b. r8：手指點雲下的一陣小雨（比毛毛雨密、粗一點），從雲底落下；落地處起漣漪
+            drawShowers(g, S);
+
+            // 3c. r8 方案 C：頂部一大片雨雲（rain-c-clouds.webp）。整片左右輕飄；被點時抖一下
+            var aCl = ART('rain-c-clouds.webp'), CR = null;
+            if (aCl && KK.placeArt) {
+              CR = KK.placeArt(aCl, S, CLOUD_BOX, { landFull: 'stretch', landMaxH: 0.3 });
+              var shake = 0;
+              for (var si = 0; si < st.showers.length; si++) {
+                var sa0 = S.now - st.showers[si].born;
+                if (sa0 >= 0 && sa0 < 0.5) shake += Math.sin(sa0 * 46) * u * 0.007 * (1 - sa0 / 0.5);
               }
+              var drift = Math.sin(ph * TAU) * w * 0.012 + shake, over = 0.035;   // 圖畫寬一點，飄動時兩邊不露縫
+              g.drawImage(aCl, CR.x - CR.w * over + drift, CR.y - CR.h * over * 0.5 + shake * 0.3, CR.w * (1 + 2 * over), CR.h * (1 + over));
             }
+            st.cloudBase = CR ? CR.y + CR.h * 0.72 : h * 0.12;     // 雲底（雲圖下緣是畫出來的雨滴，雲本身約到 72%）
+            st.tapLimit = CR ? CR.y + CR.h + h * 0.12 : h * 0.4;   // 點在這條線以上＝點雲下雨；以下＝原本的漣漪水花
+
+            // 4. 左下角：水窪裡騎單車的母子（rain-c-bike.webp），車頭小燈微微亮；水窪裡的漣漪（整數圈擴散）
+            var aBk = ART('rain-c-bike.webp');
+            if (aBk && KK.placeArt) {
+              var BR = KK.placeArt(aBk, S, BIKE_BOX);
+              g.drawImage(aBk, BR.x, BR.y, BR.w, BR.h);
+              g.save(); g.globalCompositeOperation = 'screen';
+              KK.drawSprite(g, KK.glow(P.apricot, 96), BR.x + BR.w * BIKE_LAMP[0], BR.y + BR.h * BIKE_LAMP[1], BR.w * 0.22, 0.32 + 0.08 * Math.sin(ph * TAU * 6));
+              g.restore();
+              g.lineWidth = Math.max(1.2, u * 0.003);
+              for (var k2 = 0; k2 < RIPPLES.length; k2++) {
+                var rp = RIPPLES[k2], kk = KK.mod(ph * rp[2] + rp[3], 1);
+                for (var ring = 0; ring < 2; ring++) {
+                  var kr = kk - ring * 0.18;
+                  if (kr <= 0) continue;
+                  var rx = BR.w * 0.1 * kr, al = (1 - kr) * 0.7;
+                  g.strokeStyle = KK.rgba(P.cream, al);
+                  g.beginPath(); g.ellipse(BR.x + BR.w * rp[0], BR.y + BR.h * rp[1], rx, rx * 0.3, 0, 0, TAU); g.stroke();
+                }
+              }
+            } else {
+              var pg = g.createLinearGradient(0, h * 0.9, 0, h);
+              pg.addColorStop(0, KK.rgba(P.mist, 0)); pg.addColorStop(1, KK.rgba(KK.mix(P.mist, P.slate, 0.4), 0.35));
+              g.fillStyle = pg; g.fillRect(0, h * 0.9, w, h * 0.1);
+            }
+            drawShowerRipples(g, S);
 
             // 4b. 手指點出的漣漪＋小水花
             drawTaps(g, S);
-
-            // 5. 紅傘下的兩個人（人類）：3–10.5 秒從左走到右，淡入淡出
-            if (S.critter !== false) {
-              var ck = (t - 3) / 7.5;
-              if (ck > 0 && ck < 1) {
-                var ca = KK.smooth(0, 0.12, ck) * (1 - KK.smooth(0.88, 1, ck));
-                var cs = u * 0.075, cx = KK.lerp(-cs, w + cs, ck), cy = h * 0.965;
-                var hop = Math.abs(Math.sin(ck * TAU * 6)) * cs * 0.04;
-                var aUw = ART('rain-umbrella-walkers.png');
-                if (aUw) {                            // 點陣紅傘＋傘下兩人（原圖面朝右；行進方向向右，不需翻轉）
-                  var us = u * 0.3;
-                  g.globalAlpha = ca; g.drawImage(aUw, cx - us / 2, cy - hop - us * 0.95, us, us); g.globalAlpha = 1;
-                } else {
-                  drawPair(g, cx, cy - hop, cs, t, 0.9 * ca, ck);
-                  drawUmbrella(g, cx + cs * 0.12, cy - hop, cs * 1.15, t, ca);
-                }
-                // 腳邊的小水花
-                g.strokeStyle = KK.rgba(P.cream, 0.6 * ca);
-                g.beginPath(); g.ellipse(cx, cy + cs * 0.05, cs * 0.35 * (0.6 + 0.4 * Math.abs(Math.sin(ck * TAU * 6))), cs * 0.07, 0, 0, TAU); g.stroke();
-              }
-            }
 
             KK.paper(g, S, { grain: 0.4, vignette: 0.42 });
           },

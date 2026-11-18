@@ -64,7 +64,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   // v=261118d (Kai): painted suitcase = Veo clip keyed into a sprite sheet (frame 0 open … last closed). Slots are
   // fractions of that picture, on the open case's inner floor (back row first, front row last → front overlaps back).
   var SLOTS = [[.258, .533], [.378, .563], [.498, .593], [.618, .623], [.738, .653], [.195, .605], [.315, .635], [.435, .665], [.555, .695], [.675, .725]];
-  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261118c', n: 39, cols: 8, rows: 5, land: 25 };
+  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261118e', n: 39, cols: 8, rows: 5, land: 25 };
   function sheetPos(k) { var c = k % SHEET.cols, r = Math.floor(k / SHEET.cols); return (c / (SHEET.cols - 1) * 100).toFixed(3) + '% ' + (r / (SHEET.rows - 1) * 100).toFixed(3) + '%'; }
   var ROT = [-7, 4, -3, 8, -5, 5, -8, 3, 7, -4];
 

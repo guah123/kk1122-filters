@@ -19,7 +19,7 @@
   var MAP = { helmet: 'otona', rain: 'rain', sun: 'hareru', fish: 'fish', home: 'remember' };
   var LABEL = { helmet: '太空人', rain: '下雨', sun: '太陽', fish: '魚眼', home: '家' };
   var RESET_LABEL = { hareru: '重新佈滿烏雲' };   // 只有〈太陽〉能抹開；〈下雨〉是點擊濺水花（Kai 02:47）
-  var PHOTO_SIZE = [900, 1600];
+  var PHOTO_SIZE = [1080, 1920];   // v=261118k: same as the HD video output
 
   var EXPLAIN = {
     NotAllowedError: ['相機被拒絕了', '需要允許使用相機才能拍。<br>iPhone：網址列左邊「大小」→「網站設定」→ 相機改「允許」後重新整理。<br>Android：網址列左邊的圖示 →「權限」→ 相機改「允許」。'],
@@ -60,11 +60,12 @@
    * 沒有清單就逐一試抓（失敗靜默）。除錯：網址加 ?filterArtBase=<資料夾網址/> 改從別處讀。 */
   var ART_FILES = [
     'paper-grain.jpg', 'vignette-wet.png',
-    'otona-sky.png', 'otona-stars.png', 'otona-meteor.png', 'otona-rooftop.png', 'otona-critters.png',
-    'hareru-clouds.jpg', 'hareru-wipe-brush.png', 'hareru-sunlight.png', 'hareru-sun.png', 'hareru-rainbow.png',
-    'remember-hill.png', 'remember-house.png', 'remember-smoke.png', 'remember-runner-a.png', 'remember-runner-b.png', 'remember-far-walkers.png',
-    'hareru-walkers.png',
-    'rain-strokes.png', 'rain-drop-1.png', 'rain-drop-2.png', 'rain-drop-3.png', 'rain-drop-4.png', 'rain-mist.png', 'rain-puddle.png', 'rain-umbrella-walkers.png',
+    // r8（Kai 選定：太陽 B、太空人 D、下雨 C、家 A）：每個濾鏡 1–2 張去背 WebP，擺位見 KK.placeArt
+    'otona-moon.webp', 'otona-boy.webp',
+    'hareru-clouds.jpg', 'hareru-wipe-brush.png', 'hareru-b-sun.webp', 'hareru-b-ground.webp',
+    'remember-a-hill.webp',
+    'rain-c-clouds.webp', 'rain-c-bike.webp',
+    'rain-drop-1.png', 'rain-drop-2.png', 'rain-drop-3.png', 'rain-drop-4.png', 'rain-mist.png',
     'rain-ripple.png', 'rain-splash.png',
     'fisheye-frame.png', 'fisheye-bubble.png',
   ];
@@ -197,6 +198,23 @@
       ctx.restore();
     };
     KK.art = function (n) { return DAYOF.FilterArt.get(n); };
+    /* r8 濾鏡圖層擺位：box＝素材在 1080×1920 設計稿上的範圍（比例 [x0,y0,x1,y1]）。
+     * 直式：等比縮放到畫面寬（k＝S.w/1080），貼齊設計稿上碰到的邊（左／右／上／下）。
+     * 橫式（S.w > S.h）：以畫面高為準縮小（×landScale，預設 1.35），一樣貼角；滿版寬的圖層 opt.landFull='stretch' 時橫向拉滿、高度上限 opt.landMaxH×S.h。
+     * 回傳 {x,y,w,h}（畫布座標），呼叫端用 x+fx*w／y+fy*h 找素材上的特徵點（燈、窗、水窪）。 */
+    KK.placeArt = function (img, S, box, opt) {
+      opt = opt || {};
+      var land = S.w > S.h, L = box[0] < 0.01, R = box[2] > 0.99, T = box[1] < 0.01, B = box[3] > 0.99;
+      var k = land ? (S.h / 1920) * (opt.landScale || 1.35) : S.w / 1080;
+      var w = (box[2] - box[0]) * 1080 * k, ar = img.naturalHeight / img.naturalWidth, h = w * ar, x, y;
+      if (land && L && R && opt.landFull === 'stretch') { w = S.w; h = Math.min(w * ar, S.h * (opt.landMaxH || 0.34)); }
+      if (L && R) x = land && opt.landFull !== 'stretch' ? (opt.landAlign === 'left' ? 0 : (S.w - w) / 2) : 0;
+      else if (L) x = 0;
+      else if (R) x = S.w - w;
+      else x = land ? S.w * (box[0] + box[2]) / 2 - w / 2 : box[0] * S.w;
+      if (T) y = 0; else if (B) y = S.h - h; else y = land ? S.h * (box[1] + box[3]) / 2 - h / 2 : box[1] * S.h;
+      return { x: x, y: y, w: w, h: h };
+    };
   }
 
   /* ---------- KK 動態載入 ---------- */
@@ -452,6 +470,20 @@
       C.stage = st;
       resetBtn.hidden = !RESET_LABEL[kkId];
     }
+    // v=261118k: if a phone can't keep up at 1080×1920 (slow frames for ~2 s before recording), drop to 720×1280 for this session
+    function watchPerf(st) {
+      if (!st || st.lowPerf || st.canvas.width < 1000 || !st.autoPortraitSize) return;
+      var n = 0, slow = 0, last = performance.now(), t0 = last;
+      (function tick(now) {
+        if (C.closed || st !== C.stage) return;
+        var dt = now - last; last = now; n++; if (dt > 45) slow++;
+        if (now - t0 < 2500) { requestAnimationFrame(tick); return; }
+        if (n > 10 && slow / n > 0.35 && !(KK.Recorder && KK.Recorder.active)) {
+          st.lowPerf = true; try { st.setPortraitOutput(true, st.autoPortraitSize()); } catch (e) { }
+          if (KK.Camera && KK.Camera.log) KK.Camera.log.push('慢裝置：改用 720×1280');
+        }
+      })(last);
+    }
     async function startCam() {
       var seq = ++C.seq;
       main.disabled = true;
@@ -470,6 +502,9 @@
       if (!C.noMic && mode === 'video' && KK.Camera.stream && !KK.Camera.stream.getAudioTracks().length) { C.micWarn = '麥克風無法使用（可能被別的 App 佔用），這次錄影會沒有聲音'; toast(C.micWarn, 4000); } else C.micWarn = '';
       C.stage.video = v;
       C.stage.mirror = C.facing === 'user';
+      // v=261118k: output at the camera's real resolution (1080×1920 if it gives full HD), photos too
+      if (mode !== 'photo') { try { C.stage.setPortraitOutput(true, C.stage.autoPortraitSize()); } catch (e) { } }
+      watchPerf(C.stage);
       flipTxt.textContent = C.facing === 'user' ? '前鏡頭' : '後鏡頭';
       main.disabled = false;
     }
@@ -600,7 +635,7 @@
       flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
       C.stage.renderAt((performance.now() - C.stage.t0) / 1000, (performance.now() - C.stage.t0) / 1000);
       var cv = C.stage.canvas;
-      var dataUrl = cv.toDataURL('image/jpeg', 0.85);
+      var dataUrl = cv.toDataURL('image/jpeg', 0.95);
       var blob = dataUrlToBlob(dataUrl);
       showPreview({ kind: 'photo', blob: blob, dataUrl: dataUrl });
     }

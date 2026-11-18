@@ -4,10 +4,13 @@
  *   0–1s    全滿烏雲：灰藍潮濕的柔軟雨雲緩緩飄、細斜雨絲，右上只隱約透出一團暖光（暗示太陽在那裡）。
  *   1–9s    像在起霧的窗上，一隻看不見的手指抹 4 下：斜向略帶弧度的抹痕，從太陽附近往中間、左下擴；
  *           抹開處是「被太陽照亮的畫面」：暖光＋放射光束，太陽整顆只在抹開處才出現。
- *   9–12.5s 停留：太陽光芒緩轉、閃光、低飽和彩虹浮現、小鳥飛過；左下缺口裡藏著散步的大人和小孩（人類）。
+ *   9–12.5s 停留：太陽光芒輕晃、小鳥飛過；底部石板地的水窪映著太陽與彩虹（r8 方案 B）。
  *   12.5–14s 烏雲淡回全滿 → 與 0 秒相同，無縫 loop。
  *
- * 圖層（由下而上）：暖光＋光束 → 彩虹／小鳥 → 太陽（依太陽處抹開程度顯現）→ 左下散步的兩人
+ * r8（Kai 選定方案 B「原脈絡」）：抹開後看到雨後的石板地——底部一條水彩橫幅（牆邊收起的傘、盆栽、大水窪映著太陽與彩虹，
+ *   hareru-b-ground.webp），右上角太陽探頭（hareru-b-sun.webp）。抹開烏雲／重新佈滿烏雲的互動完全不變。
+ *   水窪裡的太陽倒影會輕輕閃、偶爾一圈小漣漪；太陽光暈改成 screen＋低透明度（避免亮牆上一團死白）。
+ * 圖層（由下而上）：暖光 → 底部石板地與水窪（抹開處才看得到）→ 太陽（依太陽處抹開程度顯現）→ 小鳥
  *   → 烏雲層（半解析度離屏 C，抹開處用遮罩 M 以 destination-out 挖掉）→ 紙張。
  * 效能：雲紋、雨絲都預畫成可無縫平鋪的 tile（雙倍寬／高），每幀只用「來源視窗平移」各一次 drawImage。
  * 無縫：雲紋每 loop 平移整數個 tile 寬；雨絲整數圈下落；太陽轉 2×(2π/12)；閃光、小鳥整數圈。 */
@@ -48,7 +51,7 @@
     mood: '雨過天晴・自己決定・希望',
     duration: 14,
     hint: '用手指把烏雲抹開，抹多少由你決定',
-    critterHint: '左下角烏雲抹開處，只有抹到那裡才浮現：大人牽著穿黃外套的小孩沿下緣來回走（人類）',
+    critterHint: '抹開後底部是雨後的石板地：收起的傘、盆栽、大水窪映著太陽和彩虹；右上角太陽探頭',
     create() {
       const st = {
         C: null, cg: null, M: null, mg: null, sky: null, rain: null,
@@ -215,7 +218,7 @@
         const U = S.u / C_DIV;
         st.cu = U;
         const land = S.w > S.h;
-        st.sun = { x: S.w * (land ? 0.82 : 0.77), y: S.h * (land ? 0.21 : 0.15), r: S.u * 0.075 };
+        st.sun = { x: S.w * (land ? 0.9 : 0.87), y: S.h * (land ? 0.12 : 0.07), r: S.u * 0.075 };   // r8：方案 B 的太陽在右上角探頭（圓盤中心約 0.87w,0.07h）
 
         const lt = KK.mix(P.cream, P.mist, 0.22), dk = KK.mix(KK.mix(P.mist, P.slate, 0.35), P.cream, 0.2), md = KK.mix(lt, dk, 0.45);   // DAYOF：暗部改偏藍灰、較亮（避免髒褐灰）   // 亮灰白帶暖：亮部燈下米＋霧藍、暗部舊書頁＋雨雲灰
         const far = buildLayer(Cw, Ch, 411, { cells: 3, aspect: 2.2, topBias: 0.3, lo: 0.38, hi: 0.62, alpha: 0.9, relief: 4.2, dark: dk, mid: md, lite: lt, base: true });       // 遠層：暗、碎
@@ -285,58 +288,56 @@
         inst.cleared = 0;
       }
 
-      /* ---------- 太陽層 ---------- */
+      /* ---------- 太陽層（r8 方案 B：hareru-b-sun.webp 貼右上角；沒有圖就用手繪圓盤） ---------- */
+      const SUN_BOX = [0.5796, 0, 1, 0.2417], SUN_DISC = [0.691, 0.287];   // 素材在 1080×1920 設計稿上的範圍、圓盤在素材內的位置
+      const GROUND_BOX = [0, 0.6266, 1, 1], GROUND_SUN = [0.659, 0.828];  // 底部石板地；水窪裡太陽倒影的位置
       function drawSun(g, S, vis, sa) {
         const { x, y, r } = st.sun, u = S.u, t = S.t;
-        // 未抹開時：只透出一團淡淡的暖光暈（暗示那裡有太陽）
         if (sa <= 0.01) return;
-        g.globalCompositeOperation = 'lighter';
-        KK.drawSprite(g, KK.glow(P.apricot, 256), x, y, u * 1.5, 0.95 * sa);
-        KK.drawSprite(g, KK.glow(P.cream, 256, 0.2), x, y, u * 0.5, 0.6 * sa);
+        const aSun = ART('hareru-b-sun.webp');
+        const R = aSun && KK.placeArt ? KK.placeArt(aSun, S, SUN_BOX, { landScale: 1.5 }) : null;
+        const cx = R ? R.x + R.w * SUN_DISC[0] : x, cy = R ? R.y + R.h * SUN_DISC[1] : y;
+        // 光暈：screen＋低透明度（原本 lighter 0.95 在亮牆上會變一團死白）
+        g.globalCompositeOperation = 'screen';
+        KK.drawSprite(g, KK.glow(P.apricot, 256), cx, cy, u * 1.1, 0.34 * sa);
+        KK.drawSprite(g, KK.glow(P.cream, 256, 0.2), cx, cy, u * 0.36, 0.2 * sa);
         g.globalCompositeOperation = 'source-over';
-        const aSun = ART('hareru-sun.png');
-        if (aSun) {
-          const sz = Math.min(S.w, S.h) * 0.30;   // v2 水彩太陽（400×400，無光芒）約畫面寬 30%
-          g.save(); g.globalAlpha = sa * 0.92; g.translate(x, y); g.rotate(Math.sin(S.phase * TAU) * 0.08);
-          g.drawImage(aSun, -sz / 2, -sz / 2, sz, sz); g.restore();
+        if (R) {
+          g.save(); g.globalAlpha = sa; g.translate(cx, cy); g.rotate(Math.sin(S.phase * TAU) * 0.035);   // 光芒輕輕晃（整數圈 → 無縫）
+          g.drawImage(aSun, R.x - cx, R.y - cy, R.w, R.h); g.restore();
           g.globalAlpha = 1;
           return;
         }
         g.globalAlpha = sa;
-        // （向量光芒已移除，Kai 2026-11-16：不要放射光束）
-        // 核心：計程車黃，手繪邊
+        // 沒有素材時的備用：計程車黃圓盤，手繪邊
         g.fillStyle = P.ochre;
         KK.wobCircle(g, x, y, r, r * 0.025, 5, t, 18); g.fill();
         g.fillStyle = KK.rgba(P.cream, 0.55);
         KK.wobCircle(g, x - r * 0.15, y - r * 0.18, r * 0.62, r * 0.025, 9, t, 14); g.fill();
         g.strokeStyle = KK.rgba(P.brick, 0.55); g.lineWidth = Math.max(1.5, u * 0.004); g.lineCap = 'round';
         KK.wobCircle(g, x, y, r, r * 0.025, 5, t, 18); g.stroke();
-        // 閃光（十字星，整數圈明滅）
-        g.strokeStyle = KK.rgba(P.cream, 0.9);
-        g.lineWidth = Math.max(1.2, u * 0.0035);
-        for (const sp of st.sparks) {
-          const tw = Math.pow(Math.max(0, Math.sin(S.phase * TAU * sp[2] + sp[3] * TAU)), 3);
-          if (tw < 0.05) continue;
-          const sx = x + sp[0] * r, sy = y + sp[1] * r, L = u * 0.014 * (0.5 + tw);
-          g.globalAlpha = sa * tw * (0.5 + 0.5 * vis);
-          g.beginPath(); g.moveTo(sx - L, sy); g.lineTo(sx + L, sy); g.moveTo(sx, sy - L * 1.3); g.lineTo(sx, sy + L * 1.3); g.stroke();
-        }
         g.globalAlpha = 1;
       }
 
-      /* ---------- 彩虹：只用美術圖 hareru-rainbow.png（程式畫的彩虹已移除，Kai 2026-11-16）；沒有圖就不畫 ---------- */
-      function drawRainbow(g, S, a) {
-        if (a <= 0.01) return;
-        const img = ART('hareru-rainbow.png');
-        if (!img) return;
-        // 左上起、往右上太陽方向拱起：畫在畫面上方約 35%，左端 x≈0.05w，右側略抬高靠近太陽
-        const land = S.w > S.h;
-        const w = S.w * (land ? 0.62 : 0.8), hh = w * (img.naturalHeight / img.naturalWidth);
-        const x0 = S.w * 0.05, y0 = S.h * (land ? 0.1 : 0.085);
-        g.save(); g.globalAlpha = 0.68 * a;
-        g.translate(x0 + w / 2, y0 + hh / 2); g.rotate(-0.1);
-        g.drawImage(img, -w / 2, -hh / 2, w, hh);
+      /* ---------- 底部：雨後石板地＋大水窪（r8 方案 B）。水窪裡的太陽倒影輕輕閃，每 loop 各兩圈小漣漪 ---------- */
+      function drawGround(g, S) {
+        const img = ART('hareru-b-ground.webp');
+        if (!img || !KK.placeArt) return;
+        const R = KK.placeArt(img, S, GROUND_BOX, { landScale: 1.25, landAlign: 'left' });
+        g.drawImage(img, R.x, R.y, R.w, R.h);
+        const sx = R.x + R.w * GROUND_SUN[0], sy = R.y + R.h * GROUND_SUN[1], u = S.u, ph = S.phase;
+        g.save();
+        g.globalCompositeOperation = 'screen';
+        KK.drawSprite(g, KK.glow(P.cream, 128), sx, sy, R.w * 0.2, 0.22 + 0.12 * Math.sin(ph * TAU * 4));
         g.restore();
+        g.lineWidth = Math.max(1, u * 0.003);
+        for (let i = 0; i < 2; i++) {
+          const k = KK.mod(ph * 2 + i * 0.5, 1);
+          const rx = R.w * (0.03 + 0.09 * k), a = (1 - k) * 0.5 * KK.smooth(0, 0.08, k);
+          const ox = sx + (i ? -R.w * 0.14 : R.w * 0.12), oy = sy + (i ? -R.h * 0.06 : R.h * 0.05);
+          g.strokeStyle = KK.rgba(P.cream, a);
+          g.beginPath(); g.ellipse(ox, oy, rx, rx * 0.26, 0, 0, TAU); g.stroke();
+        }
       }
 
       function drawBirds(g, S, a) {
@@ -410,37 +411,14 @@
 
           // 2. 陽光層（雲下方）：暖色光罩，只在抹開處看得到
           g.save();
-          const warm = 0.1 + 0.26 * KK.smooth(0.0, 0.12, st.vis);   // 暖光罩（source-over 比 screen 便宜很多）
+          const warm = 0.05 + 0.12 * KK.smooth(0.0, 0.12, st.vis);   // 暖光罩（r8 調淡：中央的人是主角）
           g.fillStyle = KK.rgba(KK.mix(P.cream, P.apricot, 0.5), warm);
           g.fillRect(0, 0, S.w, S.h);
-          g.globalCompositeOperation = 'lighter';
-          // 放射光束已移除（Kai 2026-11-16）；若美術另給 hareru-sunlight.png 柔光圖才疊上
-          const aLt = ART('hareru-sunlight.png');
-          if (aLt && st.vis > 0.005) {
-            const bs = u * 1.5, sway = 1 + Math.sin(S.phase * TAU) * 0.05;
-            g.globalCompositeOperation = 'screen';
-            g.globalAlpha = Math.min(1, (0.32 + 0.1 * Math.sin(S.phase * TAU * 2)) * KK.smooth(0, 0.1, st.vis) * 2.2);
-            g.drawImage(aLt, st.sun.x - bs * sway / 2, st.sun.y - bs * sway / 2, bs * sway, bs * sway);
-            g.globalAlpha = 1;
-          }
-          g.globalCompositeOperation = 'source-over';
-          drawRainbow(g, S, KK.smooth(0.0, 0.04, st.vis));   // 在雲層底下：只有抹開處透出來
+
+          // 3. r8 方案 B：底部石板地與水窪、右上太陽（都在雲層底下：只有抹開處透出來）、小鳥
+          drawGround(g, S);
           drawSun(g, S, vis, sa);
           drawBirds(g, S, KK.smooth(0.5, 0.62, st.vis));
-
-          // 3. 左下角抹開處：大人（風衣）牽著穿黃外套的小孩（hareru-walkers.png 256×256，人類、不撐傘、原圖面朝右）
-          //    沿下緣小範圍來回走（整數圈 → 無縫），往左走時水平翻轉，腳步小跳；只有那一帶被抹開才看得到（在雲層底下）。
-          const ca = KK.smooth(0.2, 0.6, st.critV);
-          const aWk = ART('hareru-walkers.png');
-          if (aWk && ca > 0.01) {
-            const land = S.w > S.h, ws = u * (land ? 0.22 : 0.27);
-            const sw = Math.sin(S.phase * TAU * 2), face = Math.cos(S.phase * TAU * 2) >= 0 ? 1 : -1;
-            const cx = S.w * (land ? 0.13 : 0.19) + sw * S.w * 0.05, cy = S.h * (land ? 0.95 : 0.955);   // 腳底留在下方控制列漸層之上
-            const hop = Math.abs(Math.sin(S.phase * TAU * 28)) * ws * 0.02;
-            g.save(); g.globalAlpha = ca; g.translate(cx, cy - hop); g.scale(face, 1);
-            g.drawImage(aWk, -ws / 2, -ws * (250 / 256), ws, ws);
-            g.restore();
-          }
           g.restore();
 
           // 4. 烏雲層：C 畫好後整張疊上（全畫面合成 1 次）
