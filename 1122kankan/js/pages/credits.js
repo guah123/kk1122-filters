@@ -9,12 +9,15 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   var CURTAIN_N = 30, CLOSE_MS = 2600, OPEN_MS = 2000;
   var CURTAIN = []; for (var ci = 0; ci < CURTAIN_N; ci++) CURTAIN.push('assets/curtain/c' + (ci < 10 ? '0' : '') + ci + '.webp');
 
-  var FALLBACK = [
-    { section: '工作人員', items: [
-      { role: '主唱', name: 'Kai' }, { role: '吉他手', name: '蘭多' },
-      { role: '視覺設計', name: '聖壹' }, { role: '程式設計', name: 'Kai’s Claude' } ] },
+  var FALLBACK = [   // v=261118l (Kai): one list — everyone is 感謝名單
     { section: '感謝名單', items: [
-      { role: '文字顧問', name: 'Emma' }, { role: '甜點Queen', name: 'Lynn' } ] },
+      { role: '主唱', name: 'Kai' },
+      { role: '吉他手', name: '蘭多' },
+      { role: '主視覺', name: '聖壹' },
+      { role: 'UX 顧問', name: '恩妮' },
+      { role: '文字顧問', name: 'Emma' },
+      { role: '程式設計', name: 'Kai’s Claude' },
+      { role: '甜點Queen', name: 'Lynn' } ] },
     { section: '', note: '謝謝你，今天來看看', items: [] }
   ];
 
