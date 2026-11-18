@@ -41,22 +41,30 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   // (dress / monstera / guitar interleave), so to keep every rotated hit rect + picture apart at 360×780…430×932 the table
   // below is the least-squares nudge of those values: centres within ~20px, angles kept (guitar −170 so it fits on-screen),
   // most items ~80–90% size, guitar ~73% (whole guitar on-screen).
+  // v=261118c (owner: "物件尺寸可以再放更大一些些", picked +25%): every item +20…25% vs the table above
+  // (was switch 1.4 dress 2.32 guitar 3.05 headphones 1.3 monstera 1.58 book 1.4 chips 1.65 photo 1.2 football 1.24 cig 1.01).
+  // To fit, the header moved up 24px (css), the case shrank 255→228 and moved down, the dress drops below the switch (as in
+  // the painting), monstera/book/chips shift down, guitar stands upright (−180). Neighbouring pictures may now overlap a little
+  // (≤10px, smaller item on top — see ZORD) — test/suitcase.js allows that, still no overlap with header/back, all on-screen.
   var POS = {
-    switch: [72, 190, -18, 1.4], dress: [206, 194, 0, 2.32], guitar: [327, 270, -170, 3.05],
-    headphones: [62, 318, 0, 1.3], monstera: [223, 310, 0, 1.58], book: [153, 400, 14, 1.4], chips: [321, 436, 17, 1.65],
-    photoframe: [58, 541, -6, 1.2], football: [69, 723, 0, 1.24], cigarettes: [333, 714, -10, 1.01]
+    switch: [81, 162, -10, 1.75], dress: [202, 265, 0, 2.79], guitar: [336.5, 250, -180, 3.66],
+    headphones: [67.5, 303, 0, 1.56], monstera: [197, 396, 3, 1.96], book: [81, 410, 8, 1.75], chips: [311.5, 447, 11, 2.05],
+    photoframe: [64.5, 544, -3, 1.5], football: [69.5, 740.5, 2, 1.55], cigarettes: [332.5, 714, -10, 1.26]
   };
   // sprite picture aspect inside the square art box (contain-fit; from the trimmed PNGs) → item hit box = this rect
   var AR = { switch: [1, .76], headphones: [1, .89], book: [1, .89], monstera: [.79, 1], guitar: [.425, 1], chips: [.95, 1],
     football: [1, 1], photoframe: [.92, 1], cigarettes: [.92, 1], dress: [1, .79] };
-  var DESIGN = { W: 390, H: 844, TOP: 130, BOTTOM: 124, CASE_X: 205, CASE_Y: 590, CASE_W: 255 };
+  var DESIGN = { W: 390, H: 844, TOP: 130, BOTTOM: 124, CASE_X: 205, CASE_Y: 609, CASE_W: 228 };
+  // stacking: smaller picture on top, so where two pictures touch the smaller one stays grabbable
+  var ZORD = {}; Object.keys(POS).sort(function (a, b) { return POS[b][3] * POS[b][3] * AR[b][0] * AR[b][1] - POS[a][3] * POS[a][3] * AR[a][0] * AR[a][1]; })
+    .forEach(function (id, i) { ZORD[id] = 2 + i; });
   var LABEL = {}; ITEMS.forEach(function (i) { LABEL[i.id] = i.label; });
 
   // slot centres inside the suitcase interior (viewBox 260x200)
   // v=261118d (Kai): painted suitcase = Veo clip keyed into a sprite sheet (frame 0 open … last closed). Slots are
   // fractions of that picture, on the open case's inner floor (back row first, front row last → front overlaps back).
   var SLOTS = [[.258, .533], [.378, .563], [.498, .593], [.618, .623], [.738, .653], [.195, .605], [.315, .635], [.435, .665], [.555, .695], [.675, .725]];
-  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261118b', n: 39, cols: 8, rows: 5, land: 25 };
+  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261118c', n: 39, cols: 8, rows: 5, land: 25 };
   function sheetPos(k) { var c = k % SHEET.cols, r = Math.floor(k / SHEET.cols); return (c / (SHEET.cols - 1) * 100).toFixed(3) + '% ' + (r / (SHEET.rows - 1) * 100).toFixed(3) + '%'; }
   var ROT = [-7, 4, -3, 8, -5, 5, -8, 3, 7, -4];
 
@@ -131,7 +139,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var q = POS[it.id], t = -q[2] * Math.PI / 180;   // ground shadow stays down-right although the item box is rotated
         var shx = (2 * Math.cos(t) - 6 * Math.sin(t)).toFixed(1), shy = (2 * Math.sin(t) + 6 * Math.cos(t)).toFixed(1);
         // v=261118: no visible caption; the name stays available to screen readers
-        return '<div class="sc-item" data-id="' + it.id + '" role="img" aria-label="' + LABEL[it.id].replace(/"/g, '&quot;') + '" title="' + LABEL[it.id].replace(/"/g, '&quot;') + '" style="--r:' + q[2] + 'deg;--shx:' + shx + 'px;--shy:' + shy + 'px;--z:' + q[3] + ';--aw:' + AR[it.id][0] + ';--ah:' + AR[it.id][1] + '"><div class="sc-art">' + ART[it.id] + '</div></div>';
+        return '<div class="sc-item" data-id="' + it.id + '" role="img" aria-label="' + LABEL[it.id].replace(/"/g, '&quot;') + '" title="' + LABEL[it.id].replace(/"/g, '&quot;') + '" style="z-index:' + ZORD[it.id] + ';--r:' + q[2] + 'deg;--shx:' + shx + 'px;--shy:' + shy + 'px;--z:' + q[3] + ';--aw:' + AR[it.id][0] + ';--ah:' + AR[it.id][1] + '"><div class="sc-art">' + ART[it.id] + '</div></div>';
       }).join('');
       html += '<div class="sc-case" role="button" aria-label="行李箱"><div class="shadow"></div><div class="lay back sc-pic"></div><div class="sc-slots"></div><div class="lay front sc-pic"></div></div>';
       html += '<div class="sc-under"><div class="sc-msg"></div><div class="sc-actions"><button class="btn sc-fallbackbtn" type="button">繼續看看👀</button></div></div>';

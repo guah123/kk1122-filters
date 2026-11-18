@@ -10,6 +10,7 @@ const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b
 // v=261118e: works for any convex polygons (rotated item quads, the open-case silhouette)
 const sat = (A, B) => { let best = -1e9; for (const P of [A, B]) for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length], nx = q[1] - p[1], ny = p[0] - q[0], L = Math.hypot(nx, ny);
   const pa = A.map(v => (v[0] * nx + v[1] * ny) / L), pb = B.map(v => (v[0] * nx + v[1] * ny) / L); best = Math.max(best, Math.min(...pb) - Math.max(...pa), Math.min(...pa) - Math.max(...pb)); } return best; };
+const PEN = 10;   // v=261118c: max allowed overlap (px) between neighbouring item pictures / item and case outline
 const quad = b => [[b.x, b.y], [b.x + b.w, b.y], [b.x + b.w, b.y + b.h], [b.x, b.y + b.h]];
 // v=261118e: open-case silhouette = convex hull of the opaque pixels of case-sheet.webp frame 0, as fractions of the .sc-case box
 // (the box's empty top-left / bottom-right corners hold the photo frame and cigarettes, as in the ref2 painting)
@@ -29,8 +30,8 @@ const hull = b => CASE_HULL.map(([u, v]) => [b.x + u * b.w, b.y + v * b.h]);
     const pic = e => { const q = e.getBoundingClientRect(), a = e.querySelector('.sc-art'), im = e.querySelector('img'), m = new DOMMatrix(getComputedStyle(e).transform), k = Math.hypot(m.a, m.b), t = Math.atan2(m.b, m.a), side = a.offsetWidth * k;
       const f = Math.min(1, im.naturalWidth / im.naturalHeight) * side / 2, g = Math.min(1, im.naturalHeight / im.naturalWidth) * side / 2, hw = e.offsetWidth * k / 2, hh = e.offsetHeight * k / 2;
       const cx = q.x + q.width / 2, cy = q.y + q.height / 2, c = Math.cos(t), s = Math.sin(t), rq = pts => pts.map(([u, v]) => [cx + u * c - v * s, cy + u * s + v * c]);
-      return { rot: Math.round(t * 180 / Math.PI), hw: hw * 2, hh: hh * 2, quad: rq([[-f, -g], [f, -g], [f, g], [-f, g]]), hit: rq([[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]]) }; };
-    return { items: [...pg.querySelectorAll('.sc-item')].map(e => ({ id: e.dataset.id, ...r(e), pic: pic(e) })), case: r(pg.querySelector('.sc-case')), title: (e => { const g = document.createRange(); g.selectNodeContents(e); const q = g.getBoundingClientRect(); return { x: Math.round(q.x), y: Math.round(q.y), w: Math.round(q.width), h: Math.round(q.height) }; })(pg.querySelector('.sc-title')), hint: (e => { const g = document.createRange(); g.selectNodeContents(e); const q = g.getBoundingClientRect(); return { x: Math.round(q.x), y: Math.round(q.y), w: Math.round(q.width), h: Math.round(q.height) }; })(pg.querySelector('.sc-hint')),
+      return { rot: Math.round(t * 180 / Math.PI), hw: hw * 2, hh: hh * 2, quad: rq([[-f, -g], [f, -g], [f, g], [-f, g]]), hit: rq([[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]]), ctr: rq([[-22, -22], [22, -22], [22, 22], [-22, 22]]) }; };
+    return { items: [...pg.querySelectorAll('.sc-item')].map(e => { const im = e.querySelector('img'), side = e.querySelector('.sc-art').offsetWidth; return { id: e.dataset.id, ...r(e), pic: pic(e), z: +getComputedStyle(e).zIndex, area: side * side * Math.min(1, im.naturalWidth / im.naturalHeight) * Math.min(1, im.naturalHeight / im.naturalWidth) }; }), case: r(pg.querySelector('.sc-case')), title: (e => { const g = document.createRange(); g.selectNodeContents(e); const q = g.getBoundingClientRect(); return { x: Math.round(q.x), y: Math.round(q.y), w: Math.round(q.width), h: Math.round(q.height) }; })(pg.querySelector('.sc-title')), hint: (e => { const g = document.createRange(); g.selectNodeContents(e); const q = g.getBoundingClientRect(); return { x: Math.round(q.x), y: Math.round(q.y), w: Math.round(q.width), h: Math.round(q.height) }; })(pg.querySelector('.sc-hint')),
       back: (b => b && getComputedStyle(b).visibility !== 'hidden' ? r(b) : null)(document.querySelector('.step-no')), stack: [...pg.querySelectorAll('.filter-stack .round-btn')].map(r), labels: pg.querySelectorAll('.filter-stack .fs-label').length }; });
   const L = await R();
   const others = [['case', hull(L.case)], ['title', quad(L.title)], ['hint', quad(L.hint)], ['back', L.back && quad(L.back)], ...L.stack.map((s, i) => ['stack' + i, quad(s)])].filter(x => x[1]);
@@ -40,13 +41,19 @@ const hull = b => CASE_HULL.map(([u, v]) => [b.x + u * b.w, b.y + v * b.h]);
     // clear (gap ≥ 2) of every other picture / the case silhouette / the header text / back button
     const xs = a.pic.quad.map(v => v[0]), ys = a.pic.quad.map(v => v[1]);
     if (Math.min(...xs) < 2 || Math.max(...xs) > VW - 2 || Math.min(...ys) < 2 || Math.max(...ys) > VH - 8) fails.push(a.id + ' picture off-screen');
-    L.items.slice(i + 1).forEach(o => { const g = sat(a.pic.quad, o.pic.quad); if (g < 2) fails.push(a.id + ' pic × ' + o.id + ' ' + g.toFixed(1)); });
-    others.forEach(([n, o]) => { const g = sat(a.pic.quad, o); if (g < 2) fails.push(a.id + ' pic × ' + n + ' ' + g.toFixed(1)); });
+    // v=261118c (+25% items): neighbouring pictures and the case outline may overlap by ≤ PEN px (the smaller item stacks on top,
+    // checked below); header text / back button still need a ≥2px gap
+    L.items.slice(i + 1).forEach(o => { const g = sat(a.pic.quad, o.pic.quad); if (g < -PEN) fails.push(a.id + ' pic × ' + o.id + ' ' + g.toFixed(1));
+      if (g < 0 && (a.area < o.area) !== (a.z > o.z)) fails.push('z-order ' + a.id + '/' + o.id + ': smaller item must be on top');
+      // each item's grab point (44×44 around its centre) stays clear of the other's hit rect
+      if (sat(a.pic.ctr, o.pic.hit) < 0 || sat(o.pic.ctr, a.pic.hit) < 0) fails.push(a.id + ' / ' + o.id + ' centre covered'); });
+    others.forEach(([n, o]) => { const g = sat(a.pic.quad, o); if (g < (n === 'case' ? -PEN : 2)) fails.push(a.id + ' pic × ' + n + ' ' + g.toFixed(1)); });
     // rotated hit rect: leftmost corner ≥ 16 (iOS back-swipe zone), on-screen, never overlapping another item's hit rect / the case / header
     const hx = a.pic.hit.map(v => v[0]), hy = a.pic.hit.map(v => v[1]);
     if (Math.min(...hx) < 16 || Math.max(...hx) > VW - 2 || Math.min(...hy) < 2 || Math.max(...hy) > VH - 8) fails.push(a.id + ' hit edge ' + Math.min(...hx).toFixed(0) + '..' + Math.max(...hx).toFixed(0) + ' / ' + Math.max(...hy).toFixed(0));
-    L.items.slice(i + 1).forEach(o => { if (sat(a.pic.hit, o.pic.hit) < 0) fails.push(a.id + ' hit × ' + o.id); });
-    others.forEach(([n, o]) => { if (sat(a.pic.hit, o) < 0) fails.push(a.id + ' hit × ' + n); });
+    // (at these sizes the hit rect IS the picture rect, so item/case hit overlap gets the same ≤ PEN allowance; header/back: none)
+    L.items.slice(i + 1).forEach(o => { if (sat(a.pic.hit, o.pic.hit) < -PEN) fails.push(a.id + ' hit × ' + o.id); });
+    others.forEach(([n, o]) => { if (sat(a.pic.hit, o) < (n === 'case' ? -PEN : 0)) fails.push(a.id + ' hit × ' + n); });
   });
   if (L.stack.length || await p.evaluate(() => !!document.querySelector('.page-suitcase .filter-stack'))) fails.push('filter stack present on 11');
   const mode = await p.evaluate(() => ({ scene: !!document.querySelector('.sc-scene'), spr: document.querySelectorAll('.page-suitcase .sc-item img.sc-spr').length, svgItems: document.querySelectorAll('.page-suitcase .sc-item .sc-art svg').length, loaded: [...document.querySelectorAll('.page-suitcase .sc-item img.sc-spr')].every(i => i.complete && i.naturalWidth > 0), photo: (document.querySelector('.sc-item[data-id=photoframe] img') || {}).src, art: [...document.querySelectorAll('.page-suitcase .sc-item .sc-art')].map(e => Math.round(e.getBoundingClientRect().width)) }));

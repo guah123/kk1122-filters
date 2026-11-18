@@ -19,10 +19,10 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     /* v=261116aa (Kai): outro — tapping 繼續看看 fades every UI layer + the veil, holds the bare illustration ~3s, then moves on */
     /* v=261118f (Kai): no fades — tapping 繼續看看 removes every UI layer at once (bare illustration) and puts ONE emoji
        button tied to the song in the same spot; tapping it goes on */
-    '.page-lyrics.has-bg > *{transition:opacity .35s ease}',
+    /* v=261118h (Kai): 繼續看看 swaps the UI for the emoji button at once (no fade); only tapping the emoji fades the page out */
+    '#app > .page.page-lyrics.lyr-leave{opacity:0;transition:opacity .5s ease}',
     '.page-lyrics.lyr-outro > :not(.lyr-go){opacity:0 !important;pointer-events:none !important}',
     '.page-lyrics.lyr-outro .filter-stack *{pointer-events:none !important}',
-    '.page-lyrics .lyr-go{opacity:0}','.page-lyrics .lyr-go.on{opacity:1}',
     '.page-lyrics .lyr-go{position:absolute;z-index:60;width:68px;height:68px;margin:-34px 0 0 -34px;padding:0;border:0;border-radius:50%;background:rgba(251,247,239,.94);box-shadow:0 4px 16px rgba(74,60,48,.28),0 0 0 2px var(--wood,#C9A27A) inset;font:34px/1 system-ui,"Apple Color Emoji","Noto Color Emoji",sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;animation:lyrGo 1.8s ease-in-out infinite}',
     '@keyframes lyrGo{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}',
     '@media (prefers-reduced-motion:reduce){.page-lyrics .lyr-go{animation:none}}',
@@ -170,8 +170,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
 
       // v=261116aa: picture-book background per lyrics step (x = horizontal focus so the subject survives the phone crop)
       // v=261118f (Kai): emoji for the post-lyrics button, one per song
-      var SONG_EMOJI = { 4: '🫥', 6: '🕊️', 8: '🏠', 10: '🧑‍🚀', 12: '🧳', 14: '⛰️', 16: '🌧️', 18: '🫶', 20: '🎈', 22: '🌸', 24: '👔', 26: '🌤️', 28: '🗽', 30: '🌙', 32: '🕰️' };
-      var BG_X = { 4: 50, 24: 62, 26: 34, 28: 58 };
+      var SONG_EMOJI = { 4: '🫥', 6: '🕊️', 8: '🍲', 10: '🧑‍🚀', 12: '🧳', 14: '⛰️', 16: '🌧️', 18: '🌳', 20: '🌼', 22: '🌸', 24: '👔', 26: '🌤️', 28: '🗽', 30: '🌙', 32: '🌇' };
+      var BG_X = { 4: 50, 20: 55, 24: 62, 26: 34, 28: 58 };   // 20: dandelion hillside (v=261118h)
       if (n >= 4 && n <= 32 && n % 2 === 0) {
         var nn = (n < 10 ? '0' : '') + n;
         container.classList.add('has-bg');
@@ -214,13 +214,12 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var r = btn.getBoundingClientRect(), cr = container.getBoundingClientRect();
         var goBtn = document.createElement('button'); goBtn.type = 'button'; goBtn.className = 'lyr-go';
         goBtn.textContent = SONG_EMOJI[n] || '👀'; goBtn.setAttribute('aria-label', '繼續看看');
-        goBtn.style.left = Math.round(r.left - cr.left + r.width / 2) + 'px'; goBtn.style.top = Math.round(r.top - cr.top + r.height / 2) + 'px';
-        // v=261118f (review #6): on these songs the button would sit on the painted suitcase / guitar → lower-left instead
-        if ({ 12: 1, 28: 1 }[n]) { goBtn.style.left = '58px'; goBtn.style.top = Math.round(cr.height - 70) + 'px'; }
-        if (n === 10) { goBtn.style.left = Math.round(cr.width - 58) + 'px'; goBtn.style.top = '64px'; }   // (Kai) astronaut: top-right, in the night sky
+        // v=261118h (Kai): the emoji button always sits top-right
+        goBtn.style.left = Math.round(cr.width - 58) + 'px'; goBtn.style.top = 'calc(env(safe-area-inset-top, 0px) + 64px)';
         container.classList.add('lyr-outro'); container.appendChild(goBtn);
-        requestAnimationFrame(function () { requestAnimationFrame(function () { goBtn.classList.add('on'); }); });
-        goBtn.addEventListener('click', function () { if (goBtn.disabled || !alive) return; goBtn.disabled = true; ctx.next(); });
+        goBtn.addEventListener('click', function () { if (goBtn.disabled || !alive) return; goBtn.disabled = true;
+          var fast = /[?&]test=1/.test(location.search) && !/[?&]outro=1/.test(location.search);
+          container.classList.add('lyr-leave'); setTimeout(function () { if (alive) ctx.next(); }, fast ? 60 : 520); });
       });
 
       loadData().then(function (data) {

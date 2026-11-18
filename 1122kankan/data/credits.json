@@ -5,7 +5,7 @@
       { "role": "主唱", "name": "Kai" },
       { "role": "吉他手", "name": "蘭多" },
       { "role": "視覺設計", "name": "聖壹" },
-      { "role": "程式設計", "name": "Kai’s Claude & Grok" }
+      { "role": "程式設計", "name": "Kai’s Claude" }
     ] },
     { "section": "感謝名單", "items": [
       { "role": "文字顧問", "name": "Emma" },

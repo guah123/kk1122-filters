@@ -28,8 +28,8 @@
 .sc-stage { z-index: 1; --s: 1; touch-action: none; overscroll-behavior: none; position: relative; width: min(100%, 480px); height: 100%; margin: 0 auto; }
 .sc-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
-/* header sits below the 「上一頁」 row (back button top-left, filter button top-right) */
-.sc-head { position: absolute; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 68px); padding: 0 16px; text-align: center; pointer-events: none; z-index: 1; }
+/* header: title level with the 「上一頁」 button (v=261118c moved up 24px so the bigger items fit) */
+.sc-head { position: absolute; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 44px); padding: 0 16px; text-align: center; pointer-events: none; z-index: 1; }
 .sc-title { margin: 0; font-family: var(--font-serif, serif); font-size: min(18px, 4.5vw); line-height: 1.3; font-weight: 700; color: var(--wood-dark, #8A6545); }
 .sc-hint { margin: 5px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft, #7A6A5A); }
 
@@ -148,7 +148,7 @@
 .sc-case .shadow { bottom: 1%; left: 6%; right: 14%; }
 
 /* v=261118e (Kai): painted wooden floor (Gemini, from layout ref2) as the page background; wall stars / horizon removed */
-.page-suitcase { background: #E9CFA3 url("../assets/suitcase/floor.jpg?v=261118b") center / cover no-repeat; }
+.page-suitcase { background: #E9CFA3 url("../assets/suitcase/floor.jpg?v=261118c") center / cover no-repeat; }
 .page-suitcase::after { display: none; }
 .page-suitcase::before { opacity: .18; }
 .page-suitcase .sc-title, .page-suitcase .sc-hint, .page-suitcase .sc-msg { text-shadow: 0 0 8px rgba(251,247,239,.95), 0 0 3px rgba(251,247,239,.95); }

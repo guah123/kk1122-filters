@@ -12,7 +12,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   var FALLBACK = [
     { section: '工作人員', items: [
       { role: '主唱', name: 'Kai' }, { role: '吉他手', name: '蘭多' },
-      { role: '視覺設計', name: '聖壹' }, { role: '程式設計', name: 'Kai’s Claude & Grok' } ] },
+      { role: '視覺設計', name: '聖壹' }, { role: '程式設計', name: 'Kai’s Claude' } ] },
     { section: '感謝名單', items: [
       { role: '文字顧問', name: 'Emma' }, { role: '甜點Queen', name: 'Lynn' } ] },
     { section: '', note: '謝謝你，今天來看看', items: [] }
