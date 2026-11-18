@@ -6,6 +6,7 @@
 (function () {
   'use strict';
   var BASE = (document.currentScript && document.currentScript.src.replace(/kk-load\.js.*$/, '')) || 'vendor/kk/';
+  var VER = ((document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/)) || [])[1] || '';   // passed on to every file
   var FILES = [
     'kk-core.js', 'kk-art.js', 'kk-critter.js', 'kk-bg.js', 'kk-stage.js', 'kk-recorder.js',
     'filters/f2-remember.js', 'filters/f3-otona.js', 'filters/f4-hareru.js',
@@ -26,7 +27,7 @@
         return;
       }
       var s = document.createElement('script');
-      s.src = BASE + FILES[i++];
+      s.src = BASE + FILES[i++] + (VER ? '?v=' + VER : '');
       s.onload = next;
       s.onerror = function () { window.KK_LOAD_ERRORS.push(s.src); next(); };
       document.head.appendChild(s);
