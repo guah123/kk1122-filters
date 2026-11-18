@@ -136,7 +136,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var lineBtn = el('button', 'eg-bigbtn'); lineBtn.type = 'button'; lineBtn.setAttribute('aria-label', '加入 LINE 社群');
     lineBtn.appendChild(iconNode('line', SVG_LINE));
     lineBtn.addEventListener('click', function () { openUrl(cfg.LINE_URL); });
-    lineBox.appendChild(lineBtn); lineBox.appendChild(el('span', 'eg-cap', 'LINE 社群'));
+    lineBox.appendChild(lineBtn);   // v=261118e (Kai): no 「LINE 社群」 caption, the 密碼 bubble is enough
     lineBox.appendChild(el('div', 'eg-bubble', '密碼：' + (cfg.LINE_PASSWORD || '1122')));
     var cofBox = el('div', 'eg-pop eg-coffee');
     var cofBtn = el('button', 'eg-bigbtn'); cofBtn.type = 'button'; cofBtn.setAttribute('aria-label', 'Buy Kai a Coffee');
@@ -144,7 +144,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var modalH = null;
     cofBtn.addEventListener('click', function () { try { if (modalH && modalH.close) modalH.close(); } catch (e) {} modalH = openCoffeeModal(ctx); });
     cofBox.appendChild(cofBtn);
-    var cap = el('span', 'eg-cap'); cap.innerHTML = 'Buy Kai<br>a Coffee'; cofBox.appendChild(cap);
+    cofBox.appendChild(el('div', 'eg-bubble', 'Buy Kai a Coffee'));   // v=261118e (Kai): same bubble as 密碼
 
     var SVG_RESTART = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 24a12 12 0 1 0 4-9"/><path d="M11 8v8h8"/></svg>';
     var rsBox = el('div', 'eg-pop eg-restart');
@@ -153,7 +153,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     rsBtn.addEventListener('click', function () {
       if (DAYOF.app && DAYOF.app.restartKeepProgress) DAYOF.app.restartKeepProgress(); else if (ctx.goto) ctx.goto(1);
     });
-    rsBox.appendChild(rsBtn); rsBox.appendChild(el('span', 'eg-cap', '從頭開始'));
+    rsBox.appendChild(rsBtn); rsBox.appendChild(el('div', 'eg-bubble', '從頭開始'));   // v=261118e (Kai): bubble like 密碼
 
     // v=261116aa (Kai): the ⋯ fold holds ALL unlocked filters again (same DAYOF.FilterStack as the lyrics pages, so the
     // camera opens exactly the same way) + LINE / Coffee / 從頭開始 in a row underneath. Filters mount lazily on first expand.
@@ -199,9 +199,9 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       later(function () {
         if (cleaned || !tog.classList.contains('eg-attn')) return;
         hint = el('div', 'eg-hint'); hint.setAttribute('role', 'status');
-        hint.appendChild(el('b', null, '還有更多'));
-        hint.appendChild(el('span', null, '濾鏡、LINE 社群都在這'));
-        var ar = el('span', 'eg-hint-arrow', '\u2192'); ar.setAttribute('aria-hidden', 'true'); hint.appendChild(ar);
+        // v=261118e (Kai): the bubble is just 👉 (full text kept for screen readers)
+        hint.classList.add('eg-hint-point'); hint.setAttribute('aria-label', '還有更多：濾鏡、LINE 社群都在這');
+        var ar = el('span', 'eg-hint-arrow', '👉'); ar.setAttribute('aria-hidden', 'true'); hint.appendChild(ar);
         page.appendChild(hint);   // outside the stack so the collapsed-fold rule doesn't hide it
         requestAnimationFrame(function () { if (hint) hint.classList.add('show'); });
       }, 1500);

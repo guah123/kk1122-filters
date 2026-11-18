@@ -33,7 +33,10 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     ':where(html,body){margin:0;height:100%}',
     ':where(body){background:var(--cream,#F6EFE2);color:var(--ink,#4A3C30);font-family:var(--font,-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif);-webkit-text-size-adjust:100%}',
     ':where(#app){position:relative;width:100%;min-height:100vh;min-height:100dvh}',
-    ':where(#app > .page){position:relative;width:100%;height:100vh;height:100dvh;max-width:480px;margin:0 auto;overflow:hidden;opacity:0;transition:opacity .28s ease}',
+    ':where(#app > .page){position:relative;width:100%;height:100vh;height:100dvh;max-width:480px;margin:0 auto;overflow:hidden;opacity:0;transition:opacity .7s ease}',
+    /* v=261118e (Kai): page fades 2.5x slower (.28s → .7s); a page with a background picture waits for it, fades in, THEN its components fade in */
+    '#app > .page.bg-wait > :not(.lyr-veil):not(.popup-bg){opacity:0 !important}',
+    '#app > .page.bg-reveal > :not(.lyr-veil):not(.popup-bg){transition:opacity .7s ease !important}',
     ':where(#app > .page.is-in){opacity:1}',
     '#app > .page{z-index:1}',
     '#app > .page.is-out{position:absolute;top:0;left:0;right:0;z-index:0;opacity:0;pointer-events:none}',
@@ -347,6 +350,29 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
   /* ---------- router ---------- */
+  // v=261118e (Kai): background picture first, components after. Collect url(...) backgrounds on the page and its direct
+  // children (lyrics / page-bg / scene pages), preload them (max 3s), fade the page in, then fade its components in.
+  function bgUrls(el) {
+    var out = [], nodes = [el].concat([].slice.call(el.children));
+    nodes.forEach(function (n) {
+      var b = n.style.backgroundImage || ''; try { b += ' ' + getComputedStyle(n).backgroundImage; } catch (e) { }
+      b.replace(/url\(["']?([^"')]+)["']?\)/g, function (m, u) { if (!/^data:/.test(u) && /\.(jpe?g|png|webp)(\?|$)/i.test(u) && out.indexOf(u) < 0) out.push(u); return m; });
+    });
+    return out;
+  }
+  function revealWhenBgReady(el) {
+    var urls = bgUrls(el);
+    function show() { requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('is-in'); }); }); }
+    if (!urls.length) { show(); return; }
+    el.classList.add('bg-wait');
+    var left = urls.length, done = false;
+    function ready() {
+      if (done) return; done = true; show();
+      setTimeout(function () { el.classList.add('bg-reveal'); el.classList.remove('bg-wait'); setTimeout(function () { el.classList.remove('bg-reveal'); }, 800); }, 700);
+    }
+    urls.forEach(function (u) { var im = new Image(); im.onload = im.onerror = function () { if (--left <= 0) ready(); }; im.src = u; });
+    setTimeout(ready, 3000);
+  }
   function render(n) {
     var row = rowFor(n);
     // cleanup previous page first
@@ -354,7 +380,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       if (typeof cur.cleanup === 'function') { try { cur.cleanup(); } catch (e) { console.error('[dayof] cleanup', e); } }
       var old = cur.el;
       old.classList.remove('is-in'); old.classList.add('is-out');
-      setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 320);
+      setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 760);
     }
     modals.slice().forEach(function (m) { m.close(); });
     if (bubbleEl && cur && cur.n !== n) hideBubble();
@@ -394,7 +420,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
 
     if (n === 1 && hasSavedIdentity()) addRestartLink(el);
 
-    requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add('is-in'); }); });
+    revealWhenBgReady(el);
     try {
       var sp = new URLSearchParams(location.search); sp.delete('step');
       var s = sp.toString();

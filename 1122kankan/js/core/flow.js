@@ -14,7 +14,7 @@ window.DAYOF = window.DAYOF || {};
     { n: 1, type: 'landing', title: '看看', btn: '開始' },
     { n: 2, type: 'form', title: '請輸入暱稱，和email', nicknameLabel: '暱稱', emailLabel: 'email', btn: '送出' },
     { n: 3, type: 'rules', popup: true, title: '今天的守則',
-      items: ['可以吃蛋糕', '可以吧檯點酒', '想哭就哭想笑就笑', '可以加入這個LINE社群同步聊天', '請大家一步一步跟著這個網頁走'],
+      items: ['可以吃蛋糕', '可以吧檯點酒', '想笑就笑想哭就哭', '可以加入這個LINE社群同步聊天', '請大家一步一步跟著這個網頁走'],
       lineItem: 3, btn: 'OK' },
     lyr(4, '我消失了'),
     where(5, 'park', '星期天的午後，\n廣場上的鴿子比人還多。\n有人踩著一顆大球，搖搖晃晃地笑；\n伯伯把麵包撕成小小的雲，\n鴿子就飛起來、又落下。\n小提琴的聲音繞著廣場轉了一圈，\n凱凱也在這裡——\n你看見他了嗎？'),

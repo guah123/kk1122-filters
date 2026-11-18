@@ -31,23 +31,32 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   // each other / the case / header / back button and stay on-screen at 390×844, 360×780, 430×932.
   // v=261118d (Kai: follow the Gemini layout painting in/suitcase-v2/layout/ref2.jpg): items fill the upper floor in a loose
   // scatter, the open case sits lower-middle, photo frame + football on its left, cigarettes on its right.
+  // v=261118e (Kai: positions / sizes / angles follow ref2.jpg exactly): measured from the painting (ref px → design px:
+  // x·390/768, y = 138 + (y−65)·0.505), size = multiplier of the 66px square art box (contain-fit). The whole .sc-item now
+  // rotates, so the drag hit area is the ROTATED picture rect. Guitar sprite is a straightened head-up cut (aspect .425);
+  // in the painting its body is cut by the right edge — here the whole guitar stays on-screen (shifted left / slightly smaller).
+  // measured ref values (for later tuning): switch [75,190,-18,1.57] dress [201,208,-3,2.82] guitar ≈[312,313,-162,4.17] (body cut
+  // by the right edge) headphones [62,318,0,1.30] monstera [226,300,0,1.86] book [154,383,14,1.74] chips [331,437,18,1.96]
+  // photoframe [66,550,-6,1.39] football [69,716,0,1.25] cigarettes [333,714,-10,1.01]. The painting's items overlap as RECTS
+  // (dress / monstera / guitar interleave), so to keep every rotated hit rect + picture apart at 360×780…430×932 the table
+  // below is the least-squares nudge of those values: centres within ~20px, angles kept (guitar −170 so it fits on-screen),
+  // most items ~80–90% size, guitar ~73% (whole guitar on-screen).
   var POS = {
-    switch: [60, 185, -12, 1.2], dress: [176, 190, 6, 1.69], guitar: [312, 215, -10, 1.95],
-    headphones: [64, 290, -8, 1.42], monstera: [186, 320, -5, 1.9], chips: [320, 370, 12, 1.44],
-    book: [74, 396, 12, 1.44],
-    photoframe: [54, 520, -4, 1.2], football: [54, 640, -6, 1.1], cigarettes: [338, 560, 8, 0.9]
+    switch: [72, 190, -18, 1.4], dress: [206, 194, 0, 2.32], guitar: [327, 270, -170, 3.05],
+    headphones: [62, 318, 0, 1.3], monstera: [223, 310, 0, 1.58], book: [153, 400, 14, 1.4], chips: [321, 436, 17, 1.65],
+    photoframe: [58, 541, -6, 1.2], football: [69, 723, 0, 1.24], cigarettes: [333, 714, -10, 1.01]
   };
   // sprite picture aspect inside the square art box (contain-fit; from the trimmed PNGs) → item hit box = this rect
-  var AR = { switch: [1, .76], headphones: [1, .89], book: [1, .89], monstera: [.79, 1], guitar: [.95, 1], chips: [.95, 1],
+  var AR = { switch: [1, .76], headphones: [1, .89], book: [1, .89], monstera: [.79, 1], guitar: [.425, 1], chips: [.95, 1],
     football: [1, 1], photoframe: [.92, 1], cigarettes: [.92, 1], dress: [1, .79] };
-  var DESIGN = { W: 390, H: 844, TOP: 130, BOTTOM: 124, CASE_Y: 565, CASE_W: 196 };
+  var DESIGN = { W: 390, H: 844, TOP: 130, BOTTOM: 124, CASE_X: 205, CASE_Y: 590, CASE_W: 255 };
   var LABEL = {}; ITEMS.forEach(function (i) { LABEL[i.id] = i.label; });
 
   // slot centres inside the suitcase interior (viewBox 260x200)
   // v=261118d (Kai): painted suitcase = Veo clip keyed into a sprite sheet (frame 0 open … last closed). Slots are
   // fractions of that picture, on the open case's inner floor (back row first, front row last → front overlaps back).
   var SLOTS = [[.258, .533], [.378, .563], [.498, .593], [.618, .623], [.738, .653], [.195, .605], [.315, .635], [.435, .665], [.555, .695], [.675, .725]];
-  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261116aa', n: 39, cols: 8, rows: 5, land: 25 };
+  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261118a', n: 39, cols: 8, rows: 5, land: 25 };
   function sheetPos(k) { var c = k % SHEET.cols, r = Math.floor(k / SHEET.cols); return (c / (SHEET.cols - 1) * 100).toFixed(3) + '% ' + (r / (SHEET.rows - 1) * 100).toFixed(3) + '%'; }
   var ROT = [-7, 4, -3, 8, -5, 5, -8, 3, 7, -4];
 
@@ -118,11 +127,11 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var stage = document.createElement('div'); stage.className = 'sc-stage';
       var html = DEFS +
         '<div class="sc-head"><h2 class="sc-title">上太空的行李箱你要帶什麼去？</h2><p class="sc-hint">把想帶的東西拖進行李箱，<br>拖完點一下行李箱，把它關起來</p></div>';
-      html += '<div class="sc-rug" aria-hidden="true"></div>';
       html += ITEMS.map(function (it) {
-        var q = POS[it.id];
+        var q = POS[it.id], t = -q[2] * Math.PI / 180;   // ground shadow stays down-right although the item box is rotated
+        var shx = (2 * Math.cos(t) - 6 * Math.sin(t)).toFixed(1), shy = (2 * Math.sin(t) + 6 * Math.cos(t)).toFixed(1);
         // v=261118: no visible caption; the name stays available to screen readers
-        return '<div class="sc-item" data-id="' + it.id + '" role="img" aria-label="' + LABEL[it.id].replace(/"/g, '&quot;') + '" title="' + LABEL[it.id].replace(/"/g, '&quot;') + '" style="--r:' + q[2] + 'deg;--z:' + q[3] + ';--aw:' + AR[it.id][0] + ';--ah:' + AR[it.id][1] + '"><div class="sc-art">' + ART[it.id] + '</div></div>';
+        return '<div class="sc-item" data-id="' + it.id + '" role="img" aria-label="' + LABEL[it.id].replace(/"/g, '&quot;') + '" title="' + LABEL[it.id].replace(/"/g, '&quot;') + '" style="--r:' + q[2] + 'deg;--shx:' + shx + 'px;--shy:' + shy + 'px;--z:' + q[3] + ';--aw:' + AR[it.id][0] + ';--ah:' + AR[it.id][1] + '"><div class="sc-art">' + ART[it.id] + '</div></div>';
       }).join('');
       html += '<div class="sc-case" role="button" aria-label="行李箱"><div class="shadow"></div><div class="lay back sc-pic"></div><div class="sc-slots"></div><div class="lay front sc-pic"></div></div>';
       html += '<div class="sc-under"><div class="sc-msg"></div><div class="sc-actions"><button class="btn sc-fallbackbtn" type="button">繼續看看</button></div></div>';
@@ -138,7 +147,6 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       frame(0);
       var trayEl = {}; [].forEach.call(stage.querySelectorAll('.sc-item'), function (el) { trayEl[el.getAttribute('data-id')] = el; });
 
-      var $rug = stage.querySelector('.sc-rug');
       function layout() {
         var W = stage.clientWidth, Hh = stage.clientHeight; if (!W || !Hh) return;
         var sx = Math.min(1.15, W / DESIGN.W), sy = Math.max(0.6, (Hh - DESIGN.TOP - DESIGN.BOTTOM) / (DESIGN.H - DESIGN.TOP - DESIGN.BOTTOM));
@@ -146,8 +154,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         stage.style.setProperty('--s', k.toFixed(3));
         var X = function (cx) { return W / 2 + (cx - DESIGN.W / 2) * sx; }, Y = function (cy) { return DESIGN.TOP + (cy - DESIGN.TOP) * sy; };
         ITEMS.forEach(function (it) { var q = POS[it.id], e = trayEl[it.id]; e.style.left = X(q[0]).toFixed(1) + 'px'; e.style.top = Y(q[1]).toFixed(1) + 'px'; });
-        $case.style.top = Y(DESIGN.CASE_Y).toFixed(1) + 'px'; $case.style.width = (DESIGN.CASE_W * Math.min(1.1, sx, sy)).toFixed(1) + 'px';
-        if ($rug) { $rug.style.top = (Y(DESIGN.CASE_Y) + DESIGN.CASE_W * k * 0.3).toFixed(1) + 'px'; }
+        $case.style.left = X(DESIGN.CASE_X).toFixed(1) + 'px'; $case.style.top = Y(DESIGN.CASE_Y).toFixed(1) + 'px'; $case.style.width = (DESIGN.CASE_W * Math.min(1.1, sx, sy)).toFixed(1) + 'px';
         var s = stage.getBoundingClientRect(), c = $case.getBoundingClientRect();
         if (c.height) $under.style.top = (c.bottom - s.top + 12) + 'px';
       }

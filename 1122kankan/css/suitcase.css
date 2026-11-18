@@ -35,19 +35,20 @@
 
 /* items scattered around the whole room (left/top set by JS from POS; --r rotation, --z size, --s screen scale) */
 /* v=261118b casual scatter: the item box (= drag hit area) is the sprite's un-rotated picture rect (--aw/--ah aspect);
-   (never under 52px so the small ones stay ≥ 44px on a 360-wide phone); only the picture (.sc-art) is rotated, so the soft ground shadow (filter on the un-rotated .sc-item) always falls the same way */
+   (never under 52px so the small ones stay ≥ 44px on a 360-wide phone). v=261118e: the whole .sc-item rotates (hit area = rotated picture rect);
+   --shx/--shy (set by JS) counter-rotate the drop-shadow offset so the ground shadow still falls down-right */
 .sc-item { position: absolute; z-index: 2; width: max(52px, calc(66px * var(--z, 1) * var(--aw, 1))); height: max(52px, calc(66px * var(--z, 1) * var(--ah, 1))); margin-left: min(-26px, calc(-33px * var(--z, 1) * var(--aw, 1))); box-sizing: border-box; padding: 0;
-  transform: translateY(-50%) scale(var(--s, 1)); transform-origin: 50% 50%;
-  filter: drop-shadow(2px 6px 4px rgba(74,60,48,.20)) drop-shadow(0 1px 1.5px rgba(74,60,48,.14));
+  transform: translateY(-50%) rotate(var(--r, 0deg)) scale(var(--s, 1)); transform-origin: 50% 50%;
+  filter: drop-shadow(var(--shx, 2px) var(--shy, 6px) 4px rgba(74,60,48,.20)) drop-shadow(0 1px 1.5px rgba(74,60,48,.14));
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-user-drag: none;
   cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent; transition: opacity .25s; }
-.sc-art { pointer-events: none; position: absolute; left: 50%; top: 50%; width: calc(66px * var(--z, 1)); height: calc(66px * var(--z, 1)); margin: calc(-33px * var(--z, 1)) 0 0 calc(-33px * var(--z, 1)); rotate: var(--r, 0deg); }
+.sc-art { pointer-events: none; position: absolute; left: 50%; top: 50%; width: calc(66px * var(--z, 1)); height: calc(66px * var(--z, 1)); margin: calc(-33px * var(--z, 1)) 0 0 calc(-33px * var(--z, 1)); }
 .sc-art svg { width: 100%; height: 100%; display: block; overflow: visible; }
 /* v=261116y Jimmy-Liao-style sprites (contain-fit in the square art box) */
 .sc-spr { width: 100%; height: 100%; display: block; object-fit: contain; pointer-events: none; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .sc-cap { pointer-events: none; margin-top: 2px; font-size: 11.5px; line-height: 1.25; text-align: center; color: var(--ink, #4A3C30); letter-spacing: 0; font-family: var(--font-serif, serif); }
 .sc-note { display: block; font-size: 10px; color: #9A8D80; font-family: var(--font, system-ui, sans-serif); }
-.sc-item.gone { opacity: .22; pointer-events: none; filter: grayscale(.6) drop-shadow(2px 6px 4px rgba(74,60,48,.2)); }
+.sc-item.gone { opacity: .22; pointer-events: none; filter: grayscale(.6) drop-shadow(var(--shx, 2px) var(--shy, 6px) 4px rgba(74,60,48,.2)); }
 .sc-item.away { opacity: 0; pointer-events: none; }
 .sc-item.wiggle .sc-art { animation: sc-wig .45s ease; }
 @keyframes sc-wig { 0%,100% { transform: rotate(0) } 25% { transform: rotate(-9deg) } 60% { transform: rotate(7deg) } }
@@ -71,8 +72,8 @@
 .sc-case.click .latch { animation: sc-latch .35s ease; }
 @keyframes sc-latch { 0% { transform: scale(1) } 40% { transform: scale(1.5, .6) } 100% { transform: scale(1) } }
 
-/* soft watercolor rug under the suitcase */
-.sc-rug { position: absolute; left: 50%; top: 56%; width: calc(330px * var(--s, 1)); height: calc(104px * var(--s, 1)); transform: translate(-50%, -50%); pointer-events: none; z-index: 0;
+/* soft watercolor rug under the suitcase — v=261118e: hidden (not in the ref2 painting; JS no longer renders it) */
+.sc-rug { display: none; position: absolute; left: 50%; top: 56%; width: calc(330px * var(--s, 1)); height: calc(104px * var(--s, 1)); transform: translate(-50%, -50%); pointer-events: none; z-index: 0;
   border-radius: 50%; background: radial-gradient(ellipse at 50% 50%, rgba(196,110,84,.36) 0%, rgba(196,110,84,.28) 46%, rgba(214,150,110,.18) 62%, rgba(214,150,110,0) 72%);
   filter: blur(1.5px); }
 .sc-rug::after { content: ''; position: absolute; inset: 16% 12%; border-radius: 50%; border: 1.5px dashed rgba(251,247,239,.55); }
@@ -145,3 +146,9 @@
 .sc-case .lay.front { -webkit-clip-path: polygon(0 58.5%, 70% 83.5%, 90.5% 57%, 100% 57%, 100% 100%, 0 100%); clip-path: polygon(0 58.5%, 70% 83.5%, 90.5% 57%, 100% 57%, 100% 100%, 0 100%); }
 .sc-case.closed .lay.front { opacity: 0; }
 .sc-case .shadow { bottom: 1%; left: 6%; right: 14%; }
+
+/* v=261118e (Kai): painted wooden floor (Gemini, from layout ref2) as the page background; wall stars / horizon removed */
+.page-suitcase { background: #E9CFA3 url("../assets/suitcase/floor.jpg?v=261118a") center / cover no-repeat; }
+.page-suitcase::after { display: none; }
+.page-suitcase::before { opacity: .18; }
+.page-suitcase .sc-title, .page-suitcase .sc-hint, .page-suitcase .sc-msg { text-shadow: 0 0 8px rgba(251,247,239,.95), 0 0 3px rgba(251,247,239,.95); }

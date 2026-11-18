@@ -79,7 +79,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var note = el('span', null, meta, ''); note.className = 'sis-note';
         var upd = function () { note.textContent = ''; }; // secrets are never advertised
         upd(); box._upd = upd;
-        var b = el('button', 'btn', box, '繼續看看'); b.type = 'button';
+        var b = el('button', 'btn', box, '繼續看看👀'); b.type = 'button';  // v=261118e (Kai): 👀 like the lyrics pages
         b.addEventListener('click', function () { b.disabled = true; ctx.next(); });
       }
       function saveFound(patch) {

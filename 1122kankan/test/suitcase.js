@@ -7,9 +7,14 @@ const PORT = 8600 + Math.floor(Math.random() * 300); const sleep = ms => new Pro
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
 const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 // v=261118b scatter: separating-axis gap between convex quads (rotated pictures); < 0 means they overlap
-const sat = (A, B) => { let best = -1e9; for (const P of [A, B]) for (let i = 0; i < 4; i++) { const p = P[i], q = P[(i + 1) % 4], nx = q[1] - p[1], ny = p[0] - q[0], L = Math.hypot(nx, ny);
+// v=261118e: works for any convex polygons (rotated item quads, the open-case silhouette)
+const sat = (A, B) => { let best = -1e9; for (const P of [A, B]) for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length], nx = q[1] - p[1], ny = p[0] - q[0], L = Math.hypot(nx, ny);
   const pa = A.map(v => (v[0] * nx + v[1] * ny) / L), pb = B.map(v => (v[0] * nx + v[1] * ny) / L); best = Math.max(best, Math.min(...pb) - Math.max(...pa), Math.min(...pa) - Math.max(...pb)); } return best; };
 const quad = b => [[b.x, b.y], [b.x + b.w, b.y], [b.x + b.w, b.y + b.h], [b.x, b.y + b.h]];
+// v=261118e: open-case silhouette = convex hull of the opaque pixels of case-sheet.webp frame 0, as fractions of the .sc-case box
+// (the box's empty top-left / bottom-right corners hold the photo frame and cigarettes, as in the ref2 painting)
+const CASE_HULL = [[.019, .631], [.261, .061], [.325, .01], [.925, .165], [.986, .238], [.908, .713], [.622, .98], [.083, .791]];
+const hull = b => CASE_HULL.map(([u, v]) => [b.x + u * b.w, b.y + v * b.h]);
 (async () => {
   const srv = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], { cwd: SITE, stdio: 'ignore' }); await sleep(900);
   const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: 2, hasTouch: true, isMobile: true, userAgent: UA });
@@ -19,24 +24,29 @@ const quad = b => [[b.x, b.y], [b.x + b.w, b.y], [b.x + b.w, b.y + b.h], [b.x, b
   await p.goto(`http://127.0.0.1:${PORT}/?step=11&test=1`); await p.waitForSelector('.page-suitcase .sc-item'); await sleep(900);
   const R = () => p.evaluate(() => { const r = e => { const q = e.getBoundingClientRect(); return { x: Math.round(q.x), y: Math.round(q.y), w: Math.round(q.width), h: Math.round(q.height) }; };
     const pg = document.querySelector('.page-suitcase:not(.is-out)') || document;
-    const pic = e => { const q = e.getBoundingClientRect(), a = e.querySelector('.sc-art'), im = e.querySelector('img'), k = q.width / e.offsetWidth, side = a.offsetWidth * k;
-      const f = Math.min(1, im.naturalWidth / im.naturalHeight) * side / 2, g = Math.min(1, im.naturalHeight / im.naturalWidth) * side / 2, t = parseFloat(getComputedStyle(a).rotate) * Math.PI / 180 || 0;
-      const cx = q.x + q.width / 2, cy = q.y + q.height / 2, c = Math.cos(t), s = Math.sin(t); return { rot: Math.round(t * 180 / Math.PI), quad: [[-f, -g], [f, -g], [f, g], [-f, g]].map(([u, v]) => [cx + u * c - v * s, cy + u * s + v * c]) }; };
+    // v=261118e: the whole .sc-item is rotated (translateY(-50%) rotate(r) scale(s)) → read scale + angle from the computed matrix,
+    // centre = bounding-rect centre; build the rotated hit rect and the rotated contain-fit picture rect
+    const pic = e => { const q = e.getBoundingClientRect(), a = e.querySelector('.sc-art'), im = e.querySelector('img'), m = new DOMMatrix(getComputedStyle(e).transform), k = Math.hypot(m.a, m.b), t = Math.atan2(m.b, m.a), side = a.offsetWidth * k;
+      const f = Math.min(1, im.naturalWidth / im.naturalHeight) * side / 2, g = Math.min(1, im.naturalHeight / im.naturalWidth) * side / 2, hw = e.offsetWidth * k / 2, hh = e.offsetHeight * k / 2;
+      const cx = q.x + q.width / 2, cy = q.y + q.height / 2, c = Math.cos(t), s = Math.sin(t), rq = pts => pts.map(([u, v]) => [cx + u * c - v * s, cy + u * s + v * c]);
+      return { rot: Math.round(t * 180 / Math.PI), hw: hw * 2, hh: hh * 2, quad: rq([[-f, -g], [f, -g], [f, g], [-f, g]]), hit: rq([[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]]) }; };
     return { items: [...pg.querySelectorAll('.sc-item')].map(e => ({ id: e.dataset.id, ...r(e), pic: pic(e) })), case: r(pg.querySelector('.sc-case')), title: (e => { const g = document.createRange(); g.selectNodeContents(e); const q = g.getBoundingClientRect(); return { x: Math.round(q.x), y: Math.round(q.y), w: Math.round(q.width), h: Math.round(q.height) }; })(pg.querySelector('.sc-title')), hint: (e => { const g = document.createRange(); g.selectNodeContents(e); const q = g.getBoundingClientRect(); return { x: Math.round(q.x), y: Math.round(q.y), w: Math.round(q.width), h: Math.round(q.height) }; })(pg.querySelector('.sc-hint')),
       back: (b => b && getComputedStyle(b).visibility !== 'hidden' ? r(b) : null)(document.querySelector('.step-no')), stack: [...pg.querySelectorAll('.filter-stack .round-btn')].map(r), labels: pg.querySelectorAll('.filter-stack .fs-label').length }; });
   const L = await R();
-  const others = [['case', L.case], ['title', L.title], ['hint', L.hint], ['back', L.back], ...L.stack.map((s, i) => ['stack' + i, s])].filter(x => x[1]);
+  const others = [['case', hull(L.case)], ['title', quad(L.title)], ['hint', quad(L.hint)], ['back', L.back && quad(L.back)], ...L.stack.map((s, i) => ['stack' + i, quad(s)])].filter(x => x[1]);
   L.items.forEach((a, i) => {
-    if (Math.min(a.w, a.h) < 44) fails.push(a.id + ' small hit ' + a.w + 'x' + a.h);
-    // rotated picture: fully on-screen, clear of every other picture / the case / the header text / back button
+    if (Math.min(a.pic.hw, a.pic.hh) < 44) fails.push(a.id + ' small hit ' + a.pic.hw.toFixed(0) + 'x' + a.pic.hh.toFixed(0));
+    // rotated picture: ≥2px inside the viewport (bottom: VH-8 — the continue button only shows once the items are packed),
+    // clear (gap ≥ 2) of every other picture / the case silhouette / the header text / back button
     const xs = a.pic.quad.map(v => v[0]), ys = a.pic.quad.map(v => v[1]);
-    if (Math.min(...xs) < 2 || Math.max(...xs) > VW - 2 || Math.min(...ys) < 2 || Math.max(...ys) > VH - 110) fails.push(a.id + ' picture off-screen');
+    if (Math.min(...xs) < 2 || Math.max(...xs) > VW - 2 || Math.min(...ys) < 2 || Math.max(...ys) > VH - 8) fails.push(a.id + ' picture off-screen');
     L.items.slice(i + 1).forEach(o => { const g = sat(a.pic.quad, o.pic.quad); if (g < 2) fails.push(a.id + ' pic × ' + o.id + ' ' + g.toFixed(1)); });
-    others.forEach(([n, o]) => { if (sat(a.pic.quad, quad(o)) < 2) fails.push(a.id + ' pic × ' + n); });
-    if (a.x < 16 || a.x + a.w > VW - 16) fails.push(a.id + ' edge x ' + a.x + '..' + (a.x + a.w));
-    if (a.y + a.h > VH - 120) fails.push(a.id + ' too low ' + (a.y + a.h));
-    L.items.slice(i + 1).forEach(o => { if (hit(a, o)) fails.push(a.id + ' × ' + o.id); });
-    others.forEach(([n, o]) => { if (hit(a, o)) fails.push(a.id + ' × ' + n); });
+    others.forEach(([n, o]) => { const g = sat(a.pic.quad, o); if (g < 2) fails.push(a.id + ' pic × ' + n + ' ' + g.toFixed(1)); });
+    // rotated hit rect: leftmost corner ≥ 16 (iOS back-swipe zone), on-screen, never overlapping another item's hit rect / the case / header
+    const hx = a.pic.hit.map(v => v[0]), hy = a.pic.hit.map(v => v[1]);
+    if (Math.min(...hx) < 16 || Math.max(...hx) > VW - 2 || Math.min(...hy) < 2 || Math.max(...hy) > VH - 8) fails.push(a.id + ' hit edge ' + Math.min(...hx).toFixed(0) + '..' + Math.max(...hx).toFixed(0) + ' / ' + Math.max(...hy).toFixed(0));
+    L.items.slice(i + 1).forEach(o => { if (sat(a.pic.hit, o.pic.hit) < 0) fails.push(a.id + ' hit × ' + o.id); });
+    others.forEach(([n, o]) => { if (sat(a.pic.hit, o) < 0) fails.push(a.id + ' hit × ' + n); });
   });
   if (L.stack.length || await p.evaluate(() => !!document.querySelector('.page-suitcase .filter-stack'))) fails.push('filter stack present on 11');
   const mode = await p.evaluate(() => ({ scene: !!document.querySelector('.sc-scene'), spr: document.querySelectorAll('.page-suitcase .sc-item img.sc-spr').length, svgItems: document.querySelectorAll('.page-suitcase .sc-item .sc-art svg').length, loaded: [...document.querySelectorAll('.page-suitcase .sc-item img.sc-spr')].every(i => i.complete && i.naturalWidth > 0), photo: (document.querySelector('.sc-item[data-id=photoframe] img') || {}).src, art: [...document.querySelectorAll('.page-suitcase .sc-item .sc-art')].map(e => Math.round(e.getBoundingClientRect().width)) }));

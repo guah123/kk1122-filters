@@ -17,7 +17,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     '.page-lyrics .lyr-veil{position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(180deg,rgba(246,239,226,.55) 0%,rgba(246,239,226,.38) 45%,rgba(246,239,226,.18) 100%)}',
     '.page-lyrics.has-bg .lyr-head,.page-lyrics.has-bg .lyr-scroll{position:relative;z-index:1}',
     /* v=261116aa (Kai): outro — tapping 繼續看看 fades every UI layer + the veil, holds the bare illustration ~3s, then moves on */
-    '.page-lyrics.has-bg > *{transition:opacity .8s ease}',
+    '.page-lyrics.has-bg > *{transition:opacity 2s ease}',  /* v=261118e (Kai): fades 2.5x slower (.8s → 2s) */
     '.page-lyrics.lyr-outro > *{opacity:0 !important;pointer-events:none !important}',
     '.page-lyrics.has-bg .lyr-paper{background-color:rgba(251,247,239,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 18px rgba(74,60,48,.10)}',
     '.page-lyrics.has-bg .lyr-head{text-shadow:0 0 12px rgba(251,247,239,.95),0 0 3px rgba(251,247,239,.9)}',
@@ -202,7 +202,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         st.scroll[n] = Math.round(scroll.scrollTop);
         if (!container.classList.contains('has-bg')) { ctx.next(); return; }
         outro = true;
-        var q = location.search, hold = /[?&]test=1/.test(q) && !/[?&]outro=1/.test(q) ? 150 : 2800; // .8s fade + 2s look (Kai)
+        var q = location.search, hold = /[?&]test=1/.test(q) && !/[?&]outro=1/.test(q) ? 150 : 4000; // 2s fade + 2s look (Kai)
         container.classList.add('lyr-outro');
         var done = false;
         function go() { if (done || !alive) return; done = true; container.removeEventListener('click', skip, true); ctx.next(); }

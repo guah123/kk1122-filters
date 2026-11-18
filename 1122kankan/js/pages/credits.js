@@ -1,10 +1,13 @@
-/* credits.js — step 33: curtains close from left/right, then credit cards roll up; Kai+姊姊 wander in front. */
+/* credits.js — step 33: (Veo frame-sequence) curtains close from left/right, then credit cards roll up; Kai+姊姊 wander in front. */
 window.DAYOF = window.DAYOF || {}; DAYOF._pages = DAYOF._pages || {};
 DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m; };
 (function () {
   // kai-sister.png is drawn walking LEFT (Kai's snout/flag on the left). It may only ever MOVE in the way it faces.
   var NATURAL_FACING = 'left';
   var IMG = 'assets/kai-sister.png';
+  // v=261118f: Veo-generated curtain (green-keyed, in/curtain/key_curtain.py) replaces the CSS curtains.
+  var CURTAIN_N = 30, CLOSE_MS = 2600, OPEN_MS = 2000;
+  var CURTAIN = []; for (var ci = 0; ci < CURTAIN_N; ci++) CURTAIN.push('assets/curtain/c' + (ci < 10 ? '0' : '') + ci + '.webp');
 
   var FALLBACK = [
     { section: '工作人員', items: [
@@ -44,8 +47,34 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var rollwrap = el('div', 'cr-rollwrap'), roll = el('div', 'cr-roll');
     var zone = el('div', 'cr-walkzone');
     // (Kai t480u) no skip: credits always play in full; the continue button appears only after the roll ends
-    var cont = el('button', 'btn cr-continue', '繼續看看'); cont.type = 'button'; cont.hidden = true;
+    // v=261118e (Kai): no 繼續看看 here — after the roll a hint button invites the user to pull the curtains open
+    var cont = el('button', 'btn cr-continue cr-opencurtain'); cont.type = 'button'; cont.hidden = true;
+    cont.innerHTML = '<span class="cr-hand" aria-hidden="true">👀</span>';   // (Kai) just 👀; label kept for screen readers
+    cont.setAttribute('aria-label', '拉開布幕');
     rollwrap.appendChild(roll); roll.style.visibility = 'hidden';
+    // frame-sequence curtain; CSS curtains/valance stay in the DOM only as a fallback (page.cr-css) if a frame fails to load
+    var curImg = el('img', 'cr-curimg'); curImg.alt = ''; curImg.draggable = false; curImg.setAttribute('aria-hidden', 'true');
+    curImg.src = CURTAIN[0];
+    var curFrame = 0, curRaf = 0, curFailed = false;
+    var reduce = false; try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+    CURTAIN.forEach(function (u) {               // preload all frames at mount
+      var im = new Image(); im.onerror = function () { if (!curFailed) { curFailed = true; page.classList.add('cr-css'); } };
+      im.src = u; if (im.decode) im.decode().catch(function () {});
+    });
+    function showFrame(i) { if (i !== curFrame) { curFrame = i; curImg.src = CURTAIN[i]; } }
+    function playCurtain(from, to, ms, done) {   // step through frames from→to over ms
+      cancelAnimationFrame(curRaf);
+      var t0 = 0;
+      function tick(now) {
+        if (cleaned) return;
+        if (!t0) t0 = now;
+        var p = Math.min(1, (now - t0) / ms);
+        showFrame(Math.round(from + (to - from) * p));
+        if (p < 1) curRaf = requestAnimationFrame(tick); else if (done) done();
+      }
+      curRaf = requestAnimationFrame(tick);
+    }
+    stage.appendChild(curImg);
     stage.appendChild(curL); stage.appendChild(curR); stage.appendChild(valance);
     stage.appendChild(rollwrap); stage.appendChild(zone);
     page.appendChild(stage); page.appendChild(cont);
@@ -178,13 +207,19 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     }
     cont.addEventListener('click', function () {
       if (cont.disabled) return; cont.disabled = true;
-      page.classList.add('cr-out');
-      later(function () { if (!cleaned) ctx.next(); }, 950);
+      cont.classList.remove('show'); page.classList.add('cr-opening');      // hide credits + walkers, curtains part (frames in reverse, 2s)
+      page.classList.remove('cr-closed');
+      if (reduce) showFrame(0); else playCurtain(CURTAIN_N - 1, 0, OPEN_MS);
+      later(function () { if (!cleaned) page.classList.add('cr-out'); }, 2300);
+      later(function () { if (!cleaned) ctx.next(); }, 2300 + 950);
     });
 
     // ---- curtain sequence ----
     walker.el.style.opacity = '0';
-    later(function () { stage.classList.add('cr-closing'); page.classList.add('cr-closed'); }, 250);
+    later(function () {
+      stage.classList.add('cr-closing'); page.classList.add('cr-closed');
+      if (reduce) showFrame(CURTAIN_N - 1); else playCurtain(0, CURTAIN_N - 1, CLOSE_MS);
+    }, 250);
     later(function () { if (!cleaned) { walker.el.style.transition = 'opacity .8s'; walker.el.style.opacity = '1'; startRoll(); } }, 250 + 2600 + 350);
     // walker tick runs immediately so it is positioned; hidden until curtain closed
     rafId = requestAnimationFrame(step);
@@ -193,10 +228,10 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     DAYOF._finale.credits = { sxFor: sxFor, NATURAL_FACING: NATURAL_FACING };
 
     return function cleanup() {
-      cleaned = true; cancelAnimationFrame(rafId); timers.forEach(clearTimeout);
+      cleaned = true; cancelAnimationFrame(rafId); cancelAnimationFrame(curRaf); timers.forEach(clearTimeout);
       window.removeEventListener('resize', onResize);
       if (stack) stack.destroy();
-      page.classList.remove('page-credits', 'cr-out', 'cr-closed');
+      page.classList.remove('page-credits', 'cr-out', 'cr-closed', 'cr-opening', 'cr-css');
     };
   }
 

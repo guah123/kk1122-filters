@@ -15,7 +15,7 @@ DAYOF.registerPage('rules', {
         '<ul class="rl-list">' +
           '<li>' + ic('cake') + '<div>可以吃蛋糕</div></li>' +
           '<li>' + ic('wine') + '<div>可以吧檯點酒</div></li>' +
-          '<li>' + ic('smile') + '<div>想哭就哭，想笑就笑</div></li>' +
+          '<li>' + ic('smile') + '<div>想笑就笑，想哭就哭</div></li>' +
           '<li>' + ic('line') + '<div>可以加入這個 LINE 社群同步聊天<br>' + line + '</div></li>' +
           '<li>' + ic('steps') + '<div>請大家一步一步跟著這個網頁走</div></li>' +
         '</ul>' +

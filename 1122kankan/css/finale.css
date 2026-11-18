@@ -203,3 +203,35 @@
 }
 /* the one-time 「新濾鏡解鎖」 tip (filterstack.js) sits in the narrow filter column here → give it its own width */
 .page-egg .eg-filters .fs-tip { width: max-content; max-width: min(220px, calc(100vw - 110px)); }
+
+/* v=261118e (Kai): end of credits = a hint button to pull the curtains open (no 繼續看看) */
+#app .page-credits .cr-opencurtain { padding: 12px 22px; border: 0; border-radius: 999px; background: #FBF7EF; color: #7B2D36;
+  font: 700 16px/1.2 var(--font-serif, serif); letter-spacing: .04em; white-space: nowrap; box-shadow: 0 4px 16px rgba(30,15,10,.4), 0 0 0 2px #D9B65A inset; cursor: pointer; }
+#app .page-credits .cr-opencurtain.show { animation: cr-pulse 1.8s ease-in-out .6s infinite; }
+.cr-opencurtain .cr-hand { display: inline-block; margin-right: 6px; animation: cr-tap 1.2s ease-in-out infinite; }
+@keyframes cr-pulse { 0%,100% { box-shadow: 0 4px 16px rgba(30,15,10,.4), 0 0 0 2px #D9B65A inset } 50% { box-shadow: 0 4px 16px rgba(30,15,10,.4), 0 0 0 2px #D9B65A inset, 0 0 0 10px rgba(242,198,109,.28) } }
+@keyframes cr-tap { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
+.page-credits.cr-opening .cr-rollwrap, .page-credits.cr-opening .cr-walkzone { opacity: 0; transition: opacity .5s; }
+#app .page-credits.cr-opening .cr-opencurtain { opacity: 0 !important; transition: opacity .3s; animation: none; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { #app .page-credits .cr-opencurtain.show, .cr-opencurtain .cr-hand { animation: none; } }
+
+/* v=261118e (Kai): fold = ONE vertical column (filters, then LINE / Coffee / 從頭開始), no cream panel / white chips; hint bubble = 👉 only */
+.page-egg .eg-stack .eg-extra { flex-direction: column; align-items: center; gap: 10px; padding: 0; background: none; box-shadow: none; border-radius: 0; }
+.page-egg .eg-pop .eg-cap { background: none; padding: 0; text-shadow: 0 0 4px rgba(251,247,239,.95), 0 0 2px rgba(251,247,239,.95); }
+.page-egg .eg-hint.eg-hint-point { padding: 5px 10px; border-radius: 999px; background: rgba(251,247,239,.96); border: 1.5px solid var(--wood, #C9A27A); box-shadow: 0 3px 12px rgba(74,60,48,.18); font: 22px/1.1 system-ui, "Apple Color Emoji", "Noto Color Emoji", sans-serif; top: calc(env(safe-area-inset-top, 0px) + 18px); }
+.page-egg .eg-hint.eg-hint-point::after { top: 22px; border-left-color: var(--wood, #C9A27A); }
+.page-egg .eg-hint.eg-hint-point .eg-hint-arrow { margin-left: 0; }
+#app .page-credits .cr-opencurtain { padding: 10px 16px; font: 28px/1.1 system-ui, "Apple Color Emoji", "Noto Color Emoji", sans-serif; }
+.cr-opencurtain .cr-hand { margin-right: 0; }
+.page-egg .eg-coffee .eg-bubble { border-color: #A9805C; }
+.page-egg .eg-coffee .eg-bubble::after { border-color: #A9805C; }
+.page-egg .eg-restart .eg-bubble { border-color: #7F9AB0; }
+.page-egg .eg-restart .eg-bubble::after { border-color: #7F9AB0; }
+
+/* v=261118f: Veo frame-sequence curtain (assets/curtain/c00–c29.webp) replaces the CSS curtains;
+   the CSS curtains/valance only show as a fallback when a frame fails to load (.cr-css). */
+.cr-curimg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; object-fit: cover; object-position: 50% 0;
+  pointer-events: none; user-select: none; -webkit-user-select: none; }
+.page-credits:not(.cr-css) .cr-curtain, .page-credits:not(.cr-css) .cr-valance { display: none; }
+.page-credits.cr-css .cr-curimg { display: none; }
+.page-credits:not(.cr-css) .cr-rollwrap { top: 13%; }   /* keep the roll clear of the swag valance */
