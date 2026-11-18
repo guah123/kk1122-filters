@@ -379,6 +379,12 @@
 
       const inst = {
         cleared: 0,
+        /* r9 相機調色（只作用在相機畫面、雲層之下）：抹開越多越暖——soft-light 金黃＋一點 screen 暖光；
+           烏雲蓋著時只有很淡的底色，雲本身的樣子不變。w＝已抹開比例（st.vis，與陽光層同一個值） */
+        grade(S) {
+          const w = KK.smooth(0.0, 0.35, st.vis || 0);
+          return [{ op: 'soft-light', c: '#FFB54D', a: 0.08 + 0.3 * w }, { op: 'screen', c: '#5A3A10', a: 0.1 * w }];
+        },
         resize,
         pointer,
         reset,

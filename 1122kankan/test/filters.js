@@ -1,7 +1,7 @@
 // 濾鏡截圖＋互動驗證：node test/filters.js [fake-cam.mjpeg]
 //   → ../verify/y/*.png（16-rain*、sun*、cam-nonumber）（390×844、deviceScaleFactor 2、?test=1）
 //   檢查：console／page error、assets/filters/* 回應 200、〈太陽〉左下抹開後露出底部石板地（r8 方案 B；原本是散步兩人）、
-//         〈下雨〉點雲下一陣小雨（r8 方案 C）、〈太空人〉點一下放天燈（r8 方案 D）截圖、
+//         〈下雨〉點雲下一陣小雨（r8 方案 C）、〈太空人〉點一下不再放東西（r9 拿掉紙燈：像素比對點擊前後同一時刻）＋劃一下放流星截圖、
 //         「重新佈滿烏雲」用真實觸控點擊（touchscreen.tap 走 hit-test）＋像素取樣確認烏雲回來。
 const { chromium } = require('playwright'); const { spawn } = require('child_process'); const path = require('path'); const fs = require('fs');
 const CAM = process.argv[2]; const OUT = path.join(__dirname, '..', '..', 'verify', 'y'); fs.mkdirSync(OUT, { recursive: true });
@@ -46,8 +46,19 @@ const diff = (a, b) => Math.round(Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) 
       await sleep(3500); await shot(p, '16-rain-3');
     } else if (id === 'helmet') {
       await sleep(1500); await shot(p, 'cam-nonumber');
-      const R = await box(p); for (const [fx, fy] of [[0.5, 0.6], [0.3, 0.4]]) { await p.touchscreen.tap(R.x + R.w * fx, R.y + R.h * fy); await sleep(500); }
-      await sleep(800); await shot(p, 'helmet-lamps');   // r8：點一下放天燈飛向月亮
+      // r9：點一下 → 什麼都不會出現（紙燈互動已拿掉）：凍結舞台，在同一個 loop 時間比對點擊前後的畫面
+      const R = await box(p);
+      const frame = () => p.evaluate(() => { const s = window.__stage; s.renderAt(3.3, s.S.now); const d = document.querySelector('.cam-canvas').getContext('2d').getImageData(0, 0, 720, 1280).data; let h = 0; for (let i = 0; i < d.length; i += 97) h = (h * 31 + d[i]) >>> 0; return h; });
+      await p.evaluate(() => { const o = KK.Stage.prototype.renderAt; KK.Stage.prototype.renderAt = function (t, n) { window.__stage = this; return o.call(this, t, n); }; }); await sleep(200);
+      await p.evaluate(() => window.__stage.stop());
+      const h0 = await frame();
+      for (const [fx, fy] of [[0.5, 0.6], [0.3, 0.4]]) { await p.touchscreen.tap(R.x + R.w * fx, R.y + R.h * fy); await sleep(300); }
+      await p.evaluate(() => { window.__stage.S.now += 1; });
+      const h1 = await frame();
+      report.push('helmet tap: ' + (h0 === h1 ? 'nothing spawned (frame identical)' : 'FRAME CHANGED after tap'));
+      await p.evaluate(() => window.__stage.start());
+      await p.mouse.move(R.x + R.w * 0.8, R.y + R.h * 0.2); await p.mouse.down(); await p.mouse.move(R.x + R.w * 0.35, R.y + R.h * 0.35, { steps: 6 }); await p.mouse.up();
+      await sleep(450); await shot(p, 'helmet-meteor');   // 劃一下放一顆流星
     }
     else await sleep(1500);
     report.push(id + ' ok'); await p.close();

@@ -155,7 +155,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     });
     rsBox.appendChild(rsBtn); rsBox.appendChild(el('div', 'eg-bubble', '從頭開始'));   // v=261118e (Kai): bubble like 密碼
 
-    // v=261118i (Kai): one button to save every illustration of the evening (cover, lyrics pages, question pages, find-Kai scenes).
+    // v=261118j (Kai): one button to save every illustration of the evening (cover, lyrics pages, question pages, find-Kai scenes).
     // Phones: Web Share with files → the system sheet offers 「儲存 N 張影像」 (needs a fresh tap, so the files are fetched
     // first and the tap that finds them ready shares at once). No file-share support → one zip download (store-only, built here).
     var SVG_DL = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 9v20"/><path d="M15 21l9 9 9-9"/><path d="M10 37h28"/></svg>';

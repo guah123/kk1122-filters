@@ -238,7 +238,7 @@
 /* v=261118g (Kai): short normal fades */
 .page-egg { animation: eg-in .3s ease both; }
 .cr-under { position: absolute; inset: 0; z-index: 1; background: center / cover no-repeat; pointer-events: none; }
-/* v=261118i download-all-pictures button (above 從頭開始) */
+/* v=261118j download-all-pictures button (above 從頭開始) */
 .eg-dl button.eg-bigbtn { background: #C9A27A; }
 .page-egg .eg-dl .eg-bubble { border-color: #C9A27A; }
 .page-egg .eg-dl .eg-bubble::after { border-color: #C9A27A; }

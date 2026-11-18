@@ -63,7 +63,7 @@
     // r8（Kai 選定：太陽 B、太空人 D、下雨 C、家 A）：每個濾鏡 1–2 張去背 WebP，擺位見 KK.placeArt
     'otona-moon.webp', 'otona-boy.webp',
     'hareru-clouds.jpg', 'hareru-wipe-brush.png', 'hareru-b-sun.webp', 'hareru-b-ground.webp',
-    'remember-a-hill.webp',
+    'remember-a-hill.webp', 'remember-a-girl.webp', 'remember-a-boy.webp',   // r9: kids cut out of the hill → animated in f2-remember.js
     'rain-c-clouds.webp', 'rain-c-bike.webp',
     'rain-drop-1.png', 'rain-drop-2.png', 'rain-drop-3.png', 'rain-drop-4.png', 'rain-mist.png',
     'rain-ripple.png', 'rain-splash.png',
@@ -94,7 +94,7 @@
         .then(function (m) {
           var list = m ? (Array.isArray(m) ? m : (m.files || [])) : ART_FILES;
           list = list.filter(function (n) { return ART_FILES.indexOf(n) >= 0; });
-          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261118i').then(function (im) { if (im) artImgs[n] = im; }); }));
+          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261118j').then(function (im) { if (im) artImgs[n] = im; }); }));
         });
       artPromise = Promise.race([all, new Promise(function (r) { setTimeout(r, 3000); })]);
       return artPromise;
@@ -234,7 +234,7 @@
       if (window.KK && KK.Stage && KK.Recorder) { ok(); return; }
       if (window.KKReady) { window.KKReady(ok); return; }
       var s = document.createElement('script');
-      s.src = ROOT + 'vendor/kk/kk-load.js?v=261118i';   // version tag: phones must not keep an old filter engine
+      s.src = ROOT + 'vendor/kk/kk-load.js?v=261118j';   // version tag: phones must not keep an old filter engine
       s.onload = function () { window.KKReady(ok); };
       s.onerror = function () { kkPromise = null; s.remove(); reject(Object.assign(new Error('無法載入 ' + s.src), { name: 'LoadError' })); };
       document.head.appendChild(s);

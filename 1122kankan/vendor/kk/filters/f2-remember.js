@@ -11,7 +11,14 @@
  * r8（Kai 選定方案 A「原脈絡」）：底部一張夕陽草坡小畫（remember-a-hill.webp：晚霞、草坡、亮燈冒煙的小屋、姊弟跑回家），
  *   只佔下緣約 27% 高、中央淨空。動態只留：窗光呼吸（11–14 秒孩子到家時更亮）、落日微光、兩隻歸巢小鳥。
  *   原本的大片左上夕陽光暈、點陣草坡／房子／奔跑姊弟／遠方散步的人、紅蜻蜓都不畫（沒有 r8 圖時才回到舊畫法）。
- *   螢火蟲互動完全不變：點一下放 5 隻、按住滑過一路放。 */
+ *   螢火蟲互動完全不變：點一下放 5 隻、按住滑過一路放。
+ *
+ * r9：姊弟從小畫裡剪出來（remember-a-boy.webp／remember-a-girl.webp，小畫原處已補成草坡與晚霞），
+ *   在程式裡跑：沿著草坡小路往上跑向小屋（二次曲線 KIDS_PATH），7 秒一輪（整除 14）＝跑 5 秒＋到小屋旁淡出＋停 2 秒再從左下出現。
+ *   跑步：|sin| 小跳、落地瞬間微壓扁、身體前傾＋每步左右小晃（rotate＋skew 模擬手腳擺動）、越遠越小（1.2 → 0.68 倍），
+ *   姊姊先跑、弟弟晚 0.8 秒追在後面；每隔一步腳邊一小團塵土。孩子到家的那一刻窗光亮一下。
+ *   螢火蟲改成帶綠的黃綠光（核心 #F4FFB0、光暈 #BEF078），動態與互動不變。
+ *   相機調色（只作用在相機畫面）：暖琥珀＋一點玫瑰色的夕陽（見 GRADE）。 */
 (function () {
   'use strict';
   const KK = window.KK, P = KK.PAL, TAU = KK.TAU;
@@ -20,6 +27,17 @@
 
   /* r8 方案 A 素材擺位（1080×1920 設計稿比例）：小畫範圍；畫內的兩扇窗、落日 */
   const HILL_BOX = [0.0296, 0.7271, 0.9694, 1], HILL_WIN = [[0.742, 0.476], [0.907, 0.483]], HILL_SUN = [0.3, 0.555];
+  /* r9 奔跑的姊弟：座標以小畫原稿（1015 px 寬）為單位。spr＝素材原稿大小、ax/ay＝腳底錨點（素材比例）、off＝起跑延遲（秒） */
+  const HILL_W = 1015;
+  const KIDS = [
+    { n: 'remember-a-girl.webp', w: 81, h: 145, ax: 0.4, ay: 0.97, off: 0, seed: 0.0 },
+    { n: 'remember-a-boy.webp', w: 86, h: 124, ax: 0.45, ay: 0.97, off: 0.8, seed: 1.7 },
+  ];
+  const KIDS_PATH = [[285, 428], [505, 376], [678, 322]];   // 起點（左下草坡）→ 控制點 → 終點（小屋左前）
+  const KID_CYCLE = 7, KID_RUN = 5, KID_HOP = 2.6;           // 一輪秒數、跑步秒數、每秒步數
+  const FLY_CORE = '#F4FFB0', FLY_GLOW = '#BEF078';
+  /* r9 相機調色：soft-light 暖琥珀（主調）、soft-light 玫瑰（夕照的粉）、screen 深玫瑰褐（暗部微暖抬起） */
+  const GRADE = [{ op: 'soft-light', c: '#F0975A', a: 0.3 }, { op: 'soft-light', c: '#E58A8A', a: 0.12 }, { op: 'screen', c: '#3C2224', a: 0.12 }];
 
   KK.defineFilter({
     id: 'remember',
@@ -29,6 +47,7 @@
     mood: '懷念・奔跑・被等待',
     duration: 14,
     hint: '點一下或滑過畫面，放出螢火蟲',
+    grade: GRADE,
     critterHint: '只有人類：底部夕陽草坡上，姊弟跑回亮著燈的小屋（不畫小動物）',
     create() {
       const st = { back: null, front: null, flies: [], lastSpawn: 0, runX: null, runFace: 1, crest: null, crestKey: '' };
@@ -263,19 +282,72 @@
         g.restore();
       }
 
+      /* ---------- r9 奔跑的姊弟（剪出來的小畫素材） ---------- */
+      function pathAt(k) {        // 二次貝茲：回傳原稿座標
+        const A = KIDS_PATH[0], C = KIDS_PATH[1], B = KIDS_PATH[2], m = 1 - k;
+        return [m * m * A[0] + 2 * m * k * C[0] + k * k * B[0], m * m * A[1] + 2 * m * k * C[1] + k * k * B[1]];
+      }
+      function kidState(K, t) {
+        const q = KK.mod(t - K.off, KID_CYCLE);
+        if (q >= KID_RUN) return null;
+        const k0 = q / KID_RUN, k = 1 - Math.pow(1 - k0, 1.3);           // 上坡越跑越慢一點
+        const al = KK.smooth(0, 0.07, k0) * (1 - KK.smooth(0.8, 0.98, k0));
+        const p = q * KID_HOP * Math.PI + K.seed;                         // 每 π 一步
+        return { q, k, al, p, pos: pathAt(k), sc: KK.lerp(1.2, 0.68, k) };
+      }
+      function drawKids(g, S, R) {
+        const f = R.w / HILL_W, X = (x) => R.x + x * f, Y = (y) => R.y + y * f;
+        const list = [];
+        for (const K of KIDS) {
+          const img = ART(K.n);
+          if (!img) continue;
+          const s = kidState(K, S.t);
+          if (s && s.al > 0.01) list.push([K, img, s]);
+        }
+        list.sort((a, b) => a[2].pos[1] - b[2].pos[1]);                  // 遠的（上面）先畫
+        const dust = KK.glow(KK.mix(P.page, P.cream, 0.5), 64);
+        for (const [K, img, s] of list) {
+          const w = K.w * f * s.sc, h = K.h * f * s.sc;
+          const fx = X(s.pos[0]), fy = Y(s.pos[1]);
+          // 腳邊塵土：每隔一步（落地瞬間）留一小團，0.5 秒內變大變淡
+          const n = Math.floor(s.p / Math.PI);                              // sin(p)=0 的那一刻＝落地
+          for (let j = 0; j < 2; j++) {
+            const nn = n - j;
+            if (nn % 2) continue;
+            const age = s.q - (nn - K.seed / Math.PI) / KID_HOP;            // 距離那一步落地幾秒
+            if (age < 0 || age > 0.5) continue;
+            const ss = kidState(K, S.t - age);
+            if (!ss) continue;
+            const dx = X(ss.pos[0]) - w * 0.15, dy = Y(ss.pos[1]);
+            const a = 0.28 * s.al * (1 - age / 0.5);
+            KK.drawSprite(g, dust, dx - age * w * 0.3, dy - h * 0.02 - age * h * 0.08, h * (0.16 + 0.35 * age), a);
+          }
+          const sn = Math.sin(s.p), hop = Math.abs(sn), land = Math.pow(1 - hop, 4);
+          g.save();
+          g.globalAlpha = s.al;
+          g.translate(fx, fy - hop * h * 0.07);
+          g.rotate(0.07 + 0.035 * sn);                                       // 前傾＋每步左右晃
+          g.transform(1, 0, 0.05 * Math.cos(s.p), 1, 0, 0);                  // 微微 skew：手腳擺動的感覺
+          g.scale(1 + 0.05 * land, 1 - 0.07 * land);                         // 落地微壓扁
+          g.drawImage(img, -w * K.ax, -h * K.ay, w, h);
+          g.restore();
+        }
+        g.globalAlpha = 1;
+      }
+
       function spawnFly(S, x, y) {
         if (st.flies.length >= 40) st.flies.shift();
         st.flies.push({ x: x + (Math.random() - 0.5) * st.b * 0.05, y: y + (Math.random() - 0.5) * st.b * 0.05, born: S.now, seed: Math.random() * 10 });
       }
 
-      function drawFly(g, spr, x, y, age, seed, b) {
+      function drawFly(g, spr, x, y, age, seed, b, core) {
         const env = KK.smooth(0, 0.3, age) * (1 - KK.smooth(1.8, 2.7, age));
         if (env <= 0) return;
         const fx = x + Math.sin(age * 2.4 + seed) * b * 0.018;
         const fy = y - age * b * 0.045;
         const fl = 0.55 + 0.45 * Math.sin(age * 9 + seed * 7);
         KK.drawSprite(g, spr, fx, fy, b * 0.045, env * fl);
-        KK.drawSprite(g, spr, fx, fy, b * 0.014, env * Math.min(1, fl + 0.3));
+        KK.drawSprite(g, core || spr, fx, fy, b * 0.014, env * Math.min(1, fl + 0.3));
       }
 
       return {
@@ -316,7 +388,8 @@
           if (aA && KK.placeArt) {
             const R = KK.placeArt(aA, S, HILL_BOX, { landScale: 1.2 });
             g.drawImage(aA, R.x, R.y, R.w, R.h);
-            const boostA = 0.3 * KK.smooth(11.2, 12, t) * (1 - KK.smooth(13, 14, t));
+            const qa = KK.mod(t, KID_CYCLE);   // r9：姊姊到家（第 5 秒）時窗光亮一下
+            const boostA = 0.3 * KK.smooth(4.5, 5.2, qa) * (1 - KK.smooth(6.2, 7, qa));
             const wA = 0.6 + 0.12 * Math.sin(ph * TAU * 3) + boostA;
             g.save();
             g.globalCompositeOperation = 'screen';
@@ -332,6 +405,7 @@
               const y = u * (0.16 + i * 0.05) + Math.sin(k * TAU) * b * 0.02 + KK.smooth(0.5, 1, k) * b * 0.08;
               drawBird(g, x, y, b * 0.016, t * TAU * 3 + i * 2, 0.75);
             }
+            drawKids(g, S, R);
           } else {
 
             // 草坡＋房子（點陣：remember-hill.png 貼齊底部、remember-house.png 放在山丘上）
@@ -471,17 +545,17 @@
           // 螢火蟲
           g.save();
           g.globalCompositeOperation = 'screen';
-          const spr = KK.glow(P.page, 64);
+          const spr = KK.glow(FLY_GLOW, 64), core = KK.glow(FLY_CORE, 32);   // r9：黃綠螢火（原本 P.page 米黃）
           if (S.autoDemo) {
             for (let i = 0; i < 14; i++) {
               const age = KK.mod(t - i * 1, 14);
               if (age > 2.7) continue;
               const x = w * (0.18 + 0.64 * KK.hash(i, 3)), y = h * (0.5 + 0.3 * KK.hash(i, 9));
-              drawFly(g, spr, x, y, age, i * 1.3, b);
+              drawFly(g, spr, x, y, age, i * 1.3, b, core);
             }
           } else {
             st.flies = st.flies.filter((f) => S.now - f.born < 2.7);
-            st.flies.forEach((f) => drawFly(g, spr, f.x, f.y, S.now - f.born, f.seed, b));
+            st.flies.forEach((f) => drawFly(g, spr, f.x, f.y, S.now - f.born, f.seed, b, core));
           }
           g.restore();
 

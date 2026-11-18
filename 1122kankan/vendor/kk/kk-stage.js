@@ -138,6 +138,7 @@
         g.drawImage(v, (S.w - dw) / 2, (S.h - dh) / 2, dw, dh);
       }
       g.restore();
+      return true;
     } else if (this.bgMode === 'none') {
       g.fillStyle = '#000';
       g.fillRect(0, 0, S.w, S.h);
@@ -158,7 +159,11 @@
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
-    this.drawBg();
+    // v=261118 r9: per-filter colour grade on the CAMERA picture only (under the art). spec = inst.grade(S) or def.grade.
+    if (this.drawBg() && this.inst && KK.gradeOn) {
+      const sp = typeof this.inst.grade === 'function' ? this.inst.grade(S) : (this.def && this.def.grade);
+      if (sp) KK.grade(g, S, sp);
+    }
     if (this.inst) {
       g.save();
       this.inst.draw(g, S);
@@ -217,6 +222,29 @@
   };
 
   KK.Stage = Stage;
+
+  /* ---------- Colour grade (r9) ----------
+   * spec = [{ op: 'soft-light' | 'overlay' | 'multiply' | 'screen' | 'saturation' | …, c: '#rrggbb', a: alpha }, …]
+   * Each layer is ONE full-canvas fillRect with that blend mode → cheap per frame and identical on iOS Safari
+   * (no ctx.filter needed). A blend mode the browser does not know is skipped (never falls back to a flat tint).
+   * KK.gradeOn = false switches it off (before/after captures). */
+  const opOk = {};
+  KK.gradeOn = true;
+  KK.grade = function (g, S, spec) {
+    if (!spec || !spec.length) return;
+    g.save();
+    for (let i = 0; i < spec.length; i++) {
+      const L = spec[i];
+      if (!L || !(L.a > 0.003)) continue;
+      if (opOk[L.op] == null) { g.globalCompositeOperation = L.op; opOk[L.op] = g.globalCompositeOperation === L.op; }
+      if (!opOk[L.op]) continue;
+      g.globalCompositeOperation = L.op;
+      g.globalAlpha = Math.min(1, L.a);
+      g.fillStyle = L.c;
+      g.fillRect(0, 0, S.w, S.h);
+    }
+    g.restore();
+  };
 
   /* ---------- 相機（後鏡頭預設、ideal 約束） ----------
    * 與 grok/261112-live-filter 評估一致：用 ideal 不用 exact；音訊關掉通話用處理。

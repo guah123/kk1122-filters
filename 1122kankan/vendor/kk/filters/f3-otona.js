@@ -5,8 +5,8 @@
  * r8（Kai 選定方案 D「自由發想」：月色朦朧 銀河無聲 為你留一盞小小的燈）：
  *   右上角一顆朦朧的大月亮、太空人坐在月亮邊上揮手（otona-moon.webp）；左下角屋頂上舉著對講機的男孩與小油燈（otona-boy.webp）。
  *   原本的深色夜空罩、頂樓剪影與兩個人拿掉（圖集中在兩個對角，中央留給畫面）；星星眨眼、排程流星保留（流星從月亮後面劃出來）。
- *   互動：點一下 → 男孩的小燈亮一下，一盞暖暖的小紙燈飄向月亮（路徑會彎向點的位置），邊飄邊晃、越來越小、淡出；最多同時 8 盞。
- *         手指一劃（≥0.04u）→ 照舊放一顆流星。
+ *   互動：手指一劃（≥0.04u）→ 放一顆流星。（r9：「點一下放紙燈飛向月亮」整個拿掉；只是點一下不做任何事）
+ *   r9 調色：相機畫面（圖層底下）一層淡淡的藍紫夜色＋微微抬起的暗部，配合月夜的圖（見 GRADE）。
  *
  * 分鏡（loop 12 秒，流星只由 S.t 決定 → 無縫）：
  *   0.7 / 2.4 / 4.2s   零星：三顆一般流星（期待）
@@ -68,10 +68,11 @@
     const pad = S.u * 0.03;
     return x > S.w * 0.25 - pad && x < S.w * 0.75 + pad && y > S.h * 0.275 - pad && y < S.h * 0.725 + pad;
   }
-  /* r8 方案 D 素材擺位（1080×1920 設計稿比例）：月亮圖範圍、月亮圓心、天燈飛去的點（太空人揮手處）；男孩圖範圍、小油燈、屋頂小窗 */
-  const MOON_BOX = [0.3185, 0, 1, 0.3807], MOON_DISC = [0.69, 0.31], MOON_AIM = [0.5, 0.42];
+  /* r8 方案 D 素材擺位（1080×1920 設計稿比例）：月亮圖範圍、月亮圓心；男孩圖範圍、小油燈、屋頂小窗 */
+  const MOON_BOX = [0.3185, 0, 1, 0.3807], MOON_DISC = [0.69, 0.31];
   const BOY_BOX = [0, 0.6661, 0.6759, 1], BOY_LAMP = [0.137, 0.482], BOY_WIN = [0.566, 0.956];
-  const LAMP_MAX = 8;
+  /* r9 相機調色（只作用在相機畫面，圖層在上面不受影響）：soft-light 藍紫讓畫面微涼，screen 深藍紫把最暗處輕輕抬起（月光下的夜色） */
+  const GRADE = [{ op: 'soft-light', c: '#4C5A9E', a: 0.24 }, { op: 'screen', c: '#2A2C58', a: 0.14 }];
   const TAIL_N = 14;
   const TAIL_COL = [];
   for (let i = 0; i < TAIL_N; i++) TAIL_COL.push(KK.mix(P.cream, P.apricot, (i / TAIL_N) * 0.7));
@@ -83,35 +84,11 @@
     title: '流星',
     mood: '長大・許願・夜裡的勇氣',
     duration: 12,
-    hint: '點一下，放一盞燈飛向月亮；劃一下，畫一顆流星',
+    hint: '劃一下，畫一顆流星',
+    grade: GRADE,
     critterHint: '右上角月亮邊坐著揮手的太空人；左下角屋頂上，男孩舉著對講機、身旁一盞小燈（人類）',
     create() {
-      const st = { sky: null, roof: [], rh: 0, par: 0, stars: [], w: 0, h: 0, u: 0, meteors: [], downs: {}, lamps: [], lampSpr: null, lastLamp: -9, lampFrom: [0, 0], lampTo: [0, 0] };
-
-      /* ---------- 小紙燈（天燈）：預畫一張 64×80，每幀只縮放貼上 ---------- */
-      function makeLamp() {
-        const W = 64, H = 80, c = KK.canvas(W, H), g = c.getContext('2d');
-        const body = [[W * 0.2, H * 0.12], [W * 0.8, H * 0.12], [W * 0.86, H * 0.3], [W * 0.74, H * 0.86], [W * 0.26, H * 0.86], [W * 0.14, H * 0.3]];
-        const gr = g.createLinearGradient(0, H * 0.1, 0, H * 0.9);
-        gr.addColorStop(0, KK.mix(P.cream, P.apricot, 0.35));
-        gr.addColorStop(0.55, KK.mix(P.apricot, P.ochre, 0.35));
-        gr.addColorStop(1, KK.mix(P.ochre, P.cream, 0.45));
-        g.fillStyle = gr; KK.smoothPath(g, body, true, 0, 0, 0); g.fill();
-        // 紙的濃淡（水彩暈）
-        g.fillStyle = KK.rgba(P.cream, 0.45);
-        g.beginPath(); g.ellipse(W * 0.42, H * 0.36, W * 0.17, H * 0.2, -0.2, 0, TAU); g.fill();
-        // 竹骨
-        g.strokeStyle = KK.rgba(P.brick, 0.35); g.lineWidth = 1.2;
-        g.beginPath(); g.moveTo(W * 0.38, H * 0.13); g.lineTo(W * 0.4, H * 0.85); g.moveTo(W * 0.62, H * 0.13); g.lineTo(W * 0.6, H * 0.85); g.stroke();
-        // 外框（色鉛筆）
-        g.strokeStyle = KK.rgba(P.umber, 0.55); g.lineWidth = 1.6; g.lineJoin = 'round';
-        KK.smoothPath(g, body, true, 0, 0, 0); g.stroke();
-        // 底下的小火
-        KK.drawSprite(g, KK.glow(P.cream, 32, 0.6), W * 0.5, H * 0.86, W * 0.42, 1);
-        g.fillStyle = KK.rgba('#FFF4D6', 0.95);
-        g.beginPath(); g.ellipse(W * 0.5, H * 0.87, W * 0.06, H * 0.05, 0, 0, TAU); g.fill();
-        return c;
-      }
+      const st = { sky: null, roof: [], rh: 0, par: 0, stars: [], w: 0, h: 0, u: 0, meteors: [], downs: {} };
 
       function drawFingerMeteors(g, S) {
         const u = S.u, t = S.t;
@@ -417,10 +394,9 @@
           st.sky = buildSky(S);
           st.stars = buildStars(S);
           buildRoof(S);
-          if (!st.lampSpr) st.lampSpr = makeLamp();
-          st.meteors = []; st.downs = {}; st.lamps = [];
+          st.meteors = []; st.downs = {};
         },
-        reset() { st.meteors = []; st.downs = {}; st.lamps = []; },
+        reset() { st.meteors = []; st.downs = {}; },
 
         pointer(S, ev) {
           const u = st.u;
@@ -434,20 +410,13 @@
           let vx = ev.x - d0.x, vy = ev.y - d0.y;
           const dist = Math.hypot(vx, vy);
           let sx = d0.x, sy = d0.y, dx, dy, L;
-          if (dist < u * 0.04) {
-            // r8：只是點一下 → 放一盞小燈飛向月亮（路徑彎向點的位置）
-            if (st.lamps.length >= LAMP_MAX) st.lamps.shift();
-            st.lamps.push({ cx: d0.x, cy: d0.y, born: S.now, dur: 5 + Math.random() * 1.2, seed: Math.random() * 10, s: 0.85 + Math.random() * 0.3 });
-            st.lastLamp = S.now;
-            return;
-          } else {
-            dx = vx / dist; dy = vy / dist; L = u * 0.6;
-            // 終點夾在畫面內，許願的星光才看得到
-            const ex = KK.clamp(sx + dx * L, st.w * 0.04, st.w * 0.96);
-            const ey = KK.clamp(sy + dy * L, st.h * 0.04, st.h * 0.96);
-            const ll = Math.hypot(ex - sx, ey - sy);
-            if (ll > u * 0.18) { dx = (ex - sx) / ll; dy = (ey - sy) / ll; L = ll; }
-          }
+          if (dist < u * 0.04) return;   // r9：只是點一下 → 什麼都不做（紙燈互動已拿掉）
+          dx = vx / dist; dy = vy / dist; L = u * 0.6;
+          // 終點夾在畫面內，許願的星光才看得到
+          const ex = KK.clamp(sx + dx * L, st.w * 0.04, st.w * 0.96);
+          const ey = KK.clamp(sy + dy * L, st.h * 0.04, st.h * 0.96);
+          const ll = Math.hypot(ex - sx, ey - sy);
+          if (ll > u * 0.18) { dx = (ex - sx) / ll; dy = (ey - sy) / ll; L = ll; }
           st.meteors.push({ x: sx, y: sy, dx, dy, L, born: S.now });
           if (st.meteors.length > 6) st.meteors.shift();
         },
@@ -519,11 +488,10 @@
           }
 
           // 4) r8 方案 D：右上角朦朧的大月亮（太空人坐在月亮邊上揮手）＋左下角屋頂上拿對講機的男孩與小燈。
-          //    排程流星在月亮之前畫 → 從月亮後面劃出來；手指流星與天燈畫在圖的上面。
+          //    排程流星在月亮之前畫 → 從月亮後面劃出來；手指流星畫在圖的上面。
           const aMoon = ART('otona-moon.webp'), aBoy = ART('otona-boy.webp');
-          let MR = null, BR = null;
           if (aMoon && KK.placeArt) {
-            MR = KK.placeArt(aMoon, S, MOON_BOX);
+            const MR = KK.placeArt(aMoon, S, MOON_BOX);
             const mx = MR.x + MR.w * MOON_DISC[0], my = MR.y + MR.h * MOON_DISC[1];
             g.save(); g.globalCompositeOperation = 'screen';
             KK.drawSprite(g, KK.glow(P.cream, 128), mx, my, MR.w * 1.25 * (1 + 0.03 * Math.sin(ph * TAU * 2)), 0.2);   // 朦朧月暈
@@ -531,49 +499,16 @@
             g.drawImage(aMoon, MR.x, MR.y, MR.w, MR.h);
           }
           if (aBoy && KK.placeArt) {
-            BR = KK.placeArt(aBoy, S, BOY_BOX);
+            const BR = KK.placeArt(aBoy, S, BOY_BOX);
             g.drawImage(aBoy, BR.x, BR.y, BR.w, BR.h);
             const lx = BR.x + BR.w * BOY_LAMP[0], ly = BR.y + BR.h * BOY_LAMP[1];
-            const kick = KK.smooth(0, 0.08, S.now - st.lastLamp) * (1 - KK.smooth(0.15, 0.8, S.now - st.lastLamp));   // 放燈時小燈亮一下
             g.save(); g.globalCompositeOperation = 'screen';
-            KK.drawSprite(g, KK.glow(P.apricot, 96), lx, ly, BR.w * (0.34 + 0.12 * kick), 0.3 + 0.06 * Math.sin(ph * TAU * 6) + 0.3 * kick);
+            KK.drawSprite(g, KK.glow(P.apricot, 96), lx, ly, BR.w * 0.34, 0.3 + 0.06 * Math.sin(ph * TAU * 6));
             KK.drawSprite(g, KK.glow(P.apricot, 64), BR.x + BR.w * BOY_WIN[0], BR.y + BR.h * BOY_WIN[1], BR.w * 0.16, 0.22);
             g.restore();
           }
-          st.lampFrom = BR ? [BR.x + BR.w * BOY_LAMP[0], BR.y + BR.h * BOY_LAMP[1]] : [w * 0.1, h * 0.83];
-          st.lampTo = MR ? [MR.x + MR.w * MOON_AIM[0], MR.y + MR.h * MOON_AIM[1]] : [w * 0.78, h * 0.15];
-
           // 5) 手指放出的流星＋消失處的小星光
           drawFingerMeteors(g, S);
-
-          // 6) 天燈：點一下 → 一盞暖暖的小紙燈從男孩的小燈升起，搖搖晃晃飄向月亮、越飛越小、淡出
-          if (st.lamps.length) {
-            const keep = [], A = st.lampFrom, B = st.lampTo;
-            g.save();
-            for (let i = 0; i < st.lamps.length; i++) {
-              const L = st.lamps[i], age = S.now - L.born, q = age / L.dur;
-              if (age < 0 || q >= 1) continue;
-              keep.push(L);
-              const k = 1 - Math.pow(1 - q, 1.5);                               // 一開始飄得快、靠近月亮慢下來
-              const C = [KK.lerp(L.cx, (A[0] + B[0]) / 2, 0.45), KK.lerp(L.cy, (A[1] + B[1]) / 2, 0.45)];   // 路徑經過點的地方附近
-              const m = 1 - k;
-              let x = m * m * A[0] + 2 * m * k * C[0] + k * k * B[0];
-              let y = m * m * A[1] + 2 * m * k * C[1] + k * k * B[1];
-              x += Math.sin(age * 1.9 + L.seed) * u * 0.018 * (0.4 + k);         // 左右擺盪
-              y += Math.sin(age * 3.1 + L.seed * 2) * u * 0.004;
-              const sc = u * 0.07 * (1 - 0.6 * k) * L.s, al = KK.smooth(0, 0.35, age) * (1 - KK.smooth(0.72, 1, q));
-              const fl = 0.85 + 0.15 * Math.sin(age * 11 + L.seed * 5);
-              g.globalCompositeOperation = 'screen';
-              KK.drawSprite(g, KK.glow(P.apricot, 96), x, y + sc * 0.15, sc * 3.2, 0.55 * al * fl);
-              g.globalCompositeOperation = 'source-over';
-              g.save(); g.translate(x, y); g.rotate(Math.sin(age * 1.9 + L.seed) * 0.16);
-              g.globalAlpha = al; g.drawImage(st.lampSpr, -sc / 2, -sc * 0.62, sc, sc * 1.25);
-              g.restore();
-            }
-            g.restore();
-            g.globalAlpha = 1;
-            st.lamps = keep;
-          }
 
           // 沒有 r8 素材時的備用：原本的頂樓剪影
           if (!aBoy) g.drawImage(st.roof[bi], 0, h - st.rh);

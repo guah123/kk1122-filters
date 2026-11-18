@@ -50,6 +50,8 @@
       mood: '毛毛雨・起霧的窗・慢慢看清楚',
       duration: 12,
       hint: '點點上面的雲，下一陣小雨',
+      // r9 相機調色（只作用在相機畫面）：saturation 灰 → 彩度降約 18%；soft-light 灰藍 → 微涼、雨天的灰藍
+      grade: [{ op: 'saturation', c: '#808080', a: 0.18 }, { op: 'soft-light', c: '#6F86A6', a: 0.3 }],
       critterHint: '左下角水窪裡，媽媽騎單車載著小孩（人類），車頭一盞小燈',
       create: function () {
         var st = { C: null, cg: null, fog: null, rain: null, bead: null, beads: [], fingers: {}, taps: [], showers: [], cloudBase: 0, tapLimit: 0, key: '' };
