@@ -217,9 +217,13 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         // v=261118h (Kai): the emoji button always sits top-right
         goBtn.style.left = Math.round(cr.width - 34) + 'px'; goBtn.style.top = 'calc(env(safe-area-inset-top, 0px) + 34px)';   // same row + inset as the back button
         container.classList.add('lyr-outro'); container.appendChild(goBtn);
-        goBtn.addEventListener('click', function () { if (goBtn.disabled || !alive) return; goBtn.disabled = true;
+        // v=261118l (Kai): the emoji button OR a tap anywhere on the bare illustration goes on (back button excluded)
+        var leaving = false;
+        function leave() { if (leaving || !alive) return; leaving = true; goBtn.disabled = true;
           var fast = /[?&]test=1/.test(location.search) && !/[?&]outro=1/.test(location.search);
-          container.classList.add('lyr-leave'); setTimeout(function () { if (alive) ctx.next(); }, fast ? 60 : 520); });
+          container.classList.add('lyr-leave'); setTimeout(function () { if (alive) ctx.next(); }, fast ? 60 : 520); }
+        goBtn.addEventListener('click', function (e) { e.stopPropagation(); leave(); });
+        setTimeout(function () { if (alive) container.addEventListener('click', function (e) { if (container.classList.contains('lyr-outro')) leave(); }); }, 250);
       });
 
       loadData().then(function (data) {
