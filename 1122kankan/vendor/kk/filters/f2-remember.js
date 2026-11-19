@@ -26,7 +26,7 @@
   const ART = (n) => (KK.art ? KK.art(n) : null);
 
   /* r8 方案 A 素材擺位（1080×1920 設計稿比例）：小畫範圍；畫內的兩扇窗、落日 */
-  const HILL_BOX = [-0.2054, 0.659, 0.9694, 1];   /* v=261119j (Kai): whole vignette ×1.25, kept against the right edge so the cottage stays in frame */
+  const HILL_BOX = [-0.2054, 0.659, 0.9694, 1];   /* v=261119k (Kai): whole vignette ×1.25, kept against the right edge so the cottage stays in frame */
   const HILL_WIN = [[0.742, 0.476], [0.907, 0.483]], HILL_SUN = [0.3, 0.555];
   /* r9 奔跑的姊弟：座標以小畫原稿（1015 px 寬）為單位。spr＝素材原稿大小、ax/ay＝腳底錨點（素材比例）、off＝起跑延遲（秒） */
   const HILL_W = 1015;
@@ -329,7 +329,7 @@
           g.translate(fx, fy - hop * h * 0.07);
           g.rotate(0.07 + 0.035 * sn);                                       // 前傾＋每步左右晃
           g.transform(1, 0, 0.05 * Math.cos(s.p), 1, 0, 0);                  // 微微 skew：手腳擺動的感覺
-          // v=261119j (Kai): the sprites are painted facing LEFT but the path runs left → right (toward the cottage),
+          // v=261119k (Kai): the sprites are painted facing LEFT but the path runs left → right (toward the cottage),
           // so they looked like running backwards → mirror them to face the way they run
           g.scale(-(1 + 0.05 * land), 1 - 0.07 * land);                      // 水平翻轉＋落地微壓扁
           g.drawImage(img, -w * (1 - K.ax), -h * K.ay, w, h);

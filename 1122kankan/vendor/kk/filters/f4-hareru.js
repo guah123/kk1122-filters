@@ -413,7 +413,7 @@
           }
           inst.cleared = st.cleared;
           const vis = KK.clamp(st.vis * 1.15, 0, 1);
-          const sa = KK.smooth(0.03, 0.4, st.sunV); // 太陽整顆顯現的程度：看太陽處被抹開多少
+          const sa = 1; // v=261119k (Kai)：太陽一直都在雲層底下，抹開哪裡就露出哪裡（不再等抹到門檻才整顆跳出來）
 
           // 2. 陽光層（雲下方）：暖色光罩，只在抹開處看得到
           g.save();

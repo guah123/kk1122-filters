@@ -25,11 +25,14 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var ta = el('textarea', 'qz-area'); ta.placeholder = '寫在這裡…'; ta.rows = 5;
       ta.value = prev.text != null && prev.text !== '' ? prev.text : (prev.draft || '');
       wrap.appendChild(ta);
-      var nudge = el('div', 'qz-nudge', '寫一點點也好～或按' + buttons[1]);
-      wrap.appendChild(nudge);
+      var gate = buttons[1] !== '蛤';   // v=261119k: step 21 (pizza, 送出／蛤) keeps its original layout
+      var nudge = el('div', 'qz-nudge', gate ? '寫一點點也好～' : '寫一點點也好～或按' + buttons[1]);
+      if (!gate) wrap.appendChild(nudge);
       var row = el('div', 'qz-btns'), bSend = el('button', 'qz-btn', buttons[0]), bAlt = el('button', 'qz-btn ghost', buttons[1]);
       bSend.type = bAlt.type = 'button';
-      row.appendChild(bSend); row.appendChild(bAlt); wrap.appendChild(row);
+      // v=261119k (Kai): 送出 centred; the second button (跳過／蛤) only appears — right below 送出 — after 送出 was tapped 3× with an empty answer
+      var emptyTaps = 0; if (gate) { bAlt.classList.add('qz-alt'); container.classList.add('qz-gate'); }
+      row.appendChild(bSend); row.appendChild(bAlt); wrap.appendChild(row); if (gate) wrap.appendChild(nudge);
       // optional page illustration (step 21): v=261118 centred hero between the question card and the answer box (see quiz.css);
       // the whole wrap scrolls, so with the keyboard open the hero simply scrolls away
       var art = st.art || fb.art;
@@ -75,11 +78,13 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       bSend.addEventListener('click', function () {
         var t = ta.value.trim();
         if (!t) {
+          if (gate && ++emptyTaps >= 3 && !bAlt.classList.contains('on')) { bAlt.classList.add('on'); nudge.textContent = '寫一點點也好～或按' + buttons[1]; }
           nudge.classList.add('on'); ta.classList.remove('qz-shake'); void ta.offsetWidth; ta.classList.add('qz-shake'); ta.focus(); return;
         }
         finish({ text: t, skipped: false }, 0);
       });
       bAlt.addEventListener('click', function () {
+        if (gate && !bAlt.classList.contains('on')) return;
         if (buttons[1] === '蛤') {
           var h = el('div', 'qz-huh', '蛤？'); container.appendChild(h);
           finish({ text: '', skipped: true, huh: true }, 800);
