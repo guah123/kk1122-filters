@@ -80,7 +80,27 @@
   Stage.prototype.recordStream = function (fps) {
     if (!this.canvas.captureStream) throw Object.assign(new Error('此瀏覽器不支援 canvas.captureStream'), { name: 'NotSupported' });
     const cs = this.canvas.captureStream(fps || 30);
-    const audio = KK.Camera.stream ? KK.Camera.stream.getAudioTracks() : [];
+    let audio = KK.Camera.stream ? KK.Camera.stream.getAudioTracks() : [];
+    // v=261119e (Kai): the mic runs with AGC off (keeps the music's dynamics) so recordings came out quieter than the native
+    // camera. Add make-up gain (+~8 dB) followed by a fast limiter so loud passages don't clip. Any failure → raw track.
+    if (audio.length && KK.Camera.recGain !== 0) {
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!KK._recAC || KK._recAC.state === 'closed') KK._recAC = new AC({ latencyHint: 'interactive' });
+        const ac = KK._recAC; if (ac.state === 'suspended') ac.resume();
+        if (this._recNodes) { try { this._recNodes.forEach((n) => n.disconnect()); } catch (e) { /* ignore */ } }
+        const src = ac.createMediaStreamSource(new MediaStream([audio[0]]));
+        const gain = ac.createGain(); gain.gain.value = KK.Camera.recGain || 2.5;
+        const lim = ac.createDynamicsCompressor();
+        lim.threshold.value = -6; lim.knee.value = 4; lim.ratio.value = 20; lim.attack.value = 0.003; lim.release.value = 0.25;
+        const dest = ac.createMediaStreamDestination();
+        try { dest.channelCount = 2; } catch (e) { /* ignore */ }
+        src.connect(gain); gain.connect(lim); lim.connect(dest);
+        this._recNodes = [src, gain, lim, dest];
+        const out = dest.stream.getAudioTracks();
+        if (out.length) audio = out;
+      } catch (e) { if (KK.Camera.log) KK.Camera.log.push('錄音增益失敗，改用原始音軌：' + (e && e.name)); }
+    }
     return new MediaStream([...cs.getVideoTracks(), ...audio]);
   };
 
