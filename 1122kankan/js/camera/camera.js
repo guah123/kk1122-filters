@@ -94,7 +94,7 @@
         .then(function (m) {
           var list = m ? (Array.isArray(m) ? m : (m.files || [])) : ART_FILES;
           list = list.filter(function (n) { return ART_FILES.indexOf(n) >= 0; });
-          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261119b').then(function (im) { if (im) artImgs[n] = im; }); }));
+          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261119c').then(function (im) { if (im) artImgs[n] = im; }); }));
         });
       artPromise = Promise.race([all, new Promise(function (r) { setTimeout(r, 3000); })]);
       return artPromise;
@@ -234,7 +234,7 @@
       if (window.KK && KK.Stage && KK.Recorder) { ok(); return; }
       if (window.KKReady) { window.KKReady(ok); return; }
       var s = document.createElement('script');
-      s.src = ROOT + 'vendor/kk/kk-load.js?v=261119b';   // version tag: phones must not keep an old filter engine
+      s.src = ROOT + 'vendor/kk/kk-load.js?v=261119c';   // version tag: phones must not keep an old filter engine
       s.onload = function () { window.KKReady(ok); };
       s.onerror = function () { kkPromise = null; s.remove(); reject(Object.assign(new Error('無法載入 ' + s.src), { name: 'LoadError' })); };
       document.head.appendChild(s);

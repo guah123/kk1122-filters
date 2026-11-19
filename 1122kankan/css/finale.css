@@ -238,7 +238,7 @@
 /* v=261118g (Kai): short normal fades */
 .page-egg { animation: eg-in .3s ease both; }
 .cr-under { position: absolute; inset: 0; z-index: 1; background: center / cover no-repeat; pointer-events: none; }
-/* v=261119b download-all-pictures button (above 從頭開始) */
+/* v=261119c download-all-pictures button (above 從頭開始) */
 .eg-dl button.eg-bigbtn { background: #C9A27A; }
 .page-egg .eg-dl .eg-bubble { border-color: #C9A27A; }
 .page-egg .eg-dl .eg-bubble::after { border-color: #C9A27A; }
@@ -250,7 +250,7 @@
 .page-egg .eg-bubble { position: absolute !important; right: calc(100% + 8px) !important; top: 50% !important; transform: translateY(-50%); margin: 0 !important; }
 .page-egg .eg-bubble::after { display: block !important; top: 50% !important; margin-top: -4px; }
 @media (max-height: 700px) { .page-egg .eg-fold { padding: 4px 0 6px 140px; margin-left: -140px; scrollbar-width: none; } .page-egg .eg-fold::-webkit-scrollbar { display: none; } }
-/* v=261119b 本日歌單 button */
+/* v=261119c 本日歌單 button */
 .eg-playlist button.eg-bigbtn { background: #C98A7A; }
 .page-egg .eg-playlist .eg-bubble { border-color: #C98A7A; }
 .page-egg .eg-playlist .eg-bubble::after { border-color: #C98A7A; }
