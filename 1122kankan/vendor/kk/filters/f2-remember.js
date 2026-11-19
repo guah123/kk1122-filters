@@ -328,8 +328,10 @@
           g.translate(fx, fy - hop * h * 0.07);
           g.rotate(0.07 + 0.035 * sn);                                       // 前傾＋每步左右晃
           g.transform(1, 0, 0.05 * Math.cos(s.p), 1, 0, 0);                  // 微微 skew：手腳擺動的感覺
-          g.scale(1 + 0.05 * land, 1 - 0.07 * land);                         // 落地微壓扁
-          g.drawImage(img, -w * K.ax, -h * K.ay, w, h);
+          // v=261119a (Kai): the sprites are painted facing LEFT but the path runs left → right (toward the cottage),
+          // so they looked like running backwards → mirror them to face the way they run
+          g.scale(-(1 + 0.05 * land), 1 - 0.07 * land);                      // 水平翻轉＋落地微壓扁
+          g.drawImage(img, -w * (1 - K.ax), -h * K.ay, w, h);
           g.restore();
         }
         g.globalAlpha = 1;
