@@ -59,12 +59,15 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   var ZORD = {}; Object.keys(POS).sort(function (a, b) { return POS[b][3] * POS[b][3] * AR[b][0] * AR[b][1] - POS[a][3] * POS[a][3] * AR[a][0] * AR[a][1]; })
     .forEach(function (id, i) { ZORD[id] = 2 + i; });
   var LABEL = {}; ITEMS.forEach(function (i) { LABEL[i.id] = i.label; });
+  // v=261119d (Kai): after closing, name what was actually packed (short names, in packing order)
+  var SHORT = { switch: 'Switch', headphones: '耳機', book: '書', monstera: '龜背芋', guitar: '吉他', chips: '洋芋片', football: '足球', photoframe: '全家福', cigarettes: '菸', dress: '洋裝和帽子' };
+  function packedText(ids) { return ids.length ? '帶了' + ids.map(function (id) { return SHORT[id] || LABEL[id] || id; }).join('、') : ''; }
 
   // slot centres inside the suitcase interior (viewBox 260x200)
   // v=261118d (Kai): painted suitcase = Veo clip keyed into a sprite sheet (frame 0 open … last closed). Slots are
   // fractions of that picture, on the open case's inner floor (back row first, front row last → front overlaps back).
   var SLOTS = [[.258, .533], [.378, .563], [.498, .593], [.618, .623], [.738, .653], [.195, .605], [.315, .635], [.435, .665], [.555, .695], [.675, .725]];
-  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261119c', n: 39, cols: 8, rows: 5, land: 25 };
+  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261119d', n: 39, cols: 8, rows: 5, land: 25 };
   function sheetPos(k) { var c = k % SHEET.cols, r = Math.floor(k / SHEET.cols); return (c / (SHEET.cols - 1) * 100).toFixed(3) + '% ' + (r / (SHEET.rows - 1) * 100).toFixed(3) + '%'; }
   var ROT = [-7, 4, -3, 8, -5, 5, -8, 3, 7, -4];
 
@@ -165,6 +168,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         $case.style.left = X(DESIGN.CASE_X).toFixed(1) + 'px'; $case.style.top = Y(DESIGN.CASE_Y).toFixed(1) + 'px'; $case.style.width = (DESIGN.CASE_W * Math.min(1.1, sx, sy)).toFixed(1) + 'px';
         var s = stage.getBoundingClientRect(), c = $case.getBoundingClientRect();
         if (c.height) $under.style.top = (c.bottom - s.top + 12) + 'px';
+        if (closed) placeMsg();
       }
       window.addEventListener('resize', layout);
       layout(); later(layout, 60);
@@ -323,8 +327,18 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var n = packedIds().length;
         Object.keys(trayEl).forEach(function (id) { trayEl[id].classList.add('away'); });
         $hint.textContent = n ? '行李箱關好了，準備出發！' : '輕輕的，什麼都不帶也很好。';
-        $msg.textContent = n ? '帶了 ' + n + ' 樣東西' : '';
+        // each name stays whole when the line wraps (no 「洋芋／片」)
+        var pk = packedIds(); $msg.textContent = '';
+        if (pk.length) { $msg.setAttribute('aria-label', packedText(pk)); pk.forEach(function (id, i) { var sp = document.createElement('span'); sp.style.whiteSpace = 'nowrap'; sp.textContent = (i ? '' : '帶了') + (SHORT[id] || LABEL[id] || id) + (i < pk.length - 1 ? '、' : ''); $msg.appendChild(sp); }); }
+        stage.classList.add('sc-done'); placeMsg(); later(placeMsg, 120);
         later(function () { $btn.classList.add('show'); }, animated ? 250 : 0);
+      }
+      // the packed list sits in the empty space just above the closed suitcase (the lid area), so the button stays right under the case
+      function placeMsg() {
+        if (!closed) return;
+        var s = stage.getBoundingClientRect(), c = $case.getBoundingClientRect(), u = $under.getBoundingClientRect();
+        if (!c.height) return;
+        $msg.style.top = Math.round((c.top + c.height * 0.47 - $msg.offsetHeight - 8) - u.top) + 'px';
       }
 
       function closeCase(animated) {
@@ -596,7 +610,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       closed = true; closing = false;
       ids.forEach(function (id) { hitEl[id].classList.add('away'); });
       $hint.textContent = order.length ? '行李箱關好了，準備出發！' : '輕輕的，什麼都不帶也很好。';
-      $msg.textContent = order.length ? '帶了 ' + order.length + ' 樣東西' : '';
+      $msg.textContent = packedText(order);
       later(function () { $btn.classList.add('show'); }, animated ? 250 : 0);
     }
     function drawLid(phi, fin) { $lid.innerHTML = lidSvg(phi, fin); }
