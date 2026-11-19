@@ -17,7 +17,7 @@
     'video/webm;codecs=vp8,opus',
     'video/webm',
   ];
-  const R = { runs: [], active: null, last: null, MIMES: MIMES, limitSec: 600, videoBps: 12000000, audioBps: 192000 };
+  const R = { runs: [], active: null, last: null, MIMES: MIMES, limitSec: 600, videoBps: 6000000, audioBps: 192000 };
   let seq = 0;
 
   const errStr = (e) => (e && (e.name ? e.name + ': ' : '') + (e.message || '')) || String(e);

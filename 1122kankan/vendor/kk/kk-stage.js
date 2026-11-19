@@ -42,7 +42,7 @@
      Call again once the video has its size (camera.js does). */
   Stage.prototype.autoPortraitSize = function () {
     const v = this.video, a = v && v.videoWidth ? Math.max(v.videoWidth, v.videoHeight) : 0, b = v && v.videoWidth ? Math.min(v.videoWidth, v.videoHeight) : 0;
-    return (a >= 1600 && b >= 900 && !this.lowPerf) ? Stage.PORTRAIT_HD : Stage.PORTRAIT;
+    return Stage.PORTRAIT;   // v=261119f: always 720×1280 (HD output disabled, see constraints)
   };
   Stage.prototype.setPortraitOutput = function (on, size) {
     this.portrait = !!on;
@@ -81,7 +81,7 @@
     if (!this.canvas.captureStream) throw Object.assign(new Error('此瀏覽器不支援 canvas.captureStream'), { name: 'NotSupported' });
     const cs = this.canvas.captureStream(fps || 30);
     let audio = KK.Camera.stream ? KK.Camera.stream.getAudioTracks() : [];
-    // v=261119e (Kai): the mic runs with AGC off (keeps the music's dynamics) so recordings came out quieter than the native
+    // v=261119f (Kai): the mic runs with AGC off (keeps the music's dynamics) so recordings came out quieter than the native
     // camera. Add make-up gain (+~8 dB) followed by a fast limiter so loud passages don't clip. Any failure → raw track.
     if (audio.length && KK.Camera.recGain !== 0) {
       try {
@@ -274,8 +274,8 @@
       return {
         video: {
           facingMode: { ideal: facing || 'environment' },
-          width: { ideal: 1080 },   // v=261118k (Kai): ask for full-HD portrait so recordings are close to the native camera
-          height: { ideal: 1920 },
+          width: { ideal: 720 },   // v=261119f (Kai): back to 720×1280 — 1080p made filtered recordings stutter on phones
+          height: { ideal: 1280 },
           aspectRatio: { ideal: 9 / 16 }, // 不支援或給回橫向時，由 drawBg 置中裁切成 9:16
           frameRate: { ideal: 30 },
         },
@@ -340,8 +340,8 @@
         let pair = null;
         try {
           const alt = KK.Camera.constraints(facing);
-          alt.video.width = { ideal: 1920 };
-          alt.video.height = { ideal: 1080 };
+          alt.video.width = { ideal: 1280 };
+          alt.video.height = { ideal: 720 };
           delete alt.video.aspectRatio;
           pair = await open(alt);
           KK.Camera.log.push('對調約束重試：' + pair[1].videoWidth + '×' + pair[1].videoHeight);

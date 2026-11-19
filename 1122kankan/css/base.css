@@ -277,7 +277,7 @@ a{color:var(--sky-deep)}
 .page.has-pbg > .photo-wrap.paper-bg{background-color:rgba(246,239,226,.28);background-image:none}
 
 /* ============================================================
-   v=261119e (Kai + UI review): ONE round button — 48px, same paper face, border and shadow everywhere.
+   v=261119f (Kai + UI review): ONE round button — 48px, same paper face, border and shadow everywhere.
    Top row inset 10px (back button left, filter / emoji / ⋯ right, same line). Icons 26px (single-stroke
    symbols 20px), emoji 25px. Exception by design: pill text buttons (繼續看看 / 開始找 / 送出) are not round buttons.
    ============================================================ */

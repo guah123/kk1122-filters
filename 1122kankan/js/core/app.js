@@ -391,7 +391,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     // v=261116aa: picture-book backgrounds for non-lyrics pages (assets/page-bg/NN.jpg) under a cream veil
     if ({ 9: 1, 13: 1, 15: 1, 21: 1, 29: 1, 31: 1 }[n]) {
       el.classList.add('has-pbg');
-      // v=261119e (Kai): step 29 (photo page) shows its picture at full strength — no cream veil
+      // v=261119f (Kai): step 29 (photo page) shows its picture at full strength — no cream veil
       var veil = n === 29 ? 'linear-gradient(rgba(246,239,226,0),rgba(246,239,226,0))' : 'linear-gradient(180deg,rgba(246,239,226,.5) 0%,rgba(246,239,226,.32) 50%,rgba(246,239,226,.1) 100%)';
       el.style.backgroundImage = veil + ',url("assets/page-bg/' + (n < 10 ? '0' : '') + n + '.jpg")';
       el.style.backgroundSize = 'cover,cover'; el.style.backgroundRepeat = 'no-repeat'; el.style.backgroundPosition = 'center,center bottom';
@@ -463,8 +463,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     state.maxStep = Math.max(state.maxStep || 1, 32); // backend refuses finish ('not_finished') if maxStep < 32
     save();
     if (!api.enabled || api.isTestEmail(state.email)) {
-      setTimeout(function () { toast(OFFLINE_MSG, { ms: 3800 }); }, 400);
-      return;
+      return;   // v=261119f (Kai): never show the 「信件將於後台接上後寄出」 toast to guests — stays queued and is retried silently
     }
     sendFinish(0);
   }
@@ -479,7 +478,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       } else if (attempt < 2 && !(r && r.offline)) {
         setTimeout(function () { sendFinish(attempt + 1); }, 4000 * (attempt + 1));
       } else {
-        toast(OFFLINE_MSG, { ms: 3800 });
+        console.warn('[dayof] finish queued (offline) — will retry on next load');   // silent for guests
       }
     });
   }
