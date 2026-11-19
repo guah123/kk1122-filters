@@ -59,7 +59,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   var ZORD = {}; Object.keys(POS).sort(function (a, b) { return POS[b][3] * POS[b][3] * AR[b][0] * AR[b][1] - POS[a][3] * POS[a][3] * AR[a][0] * AR[a][1]; })
     .forEach(function (id, i) { ZORD[id] = 2 + i; });
   var LABEL = {}; ITEMS.forEach(function (i) { LABEL[i.id] = i.label; });
-  // v=261119f (Kai): after closing, name what was actually packed (short names, in packing order)
+  // v=261119g (Kai): after closing, name what was actually packed (short names, in packing order)
   var SHORT = { switch: 'Switch', headphones: '耳機', book: '書', monstera: '龜背芋', guitar: '吉他', chips: '洋芋片', football: '足球', photoframe: '全家福', cigarettes: '菸', dress: '洋裝和帽子' };
   function packedText(ids) { return ids.length ? '帶了' + ids.map(function (id) { return SHORT[id] || LABEL[id] || id; }).join('、') : ''; }
 
@@ -67,7 +67,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
   // v=261118d (Kai): painted suitcase = Veo clip keyed into a sprite sheet (frame 0 open … last closed). Slots are
   // fractions of that picture, on the open case's inner floor (back row first, front row last → front overlaps back).
   var SLOTS = [[.258, .533], [.378, .563], [.498, .593], [.618, .623], [.738, .653], [.195, .605], [.315, .635], [.435, .665], [.555, .695], [.675, .725]];
-  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261119f', n: 39, cols: 8, rows: 5, land: 25 };
+  var SHEET = { src: 'assets/suitcase/case-sheet.webp?v=261119g', n: 39, cols: 8, rows: 5, land: 25 };
   function sheetPos(k) { var c = k % SHEET.cols, r = Math.floor(k / SHEET.cols); return (c / (SHEET.cols - 1) * 100).toFixed(3) + '% ' + (r / (SHEET.rows - 1) * 100).toFixed(3) + '%'; }
   var ROT = [-7, 4, -3, 8, -5, 5, -8, 3, 7, -4];
 

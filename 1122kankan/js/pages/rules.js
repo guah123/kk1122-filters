@@ -17,7 +17,7 @@ DAYOF.registerPage('rules', {
           '<li>' + ic('wine') + '<div>可以吧檯點酒</div></li>' +
           '<li>' + ic('smile') + '<div>想笑就笑，想哭就哭</div></li>' +
           '<li>' + ic('line') + '<div>可以加入這個 LINE 社群同步聊天<br>' + line + '</div></li>' +
-          '<li>' + ic('steps') + '<div>請大家一步一步跟著這個網頁走</div></li>' +
+          '<li>' + ic('steps') + '<div>請一步步跟著網頁指示進行</div></li>' +
         '</ul>' +
         '<button type="button" class="btn" data-act="ok">OK</button>' +
       '</div></div>';

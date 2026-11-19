@@ -277,7 +277,7 @@ a{color:var(--sky-deep)}
 .page.has-pbg > .photo-wrap.paper-bg{background-color:rgba(246,239,226,.28);background-image:none}
 
 /* ============================================================
-   v=261119f (Kai + UI review): ONE round button — 48px, same paper face, border and shadow everywhere.
+   v=261119g (Kai + UI review): ONE round button — 48px, same paper face, border and shadow everywhere.
    Top row inset 10px (back button left, filter / emoji / ⋯ right, same line). Icons 26px (single-stroke
    symbols 20px), emoji 25px. Exception by design: pill text buttons (繼續看看 / 開始找 / 送出) are not round buttons.
    ============================================================ */
@@ -305,3 +305,7 @@ a{color:var(--sky-deep)}
 /* the gold ring is reserved for the few seconds a filter is NEW; an open fold shows a quiet wood ring */
 #app .filter-stack .round-btn.is-new{ box-shadow:0 0 0 3px rgba(242,198,109,.55),0 2px 10px rgba(201,162,122,.55); }
 #app .filter-stack.fs-open .fs-toggle{ box-shadow:0 0 0 3px rgba(138,101,69,.28),var(--rb-sh); }
+
+/* v=261119g (Kai): 暱稱和 email 頁 — the cover illustration itself (sharp, same crop as the cover), pressed to half transparency over cream */
+.page-form .dx-bg.soft{ filter:none; transform:none; opacity:.5; }
+.page-form .dx-veil{ background:none; }
