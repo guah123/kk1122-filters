@@ -155,7 +155,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     });
     rsBox.appendChild(rsBtn); rsBox.appendChild(el('div', 'eg-bubble', '從頭開始'));   // v=261118e (Kai): bubble like 密碼
 
-    // v=261119a (Kai): one button to save every illustration of the evening (cover, lyrics pages, question pages, find-Kai scenes).
+    // v=261119b (Kai): one button to save every illustration of the evening (cover, lyrics pages, question pages, find-Kai scenes).
     // Phones: Web Share with files → the system sheet offers 「儲存 N 張影像」 (needs a fresh tap, so the files are fetched
     // first and the tap that finds them ready shares at once). No file-share support → one zip download (store-only, built here).
     var SVG_DL = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 9v20"/><path d="M15 21l9 9 9-9"/><path d="M10 37h28"/></svg>';
@@ -191,6 +191,13 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         later(function () { if (a.parentNode) a.parentNode.removeChild(a); URL.revokeObjectURL(url); }, 4000);
       });
     }
+    // v=261119b (Kai): today's set list on YouTube
+    var SVG_MUSIC = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 34V12l18-4v22"/><ellipse cx="14" cy="34" rx="5" ry="4"/><ellipse cx="32" cy="30" rx="5" ry="4"/></svg>';
+    var plBox = el('div', 'eg-pop eg-playlist');
+    var plBtn = el('button', 'eg-bigbtn'); plBtn.type = 'button'; plBtn.setAttribute('aria-label', '本日歌單（YouTube）');
+    plBtn.appendChild(iconNode('music', SVG_MUSIC));
+    plBtn.addEventListener('click', function () { openUrl(cfg.PLAYLIST_URL || 'https://youtube.com/playlist?list=PLSYxzFWN7gR8&si=jkl7Pm1J-VsRj6sR'); });
+    plBox.appendChild(plBtn); plBox.appendChild(el('div', 'eg-bubble', '本日歌單'));
     var dlBox = el('div', 'eg-pop eg-dl');
     var dlBtn = el('button', 'eg-bigbtn'); dlBtn.type = 'button'; dlBtn.setAttribute('aria-label', '下載圖片');
     dlBtn.appendChild(iconNode('download', SVG_DL));
@@ -220,7 +227,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var own = el('div', 'eg-stack');
     var fold = el('div', 'eg-fold');
     var fsHost = el('div', 'eg-filters');
-    var ex = el('div', 'eg-extra'); ex.appendChild(lineBox); ex.appendChild(cofBox); ex.appendChild(dlBox); ex.appendChild(rsBox);
+    var ex = el('div', 'eg-extra'); ex.appendChild(lineBox); ex.appendChild(cofBox); ex.appendChild(plBox); ex.appendChild(dlBox); ex.appendChild(rsBox);
     fold.appendChild(fsHost); fold.appendChild(ex); own.appendChild(fold);
     page.appendChild(own);
     var fstack = null;

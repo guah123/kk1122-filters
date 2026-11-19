@@ -94,7 +94,7 @@
         .then(function (m) {
           var list = m ? (Array.isArray(m) ? m : (m.files || [])) : ART_FILES;
           list = list.filter(function (n) { return ART_FILES.indexOf(n) >= 0; });
-          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261119a').then(function (im) { if (im) artImgs[n] = im; }); }));
+          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261119b').then(function (im) { if (im) artImgs[n] = im; }); }));
         });
       artPromise = Promise.race([all, new Promise(function (r) { setTimeout(r, 3000); })]);
       return artPromise;
@@ -204,7 +204,7 @@
      * 回傳 {x,y,w,h}（畫布座標），呼叫端用 x+fx*w／y+fy*h 找素材上的特徵點（燈、窗、水窪）。 */
     KK.placeArt = function (img, S, box, opt) {
       opt = opt || {};
-      var land = S.w > S.h, L = box[0] < 0.01, R = box[2] > 0.99, T = box[1] < 0.01, B = box[3] > 0.99;
+      var land = S.w > S.h, L = box[0] < 0.01 && box[0] > -0.001, R = box[2] > 0.99, T = box[1] < 0.01, B = box[3] > 0.99;
       var k = land ? (S.h / 1920) * (opt.landScale || 1.35) : S.w / 1080;
       var w = (box[2] - box[0]) * 1080 * k, ar = img.naturalHeight / img.naturalWidth, h = w * ar, x, y;
       if (land && L && R && opt.landFull === 'stretch') { w = S.w; h = Math.min(w * ar, S.h * (opt.landMaxH || 0.34)); }
@@ -234,7 +234,7 @@
       if (window.KK && KK.Stage && KK.Recorder) { ok(); return; }
       if (window.KKReady) { window.KKReady(ok); return; }
       var s = document.createElement('script');
-      s.src = ROOT + 'vendor/kk/kk-load.js?v=261119a';   // version tag: phones must not keep an old filter engine
+      s.src = ROOT + 'vendor/kk/kk-load.js?v=261119b';   // version tag: phones must not keep an old filter engine
       s.onload = function () { window.KKReady(ok); };
       s.onerror = function () { kkPromise = null; s.remove(); reject(Object.assign(new Error('無法載入 ' + s.src), { name: 'LoadError' })); };
       document.head.appendChild(s);
