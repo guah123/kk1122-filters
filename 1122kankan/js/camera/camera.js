@@ -19,7 +19,7 @@
   var MAP = { helmet: 'otona', rain: 'rain', sun: 'hareru', fish: 'fish', home: 'remember' };
   var LABEL = { helmet: '太空人', rain: '下雨', sun: '太陽', fish: '魚眼', home: '家' };
   var RESET_LABEL = { hareru: '重新佈滿烏雲' };   // 只有〈太陽〉能抹開；〈下雨〉是點擊濺水花（Kai 02:47）
-  var PHOTO_SIZE = [900, 1600];   // v=261119l: back to the original photo size
+  var PHOTO_SIZE = [900, 1600];   // v=261119m: back to the original photo size
 
   var EXPLAIN = {
     NotAllowedError: ['相機被拒絕了', '需要允許使用相機才能拍。<br>iPhone：網址列左邊「大小」→「網站設定」→ 相機改「允許」後重新整理。<br>Android：網址列左邊的圖示 →「權限」→ 相機改「允許」。'],
@@ -94,7 +94,7 @@
         .then(function (m) {
           var list = m ? (Array.isArray(m) ? m : (m.files || [])) : ART_FILES;
           list = list.filter(function (n) { return ART_FILES.indexOf(n) >= 0; });
-          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261119l').then(function (im) { if (im) artImgs[n] = im; }); }));
+          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261119m').then(function (im) { if (im) artImgs[n] = im; }); }));
         });
       artPromise = Promise.race([all, new Promise(function (r) { setTimeout(r, 3000); })]);
       return artPromise;
@@ -234,7 +234,7 @@
       if (window.KK && KK.Stage && KK.Recorder) { ok(); return; }
       if (window.KKReady) { window.KKReady(ok); return; }
       var s = document.createElement('script');
-      s.src = ROOT + 'vendor/kk/kk-load.js?v=261119l';   // version tag: phones must not keep an old filter engine
+      s.src = ROOT + 'vendor/kk/kk-load.js?v=261119m';   // version tag: phones must not keep an old filter engine
       s.onload = function () { window.KKReady(ok); };
       s.onerror = function () { kkPromise = null; s.remove(); reject(Object.assign(new Error('無法載入 ' + s.src), { name: 'LoadError' })); };
       document.head.appendChild(s);
@@ -388,7 +388,7 @@
 
     /* 不顯示步驟編號徽章（Kai 2026-11-16：濾鏡／相機畫面不出現任何數字；濾鏡名稱在右上 .cam-tag） */
     var back = h('button', 'cam-back', (mode === 'photo' || (DAYOF.app && DAYOF.app.ctx && DAYOF.app.ctx.step && DAYOF.app.ctx.step.type !== 'lyrics')) ? '← 返回' : '← 回歌詞'); back.type = 'button';
-    var tag = h('div', 'cam-tag', mode === 'photo' ? '魚眼相機' : LABEL[filter]); tag.hidden = true; tag.style.display = 'none';   // v=261119l (Kai): no filter-name label in the camera
+    var tag = h('div', 'cam-tag', mode === 'photo' ? '魚眼相機' : LABEL[filter]); tag.hidden = true; tag.style.display = 'none';   // v=261119m (Kai): no filter-name label in the camera
     ov.appendChild(back); ov.appendChild(tag);
 
     var inapp = h('div', 'cam-inapp', '偵測到內建瀏覽器（LINE／IG／FB…）。請點右上角 ⋯ 改用 Safari 或 Chrome 開啟，相機、麥克風與錄影才穩定。');
