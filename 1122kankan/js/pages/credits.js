@@ -17,7 +17,8 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       { role: 'UX 顧問', name: '恩妮' },
       { role: '文字顧問', name: 'Emma' },
       { role: '程式設計', name: 'Kai’s Claude' },
-      { role: '甜點Queen', name: 'Lynn' } ] },
+      { role: '甜點Queen', name: 'Lynn' },
+      { role: '花藝老師', name: '珺珺' } ] },
     { section: '', note: '謝謝你，今天來看看', items: [] }
   ];
 
