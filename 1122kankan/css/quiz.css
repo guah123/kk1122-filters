@@ -52,7 +52,7 @@
 /* v=261118f (Kai): the 「寫一點點也好」 nudge sits UNDER the buttons; it takes no space, so the buttons never move */
 .page-qa.qz-has-art .qz-nudge, .page-qa[data-step="21"] .qz-nudge { transform: translateY(72px); pointer-events: none; text-shadow: 0 0 6px rgba(251,247,239,.95), 0 0 2px rgba(251,247,239,.95); }
 
-/* v=261119k (Kai): steps 9/15/31 — 送出 centred; 跳過 hidden until 送出 was tapped 3× empty, then appears right below it; nudge under both. Step 21 unchanged */
+/* v=261119l (Kai): steps 9/15/31 — 送出 centred; 跳過 hidden until 送出 was tapped 3× empty, then appears right below it; nudge under both. Step 21 unchanged */
 .page-qa.qz-gate .qz-btns{flex-direction:column;align-items:center;gap:10px}
 .page-qa.qz-gate .qz-btns .qz-alt{visibility:hidden;opacity:0;pointer-events:none;transition:opacity .35s ease;padding:8px 24px;font-size:15px;background:rgba(251,247,239,.92)}
 .page-qa.qz-gate .qz-btns .qz-alt.on{visibility:visible;opacity:1;pointer-events:auto}
