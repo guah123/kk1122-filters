@@ -43,7 +43,7 @@
      Call again once the video has its size (camera.js does). */
   Stage.prototype.autoPortraitSize = function () {
     const v = this.video, a = v && v.videoWidth ? Math.max(v.videoWidth, v.videoHeight) : 0, b = v && v.videoWidth ? Math.min(v.videoWidth, v.videoHeight) : 0;
-    return this.lowPerf ? Stage.REC_LOW : Stage.REC;   // v=261119n (Kai): filtered recordings still stuttered (~12 fps) at 720×1280 → record at 576×1024 (−36% pixels, both ×16)
+    return this.lowPerf ? Stage.REC_LOW : Stage.REC;   // v=261119o (Kai): filtered recordings still stuttered (~12 fps) at 720×1280 → record at 576×1024 (−36% pixels, both ×16)
   };
   Stage.prototype.setPortraitOutput = function (on, size) {
     this.portrait = !!on;
@@ -82,7 +82,7 @@
     if (!this.canvas.captureStream) throw Object.assign(new Error('此瀏覽器不支援 canvas.captureStream'), { name: 'NotSupported' });
     const cs = this.canvas.captureStream(fps || 30);
     let audio = KK.Camera.stream ? KK.Camera.stream.getAudioTracks() : [];
-    // v=261119n (Kai): the mic runs with AGC off (keeps the music's dynamics) so recordings came out quieter than the native
+    // v=261119o (Kai): the mic runs with AGC off (keeps the music's dynamics) so recordings came out quieter than the native
     // camera. Add make-up gain (+~8 dB) followed by a fast limiter so loud passages don't clip. Any failure → raw track.
     if (audio.length && KK.Camera.recGain !== 0) {
       try {
@@ -91,13 +91,18 @@
         const ac = KK._recAC; if (ac.state === 'suspended') ac.resume();
         if (this._recNodes) { try { this._recNodes.forEach((n) => n.disconnect()); } catch (e) { /* ignore */ } }
         const src = ac.createMediaStreamSource(new MediaStream([audio[0]]));
-        const gain = ac.createGain(); gain.gain.value = KK.Camera.recGain || 10;   /* v=261119n: measured Kai's clip at −34.5 dB mean / −12.7 dB peak → ×5 was not enough, now ×10 (+20 dB) */   // v=261119n (Kai): 2.5 was still too quiet → doubled (+14 dB total), limiter below catches the peaks
+        const gain = ac.createGain(); gain.gain.value = KK.Camera.recGain || 6;   /* v=261119o: measured Kai's clip at −34.5 dB mean / −12.7 dB peak → ×5 was not enough, now ×10 (+20 dB) */   // v=261119o (Kai): 2.5 was still too quiet → doubled (+14 dB total), limiter below catches the peaks
         const lim = ac.createDynamicsCompressor();
         lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 20; lim.attack.value = 0.003; lim.release.value = 0.25;
         const dest = ac.createMediaStreamDestination();
         try { dest.channelCount = 2; } catch (e) { /* ignore */ }
-        src.connect(gain); gain.connect(lim); lim.connect(dest);
-        this._recNodes = [src, gain, lim, dest];
+        // v=261119o: Kai's clips had sound in the LEFT channel only (right silent) → sum L+R to one mono bus, which the
+        // stereo destination then copies to both channels.
+        const sp = ac.createChannelSplitter(2);
+        gain.channelCount = 1; gain.channelCountMode = 'explicit'; gain.channelInterpretation = 'discrete';
+        src.connect(sp); sp.connect(gain, 0); sp.connect(gain, 1); const trim = ac.createGain(); trim.gain.value = 0.85;   // headroom after the limiter's make-up gain
+        gain.connect(lim); lim.connect(trim); trim.connect(dest);
+        this._recNodes = [src, sp, gain, lim, trim, dest];
         const out = dest.stream.getAudioTracks();
         if (out.length) audio = out;
       } catch (e) { if (KK.Camera.log) KK.Camera.log.push('錄音增益失敗，改用原始音軌：' + (e && e.name)); }
@@ -181,7 +186,7 @@
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
     // v=261118 r9: per-filter colour grade on the CAMERA picture only (under the art). spec = inst.grade(S) or def.grade.
-    if (this.drawBg() && this.inst && KK.gradeOn) {
+    if (this.drawBg() && this.inst && KK.gradeOn && !KK.LITE) {
       const sp = typeof this.inst.grade === 'function' ? this.inst.grade(S) : (this.def && this.def.grade);
       if (sp) KK.grade(g, S, sp);
     }
@@ -275,7 +280,7 @@
       return {
         video: {
           facingMode: { ideal: facing || 'environment' },
-          width: { ideal: 720 },   // v=261119n (Kai): back to 720×1280 — 1080p made filtered recordings stutter on phones
+          width: { ideal: 720 },   // v=261119o (Kai): back to 720×1280 — 1080p made filtered recordings stutter on phones
           height: { ideal: 1280 },
           aspectRatio: { ideal: 9 / 16 }, // 不支援或給回橫向時，由 drawBg 置中裁切成 9:16
           frameRate: { ideal: 30 },

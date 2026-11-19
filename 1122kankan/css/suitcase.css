@@ -148,10 +148,10 @@
 .sc-case .shadow { bottom: 1%; left: 6%; right: 14%; }
 
 /* v=261118e (Kai): painted wooden floor (Gemini, from layout ref2) as the page background; wall stars / horizon removed */
-.page-suitcase { background: #E9CFA3 url("../assets/suitcase/floor.jpg?v=261119n") center / cover no-repeat; }
+.page-suitcase { background: #E9CFA3 url("../assets/suitcase/floor.jpg?v=261119o") center / cover no-repeat; }
 .page-suitcase::after { display: none; }
 .page-suitcase::before { opacity: .18; }
 .page-suitcase .sc-title, .page-suitcase .sc-hint, .page-suitcase .sc-msg { text-shadow: 0 0 8px rgba(251,247,239,.95), 0 0 3px rgba(251,247,239,.95); }
 
-/* v=261119n (Kai): closed state lists what was packed, above the closed suitcase */
+/* v=261119o (Kai): closed state lists what was packed, above the closed suitcase */
 .sc-stage.sc-done .sc-msg { position: absolute; left: 50%; transform: translateX(-50%); width: min(300px, 82%); font-size: 14px; line-height: 1.5; min-height: 0; }
