@@ -38,11 +38,12 @@
    * 呼叫端（app／camera 頁）負責把 canvas 元素用 CSS 排成 9:16（例如 height:100dvh; aspect-ratio:9/16）。 */
   Stage.PORTRAIT = [720, 1280];
   Stage.PORTRAIT_HD = [1080, 1920];
+  Stage.REC = [576, 1024]; Stage.REC_LOW = [480, 854];
   /* v=261118k: output size follows the camera — 1080×1920 when the camera really delivers ≥1080p, else 720×1280.
      Call again once the video has its size (camera.js does). */
   Stage.prototype.autoPortraitSize = function () {
     const v = this.video, a = v && v.videoWidth ? Math.max(v.videoWidth, v.videoHeight) : 0, b = v && v.videoWidth ? Math.min(v.videoWidth, v.videoHeight) : 0;
-    return Stage.PORTRAIT;   // v=261119m: always 720×1280 (HD output disabled, see constraints)
+    return this.lowPerf ? Stage.REC_LOW : Stage.REC;   // v=261119n (Kai): filtered recordings still stuttered (~12 fps) at 720×1280 → record at 576×1024 (−36% pixels, both ×16)
   };
   Stage.prototype.setPortraitOutput = function (on, size) {
     this.portrait = !!on;
@@ -81,7 +82,7 @@
     if (!this.canvas.captureStream) throw Object.assign(new Error('此瀏覽器不支援 canvas.captureStream'), { name: 'NotSupported' });
     const cs = this.canvas.captureStream(fps || 30);
     let audio = KK.Camera.stream ? KK.Camera.stream.getAudioTracks() : [];
-    // v=261119m (Kai): the mic runs with AGC off (keeps the music's dynamics) so recordings came out quieter than the native
+    // v=261119n (Kai): the mic runs with AGC off (keeps the music's dynamics) so recordings came out quieter than the native
     // camera. Add make-up gain (+~8 dB) followed by a fast limiter so loud passages don't clip. Any failure → raw track.
     if (audio.length && KK.Camera.recGain !== 0) {
       try {
@@ -90,9 +91,9 @@
         const ac = KK._recAC; if (ac.state === 'suspended') ac.resume();
         if (this._recNodes) { try { this._recNodes.forEach((n) => n.disconnect()); } catch (e) { /* ignore */ } }
         const src = ac.createMediaStreamSource(new MediaStream([audio[0]]));
-        const gain = ac.createGain(); gain.gain.value = KK.Camera.recGain || 5;   // v=261119m (Kai): 2.5 was still too quiet → doubled (+14 dB total), limiter below catches the peaks
+        const gain = ac.createGain(); gain.gain.value = KK.Camera.recGain || 10;   /* v=261119n: measured Kai's clip at −34.5 dB mean / −12.7 dB peak → ×5 was not enough, now ×10 (+20 dB) */   // v=261119n (Kai): 2.5 was still too quiet → doubled (+14 dB total), limiter below catches the peaks
         const lim = ac.createDynamicsCompressor();
-        lim.threshold.value = -4; lim.knee.value = 4; lim.ratio.value = 20; lim.attack.value = 0.003; lim.release.value = 0.25;
+        lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 20; lim.attack.value = 0.003; lim.release.value = 0.25;
         const dest = ac.createMediaStreamDestination();
         try { dest.channelCount = 2; } catch (e) { /* ignore */ }
         src.connect(gain); gain.connect(lim); lim.connect(dest);
@@ -274,7 +275,7 @@
       return {
         video: {
           facingMode: { ideal: facing || 'environment' },
-          width: { ideal: 720 },   // v=261119m (Kai): back to 720×1280 — 1080p made filtered recordings stutter on phones
+          width: { ideal: 720 },   // v=261119n (Kai): back to 720×1280 — 1080p made filtered recordings stutter on phones
           height: { ideal: 1280 },
           aspectRatio: { ideal: 9 / 16 }, // 不支援或給回橫向時，由 drawBg 置中裁切成 9:16
           frameRate: { ideal: 30 },

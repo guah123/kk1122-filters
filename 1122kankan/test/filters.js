@@ -8,7 +8,7 @@ const CAM = process.argv[2]; const OUT = path.join(__dirname, '..', '..', 'verif
 const PORT = 8100 + Math.floor(Math.random() * 800); const sleep = ms => new Promise(r => setTimeout(r, ms));
 // 畫布（720×1280）上某個矩形的平均 RGB
 const sample = (p, x, y, w, h) => p.evaluate(([x, y, w, h]) => {
-  const c = document.querySelector('.cam-canvas'), d = c.getContext('2d').getImageData(x, y, w, h).data; let r = 0, g = 0, b = 0;
+  const c = document.querySelector('.cam-canvas'), q = c.width / 720, d = c.getContext('2d').getImageData(Math.round(x * q), Math.round(y * q), Math.round(w * q), Math.round(h * q)).data; let r = 0, g = 0, b = 0;
   for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; } const n = d.length / 4;
   return [Math.round(r / n), Math.round(g / n), Math.round(b / n)];
 }, [x, y, w, h]);
@@ -48,7 +48,7 @@ const diff = (a, b) => Math.round(Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) 
       await sleep(1500); await shot(p, 'cam-nonumber');
       // r9：點一下 → 什麼都不會出現（紙燈互動已拿掉）：凍結舞台，在同一個 loop 時間比對點擊前後的畫面
       const R = await box(p);
-      const frame = () => p.evaluate(() => { const s = window.__stage; s.renderAt(3.3, s.S.now); const d = document.querySelector('.cam-canvas').getContext('2d').getImageData(0, 0, 720, 1280).data; let h = 0; for (let i = 0; i < d.length; i += 97) h = (h * 31 + d[i]) >>> 0; return h; });
+      const frame = () => p.evaluate(() => { const s = window.__stage; s.renderAt(3.3, s.S.now); const d = document.querySelector('.cam-canvas').getContext('2d').getImageData(0, 0, s.canvas.width, s.canvas.height).data; let h = 0; for (let i = 0; i < d.length; i += 97) h = (h * 31 + d[i]) >>> 0; return h; });
       await p.evaluate(() => { const o = KK.Stage.prototype.renderAt; KK.Stage.prototype.renderAt = function (t, n) { window.__stage = this; return o.call(this, t, n); }; }); await sleep(200);
       await p.evaluate(() => window.__stage.stop());
       const h0 = await frame();
