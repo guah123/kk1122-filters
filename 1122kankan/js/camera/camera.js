@@ -19,7 +19,7 @@
   var MAP = { helmet: 'otona', rain: 'rain', sun: 'hareru', fish: 'fish', home: 'remember' };
   var LABEL = { helmet: '太空人', rain: '下雨', sun: '太陽', fish: '魚眼', home: '家' };
   var RESET_LABEL = { hareru: '重新佈滿烏雲' };   // 只有〈太陽〉能抹開；〈下雨〉是點擊濺水花（Kai 02:47）
-  var PHOTO_SIZE = [900, 1600];   // v=261120a: back to the original photo size
+  var PHOTO_SIZE = [900, 1600];   // v=261120b: back to the original photo size
 
   var EXPLAIN = {
     NotAllowedError: ['相機被拒絕了', '需要允許使用相機才能拍。<br>iPhone：網址列左邊「大小」→「網站設定」→ 相機改「允許」後重新整理。<br>Android：網址列左邊的圖示 →「權限」→ 相機改「允許」。'],
@@ -94,7 +94,7 @@
         .then(function (m) {
           var list = m ? (Array.isArray(m) ? m : (m.files || [])) : ART_FILES;
           list = list.filter(function (n) { return ART_FILES.indexOf(n) >= 0; });
-          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261120a').then(function (im) { if (im) artImgs[n] = im; }); }));
+          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261120b').then(function (im) { if (im) artImgs[n] = im; }); }));
         });
       artPromise = Promise.race([all, new Promise(function (r) { setTimeout(r, 3000); })]);
       return artPromise;
@@ -172,6 +172,7 @@
       return c;
     }
     KK.paper = function (ctx, S, opt) {
+      if (KK.LITE) return;   // v=261120b: video mode skips paper grain + vignette (this override is the one that actually runs)
       opt = opt || {};
       var art = DAYOF.FilterArt;
       var pg = art.get('paper-grain.jpg');
@@ -234,7 +235,7 @@
       if (window.KK && KK.Stage && KK.Recorder) { ok(); return; }
       if (window.KKReady) { window.KKReady(ok); return; }
       var s = document.createElement('script');
-      s.src = ROOT + 'vendor/kk/kk-load.js?v=261120a';   // version tag: phones must not keep an old filter engine
+      s.src = ROOT + 'vendor/kk/kk-load.js?v=261120b';   // version tag: phones must not keep an old filter engine
       s.onload = function () { window.KKReady(ok); };
       s.onerror = function () { kkPromise = null; s.remove(); reject(Object.assign(new Error('無法載入 ' + s.src), { name: 'LoadError' })); };
       document.head.appendChild(s);
@@ -298,10 +299,10 @@
     '.cam-preview-actions{position:relative;z-index:3}',
     '.cam-overlay.previewing .cam-back,.cam-overlay.previewing .cam-tag,.cam-overlay.previewing .cam-inapp{display:none}',
     '.cam-overlay.previewing .cam-toast{top:auto;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:9}',
-    // v=261120a: the live camera <video> sits in the page behind the (opaque) canvas — Android Chrome may throttle a detached video
+    // v=261120b: the live camera <video> sits in the page behind the (opaque) canvas — Android Chrome may throttle a detached video
     '.cam-frame{isolation:isolate}',
     '.cam-frame>.cam-src{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;pointer-events:none}',
-    // v=261120a: pinch-zoom badge (photo mode) + optional ?diag=1 readout
+    // v=261120b: pinch-zoom badge (photo mode) + optional ?diag=1 readout
     '.cam-zoom{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:6;padding:4px 12px;border-radius:999px;background:rgba(20,16,12,.55);color:#fff;font:600 14px/1.4 system-ui,sans-serif;opacity:0;transition:opacity .25s;pointer-events:none}',
     '.cam-zoom.on{opacity:1}',
     '.cam-diag{position:absolute;left:6px;bottom:6px;z-index:7;padding:4px 7px;border-radius:6px;background:rgba(0,0,0,.6);color:#9f9;font:11px/1.35 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none}',
@@ -395,7 +396,7 @@
 
     /* 不顯示步驟編號徽章（Kai 2026-11-16：濾鏡／相機畫面不出現任何數字；濾鏡名稱在右上 .cam-tag） */
     var back = h('button', 'cam-back', (mode === 'photo' || (DAYOF.app && DAYOF.app.ctx && DAYOF.app.ctx.step && DAYOF.app.ctx.step.type !== 'lyrics')) ? '← 返回' : '← 回歌詞'); back.type = 'button';
-    var tag = h('div', 'cam-tag', mode === 'photo' ? '魚眼相機' : LABEL[filter]); tag.hidden = true; tag.style.display = 'none';   // v=261120a (Kai): no filter-name label in the camera
+    var tag = h('div', 'cam-tag', mode === 'photo' ? '魚眼相機' : LABEL[filter]); tag.hidden = true; tag.style.display = 'none';   // v=261120b (Kai): no filter-name label in the camera
     ov.appendChild(back); ov.appendChild(tag);
 
     var inapp = h('div', 'cam-inapp', '偵測到內建瀏覽器（LINE／IG／FB…）。請點右上角 ⋯ 改用 Safari 或 Chrome 開啟，相機、麥克風與錄影才穩定。');
@@ -468,7 +469,7 @@
       else close();
     });
 
-    /* ---------- v=261120a：相機影像放進頁面、雙指縮放（拍照）、?diag=1 診斷 ---------- */
+    /* ---------- v=261120b：相機影像放進頁面、雙指縮放（拍照）、?diag=1 診斷 ---------- */
     // Android Chrome may update a <video> that is not in the document at a reduced rate → keep the live camera video in
     // the frame, behind the opaque canvas (CSS .cam-src). Only the newest video stays; older ones are removed.
     function attachSrc(v) {
@@ -504,6 +505,7 @@
     }
     // ?diag=1 → live readout: camera frames/s (requestVideoFrameCallback), drawn frames/s, camera settings, canvas size.
     var diagEl = null, diagT = 0, camFrames = [], rvfcV = null;
+    var NOBG = /[?&]diag=1\b/.test(location.search) && /[?&]nobg=1\b/.test(location.search);   // A/B test: skip drawing the camera picture
     function countCam(v) {
       if (!v || rvfcV === v || typeof v.requestVideoFrameCallback !== 'function') return;
       rvfcV = v;
@@ -514,18 +516,21 @@
       diagEl = h('div', 'cam-diag', '診斷中…'); frame.appendChild(diagEl);
       diagT = setInterval(function () {
         if (C.closed) { clearInterval(diagT); return; }
+        if (!window.KK || !KK.Camera) return;   // engine still loading
         var now = performance.now(); while (camFrames.length && now - camFrames[0] > 1000) camFrames.shift();
         var v = C.stage && C.stage.video, tr = KK.Camera && KK.Camera.stream && KK.Camera.stream.getVideoTracks()[0];
         if (v) countCam(v);
         var s = {}; try { s = tr ? tr.getSettings() : {}; } catch (e) { /* ignore */ }
         var cap = {}; try { cap = tr && tr.getCapabilities ? tr.getCapabilities() : {}; } catch (e) { /* ignore */ }
-        diagEl.textContent =
+        var mime = (KK.Recorder && KK.Recorder.pickMime) ? String(KK.Recorder.pickMime() || '?').replace(/;.*/, '') : '?';
+        diagEl.textContent = 'v=261120b' + (KK.NOBG ? '  ★不畫相機' : '') + '\n' +
           '相機 ' + (typeof (v && v.requestVideoFrameCallback) === 'function' ? camFrames.length : '?') + ' fps' +
           '  (設定 ' + (s.frameRate ? Math.round(s.frameRate) : '?') + ')\n' +
-          '畫面 ' + (C.stage ? C.stage.S.fps : '?') + ' fps' + (C.rec ? '  ● 錄影中' : '') + '\n' +
+          '畫面 ' + (C.stage ? C.stage.S.fps : '?') + ' fps  每格 ' + (C.stage && C.stage.S.drawMs ? C.stage.S.drawMs.toFixed(1) : '?') + ' ms' + (C.rec ? '  ● 錄影中' : '') + '\n' +
           '相機 ' + (v ? v.videoWidth + '×' + v.videoHeight : '?') + '  畫布 ' + canvas.width + '×' + canvas.height + '\n' +
           '縮放 ' + ((C.stage && C.stage.zoom) || 1).toFixed(1) + '×' + (cap.zoom ? '  原生zoom ' + cap.zoom.min + '–' + cap.zoom.max : '') +
-          (cap.exposureMode ? '\n曝光 ' + (s.exposureMode || '?') + ' / ' + cap.exposureMode.join(',') : '');
+          (cap.exposureMode ? '\n曝光 ' + (s.exposureMode || '?') + ' / ' + cap.exposureMode.join(',') : '') +
+          '\n錄影 ' + mime + (KK.Camera._agcLvl != null ? '  音量 ' + Math.round(KK.Camera._agcLvl) + ' dB  增益 ' + (KK.Camera._agcDb >= 0 ? '+' : '') + KK.Camera._agcDb.toFixed(1) + ' dB' : '');
       }, 500);
     }
 
@@ -535,7 +540,8 @@
       var def = KK.byId[kkId];
       if (!def) throw Object.assign(new Error('找不到濾鏡：' + kkId), { name: 'LoadError' });
       var st = new KK.Stage(canvas, { bg: def.bg || 'camera' });
-      KK.LITE = mode !== 'photo';   // v=261120a: no colour grade / paper grain while filming (performance); photos keep them
+      KK.NOBG = NOBG;
+      KK.LITE = mode !== 'photo';   // v=261120b: no colour grade / paper grain while filming (performance); photos keep them
       st.setPortraitOutput(true, mode === 'photo' ? PHOTO_SIZE : null);
       st.S.critter = true;
       st.S.stage = st;
@@ -564,7 +570,7 @@
       var seq = ++C.seq;
       main.disabled = true;
       KK.Camera.wantAudio = function () { return !C.noMic; };
-      KK.Camera.hiRes = mode === 'photo';   // v=261120a: 1080×1920 for photos (sharper pinch-zoom); filtered video stays 720p
+      KK.Camera.hiRes = mode === 'photo';   // v=261120b: 1080×1920 for photos (sharper pinch-zoom); filtered video stays 720p
       var v;
       try { v = await KK.Camera.start(C.facing); }
       catch (e) {

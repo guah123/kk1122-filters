@@ -23,7 +23,7 @@
     'void main(){',
     '  vec2 q = vec2(gl_FragCoord.x, uOut.y - gl_FragCoord.y);',
     '  vec2 c = uOut * 0.5; vec2 d = q - c; float r = length(d); float rn = r / uR;',
-    '  float k = max(uOut.x / uV.x, uOut.y / uV.y) * uZ; vec2 dsz = uV * k;',   // uZ: pinch zoom (v=261120a)
+    '  float k = max(uOut.x / uV.x, uOut.y / uV.y) * uZ; vec2 dsz = uV * k;',   // uZ: pinch zoom (v=261120b)
     '  float Rs = min(uR, min(dsz.x, dsz.y) * 0.5) * 0.98;',
     '  float s = tan(min(rn, 1.0) * uA) / tan(uA);',
     '  vec2 dir = r > 0.0001 ? d / r : vec2(0.0);',
@@ -126,7 +126,7 @@
     return {
       mode: '2d', canvas: out,
       render: function (v, W, H, mirror, Rr, Z) {
-        Z = Z > 1 ? Math.round(Z * 20) / 20 : 1;   // v=261120a: pinch zoom (map rebuilt per 0.05 step)
+        Z = Z > 1 ? Math.round(Z * 20) / 20 : 1;   // v=261120b: pinch zoom (map rebuilt per 0.05 step)
         var Rf = Rr ? Rr / W : CIRCLE;
         var w = Math.max(2, Math.round(W / 2)), h = Math.max(2, Math.round(H / 2));
         if (out.width !== w) out.width = w;

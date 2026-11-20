@@ -21,8 +21,8 @@
     this.maxPixels = opts.maxPixels || MAX_PIXELS;
     this.fixedSize = opts.size || null; // [w,h] 固定像素（渲染用）
     this.locked = false;                // 錄影中鎖住尺寸（同 261112-proto：錄影中不改畫布大小，避免編碼器出問題）
-    this.maxFps = opts.maxFps || 30;    // v=261120a: always ≤30 fps — the camera only delivers ~30, and drawing at 120 Hz (S23 Ultra) just heats the phone
-    this.zoom = 1;                       // v=261120a: digital zoom (pinch in photo mode); 1 = cover-fit
+    this.maxFps = opts.maxFps || 30;    // v=261120b: always ≤30 fps — the camera only delivers ~30, and drawing at 120 Hz (S23 Ultra) just heats the phone
+    this.zoom = 1;                       // v=261120b: digital zoom (pinch in photo mode); 1 = cover-fit
     this._last = 0;
     this.portrait = false;
     this.rotateVideo = 0;
@@ -44,7 +44,7 @@
      Call again once the video has its size (camera.js does). */
   Stage.prototype.autoPortraitSize = function () {
     const v = this.video, a = v && v.videoWidth ? Math.max(v.videoWidth, v.videoHeight) : 0, b = v && v.videoWidth ? Math.min(v.videoWidth, v.videoHeight) : 0;
-    return this.lowPerf ? Stage.REC_LOW : Stage.REC;   // v=261120a (Kai): filtered recordings still stuttered (~12 fps) at 720×1280 → record at 576×1024 (−36% pixels, both ×16)
+    return this.lowPerf ? Stage.REC_LOW : Stage.REC;   // v=261120b (Kai): filtered recordings still stuttered (~12 fps) at 720×1280 → record at 576×1024 (−36% pixels, both ×16)
   };
   Stage.prototype.setPortraitOutput = function (on, size) {
     this.portrait = !!on;
@@ -83,30 +83,53 @@
     if (!this.canvas.captureStream) throw Object.assign(new Error('此瀏覽器不支援 canvas.captureStream'), { name: 'NotSupported' });
     const cs = this.canvas.captureStream(fps || 30);
     let audio = KK.Camera.stream ? KK.Camera.stream.getAudioTracks() : [];
-    // v=261120a (Kai): the mic runs with AGC off (keeps the music's dynamics) so recordings came out quieter than the native
-    // camera. Add make-up gain (+~8 dB) followed by a fast limiter so loud passages don't clip. Any failure → raw track.
+    // v=261120b (Kai): mic runs with the browser's voice AGC off (keeps music dynamics). A FIXED make-up gain failed both ways:
+    // iPhone mics came out too quiet, Android (S23 Ultra) too loud — room noise pumped up and squashed flat (LRA 0.2 LU).
+    // Now: L+R → mono bus → 80 Hz high-pass (rumble / handling noise) → slow automatic gain (target ≈ −16 dBFS RMS × 0.75 correction,
+    // −6…+18 dB, never boosts near-silence) → fast limiter → both channels. Any failure → raw mic track.
     if (audio.length && KK.Camera.recGain !== 0) {
       try {
         const AC = window.AudioContext || window.webkitAudioContext;
         if (!KK._recAC || KK._recAC.state === 'closed') KK._recAC = new AC({ latencyHint: 'interactive' });
         const ac = KK._recAC; if (ac.state === 'suspended') ac.resume();
         if (this._recNodes) { try { this._recNodes.forEach((n) => n.disconnect()); } catch (e) { /* ignore */ } }
+        if (this._agcT) { clearInterval(this._agcT); this._agcT = 0; }
         const src = ac.createMediaStreamSource(new MediaStream([audio[0]]));
-        const gain = ac.createGain(); gain.gain.value = KK.Camera.recGain || 6;   /* v=261120a: measured Kai's clip at −34.5 dB mean / −12.7 dB peak → ×5 was not enough, now ×10 (+20 dB) */   // v=261120a (Kai): 2.5 was still too quiet → doubled (+14 dB total), limiter below catches the peaks
+        const sp = ac.createChannelSplitter(2);
+        const mono = ac.createGain(); mono.gain.value = 0.5;   // average of L and R (a one-sided mic still reaches both channels)
+        mono.channelCount = 1; mono.channelCountMode = 'explicit'; mono.channelInterpretation = 'discrete';
+        const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 80; hp.Q.value = 0.707;
+        const agc = ac.createGain();
         const lim = ac.createDynamicsCompressor();
-        lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 20; lim.attack.value = 0.003; lim.release.value = 0.25;
+        lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.15;
+        const trim = ac.createGain(); trim.gain.value = 0.85;   // headroom after the compressor's automatic make-up gain
+        const an = ac.createAnalyser(); an.fftSize = 2048;
         const dest = ac.createMediaStreamDestination();
         try { dest.channelCount = 2; } catch (e) { /* ignore */ }
-        // v=261120a: Kai's clips had sound in the LEFT channel only (right silent) → sum L+R to one mono bus, which the
-        // stereo destination then copies to both channels.
-        const sp = ac.createChannelSplitter(2);
-        gain.channelCount = 1; gain.channelCountMode = 'explicit'; gain.channelInterpretation = 'discrete';
-        src.connect(sp); sp.connect(gain, 0); sp.connect(gain, 1); const trim = ac.createGain(); trim.gain.value = 0.85;   // headroom after the limiter's make-up gain
-        gain.connect(lim); lim.connect(trim); trim.connect(dest);
-        this._recNodes = [src, sp, gain, lim, trim, dest];
+        src.connect(sp); sp.connect(mono, 0); sp.connect(mono, 1);
+        mono.connect(hp); hp.connect(agc); agc.connect(lim); lim.connect(trim); trim.connect(dest);
+        hp.connect(an);   // level meter BEFORE the automatic gain
+        this._recNodes = [src, sp, mono, hp, agc, lim, trim, an, dest];
         const out = dest.stream.getAudioTracks();
+        const TARGET = -16, GATE = -52, MIN = -6, MAX = 18;   // Kai found ≈ −21 dB RMS "loud enough"
+        const lin = (db) => Math.pow(10, db / 20);
+        let g = KK.Camera._agcDb != null ? KK.Camera._agcDb : 6;   // remember the learned gain for the next recording
+        let lvl = null;
+        const buf = new Float32Array(an.fftSize);
+        agc.gain.value = lin(g);
+        this._agcT = setInterval(() => {
+          if (!out.length || out[0].readyState === 'ended') { clearInterval(this._agcT); this._agcT = 0; return; }
+          an.getFloatTimeDomainData(buf);
+          let sum = 0; for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+          const db = 10 * Math.log10(sum / buf.length + 1e-12);
+          lvl = lvl == null ? db : lvl + (db - lvl) * (db > lvl ? 0.35 : 0.06);   // quick to notice loud, slow to forget
+          const want = lvl < GATE ? Math.min(g, 6) : Math.max(MIN, Math.min(MAX, 0.75 * (TARGET - lvl)));
+          g += want < g ? Math.max(want - g, -0.8) : Math.min(want - g, 0.25);  // down ≤8 dB/s, up ≤2.5 dB/s
+          KK.Camera._agcDb = g; KK.Camera._agcLvl = lvl;
+          agc.gain.setTargetAtTime(lin(g), ac.currentTime, 0.05);
+        }, 100);
         if (out.length) audio = out;
-      } catch (e) { if (KK.Camera.log) KK.Camera.log.push('錄音增益失敗，改用原始音軌：' + (e && e.name)); }
+      } catch (e) { if (KK.Camera.log) KK.Camera.log.push('錄音處理失敗，改用原始音軌：' + (e && e.name)); }
     }
     return new MediaStream([...cs.getVideoTracks(), ...audio]);
   };
@@ -147,6 +170,7 @@
   Stage.prototype.drawBg = function () {
     const g = this.ctx, S = this.S;
     const v = this.video;
+    if (KK.NOBG && this.bgMode === 'camera') { g.fillStyle = '#222'; g.fillRect(0, 0, S.w, S.h); return true; }   // v=261120b: ?diag=1&nobg=1 test only
     if (this.bgMode === 'camera' && v && v.readyState >= 2 && v.videoWidth) {
       // cover-fit：填滿畫面、置中裁切（橫向來源放進直式畫布 → 裁掉左右，不留黑邊）
       // rotateVideo = 90 / -90：僅供「影格真的側躺」的裝置使用（網址 ?rotate=90）。
@@ -207,7 +231,9 @@
       if (this.maxFps && ts - this._last < 1000 / this.maxFps - 4) { this.raf = requestAnimationFrame(loop); return; }
       this._last = ts;
       const now = (ts - this.t0) / 1000;
+      const t0 = performance.now();
       this.renderAt(now, now);
+      this.S.drawMs = (this.S.drawMs || 0) * 0.9 + (performance.now() - t0) * 0.1;   // v=261120b: diag readout
       // fps：最近 1 秒的幀數
       this.frames.push(ts);
       while (this.frames.length && ts - this.frames[0] > 1000) this.frames.shift();
@@ -281,8 +307,8 @@
       return {
         video: {
           facingMode: { ideal: facing || 'environment' },
-          width: { ideal: KK.Camera.hiRes ? 1080 : 720 },   // v=261120a (Kai): 720×1280 for filtered recordings (1080p stuttered);
-          height: { ideal: KK.Camera.hiRes ? 1920 : 1280 }, // v=261120a: photos ask for 1080×1920 so pinch-zoom stays sharp
+          width: { ideal: KK.Camera.hiRes ? 1080 : 720 },   // v=261120b (Kai): 720×1280 for filtered recordings (1080p stuttered);
+          height: { ideal: KK.Camera.hiRes ? 1920 : 1280 }, // v=261120b: photos ask for 1080×1920 so pinch-zoom stays sharp
           aspectRatio: { ideal: 9 / 16 }, // 不支援或給回橫向時，由 drawBg 置中裁切成 9:16
           frameRate: { ideal: 30 },
         },
