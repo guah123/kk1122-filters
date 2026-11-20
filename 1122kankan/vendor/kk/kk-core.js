@@ -188,7 +188,7 @@
   const vigCache = { key: '', c: null };
   KK.paper = function (ctx, S, opt) {
     opt = opt || {};
-    if (KK.LITE) return;   // v=261120d (Kai): video mode skips grain + vignette (two full-canvas fills per frame) for a smoother recording
+    if (KK.LITE) return;   // v=261120e (Kai): video mode skips grain + vignette (two full-canvas fills per frame) for a smoother recording
     if (!grainTile) grainTile = makeGrain();
     const grainA = opt.grain == null ? 0.5 : opt.grain;
     if (grainA > 0) {
