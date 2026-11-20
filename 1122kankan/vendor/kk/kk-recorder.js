@@ -201,7 +201,7 @@
   };
   R.savedMsg = function (platform) {
     return platform === 'ios' ? '已存到手機（iPhone：檔案 App › 下載項目）'
-      : platform === 'android' ? '已存到手機的「下載」'
+      : platform === 'android' ? '已存到手機（相簿裡的「Download」）'
       : platform === 'inapp' ? '已嘗試下載；內建瀏覽器常會擋下，沒看到請按「儲存剛剛這段」或改用 Safari／Chrome'
       : '已存到本機的「下載」資料夾';
   };

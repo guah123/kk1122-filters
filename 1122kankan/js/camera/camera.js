@@ -19,7 +19,7 @@
   var MAP = { helmet: 'otona', rain: 'rain', sun: 'hareru', fish: 'fish', home: 'remember' };
   var LABEL = { helmet: '太空人', rain: '下雨', sun: '太陽', fish: '魚眼', home: '家' };
   var RESET_LABEL = { hareru: '重新佈滿烏雲' };   // 只有〈太陽〉能抹開；〈下雨〉是點擊濺水花（Kai 02:47）
-  var PHOTO_SIZE = [900, 1600];   // v=261120b: back to the original photo size
+  var PHOTO_SIZE = [900, 1600];   // v=261120c: back to the original photo size
 
   var EXPLAIN = {
     NotAllowedError: ['相機被拒絕了', '需要允許使用相機才能拍。<br>iPhone：網址列左邊「大小」→「網站設定」→ 相機改「允許」後重新整理。<br>Android：網址列左邊的圖示 →「權限」→ 相機改「允許」。'],
@@ -94,7 +94,7 @@
         .then(function (m) {
           var list = m ? (Array.isArray(m) ? m : (m.files || [])) : ART_FILES;
           list = list.filter(function (n) { return ART_FILES.indexOf(n) >= 0; });
-          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261120b').then(function (im) { if (im) artImgs[n] = im; }); }));
+          return Promise.all(list.map(function (n) { return loadImg(base + n + '?v=261120c').then(function (im) { if (im) artImgs[n] = im; }); }));
         });
       artPromise = Promise.race([all, new Promise(function (r) { setTimeout(r, 3000); })]);
       return artPromise;
@@ -172,7 +172,7 @@
       return c;
     }
     KK.paper = function (ctx, S, opt) {
-      if (KK.LITE) return;   // v=261120b: video mode skips paper grain + vignette (this override is the one that actually runs)
+      if (KK.LITE) return;   // v=261120c: video mode skips paper grain + vignette (this override is the one that actually runs)
       opt = opt || {};
       var art = DAYOF.FilterArt;
       var pg = art.get('paper-grain.jpg');
@@ -235,7 +235,7 @@
       if (window.KK && KK.Stage && KK.Recorder) { ok(); return; }
       if (window.KKReady) { window.KKReady(ok); return; }
       var s = document.createElement('script');
-      s.src = ROOT + 'vendor/kk/kk-load.js?v=261120b';   // version tag: phones must not keep an old filter engine
+      s.src = ROOT + 'vendor/kk/kk-load.js?v=261120c';   // version tag: phones must not keep an old filter engine
       s.onload = function () { window.KKReady(ok); };
       s.onerror = function () { kkPromise = null; s.remove(); reject(Object.assign(new Error('無法載入 ' + s.src), { name: 'LoadError' })); };
       document.head.appendChild(s);
@@ -256,7 +256,8 @@
    *   其他錯誤 → 改用下載。桌機一律下載（桌機的分享單不能存到相簿）。須盡量在使用者點擊當下呼叫。 */
   function hhmmss() { var d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; }; return p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()); }
   function canShareFile(file) {
-    try { return !!(file && platform() !== 'desktop' && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) { return false; }
+    // v=261120c (Kai): only iPhone needs the share sheet (it's the only way into the Photos app); Android downloads directly
+    try { return !!(file && platform() === 'ios' && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) { return false; }
   }
   function shareOrDownload(blob, name, mime) {
     var info = { name: name, method: '', platform: platform() };
@@ -299,10 +300,10 @@
     '.cam-preview-actions{position:relative;z-index:3}',
     '.cam-overlay.previewing .cam-back,.cam-overlay.previewing .cam-tag,.cam-overlay.previewing .cam-inapp{display:none}',
     '.cam-overlay.previewing .cam-toast{top:auto;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:9}',
-    // v=261120b: the live camera <video> sits in the page behind the (opaque) canvas — Android Chrome may throttle a detached video
+    // v=261120c: the live camera <video> sits in the page behind the (opaque) canvas — Android Chrome may throttle a detached video
     '.cam-frame{isolation:isolate}',
     '.cam-frame>.cam-src{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;pointer-events:none}',
-    // v=261120b: pinch-zoom badge (photo mode) + optional ?diag=1 readout
+    // v=261120c: pinch-zoom badge (photo mode) + optional ?diag=1 readout
     '.cam-zoom{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:6;padding:4px 12px;border-radius:999px;background:rgba(20,16,12,.55);color:#fff;font:600 14px/1.4 system-ui,sans-serif;opacity:0;transition:opacity .25s;pointer-events:none}',
     '.cam-zoom.on{opacity:1}',
     '.cam-diag{position:absolute;left:6px;bottom:6px;z-index:7;padding:4px 7px;border-radius:6px;background:rgba(0,0,0,.6);color:#9f9;font:11px/1.35 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:none}',
@@ -396,7 +397,7 @@
 
     /* 不顯示步驟編號徽章（Kai 2026-11-16：濾鏡／相機畫面不出現任何數字；濾鏡名稱在右上 .cam-tag） */
     var back = h('button', 'cam-back', (mode === 'photo' || (DAYOF.app && DAYOF.app.ctx && DAYOF.app.ctx.step && DAYOF.app.ctx.step.type !== 'lyrics')) ? '← 返回' : '← 回歌詞'); back.type = 'button';
-    var tag = h('div', 'cam-tag', mode === 'photo' ? '魚眼相機' : LABEL[filter]); tag.hidden = true; tag.style.display = 'none';   // v=261120b (Kai): no filter-name label in the camera
+    var tag = h('div', 'cam-tag', mode === 'photo' ? '魚眼相機' : LABEL[filter]); tag.hidden = true; tag.style.display = 'none';   // v=261120c (Kai): no filter-name label in the camera
     ov.appendChild(back); ov.appendChild(tag);
 
     var inapp = h('div', 'cam-inapp', '偵測到內建瀏覽器（LINE／IG／FB…）。請點右上角 ⋯ 改用 Safari 或 Chrome 開啟，相機、麥克風與錄影才穩定。');
@@ -469,7 +470,7 @@
       else close();
     });
 
-    /* ---------- v=261120b：相機影像放進頁面、雙指縮放（拍照）、?diag=1 診斷 ---------- */
+    /* ---------- v=261120c：相機影像放進頁面、雙指縮放（拍照）、?diag=1 診斷 ---------- */
     // Android Chrome may update a <video> that is not in the document at a reduced rate → keep the live camera video in
     // the frame, behind the opaque canvas (CSS .cam-src). Only the newest video stays; older ones are removed.
     function attachSrc(v) {
@@ -523,7 +524,7 @@
         var s = {}; try { s = tr ? tr.getSettings() : {}; } catch (e) { /* ignore */ }
         var cap = {}; try { cap = tr && tr.getCapabilities ? tr.getCapabilities() : {}; } catch (e) { /* ignore */ }
         var mime = (KK.Recorder && KK.Recorder.pickMime) ? String(KK.Recorder.pickMime() || '?').replace(/;.*/, '') : '?';
-        diagEl.textContent = 'v=261120b' + (KK.NOBG ? '  ★不畫相機' : '') + '\n' +
+        diagEl.textContent = 'v=261120c' + (KK.NOBG ? '  ★不畫相機' : '') + '\n' +
           '相機 ' + (typeof (v && v.requestVideoFrameCallback) === 'function' ? camFrames.length : '?') + ' fps' +
           '  (設定 ' + (s.frameRate ? Math.round(s.frameRate) : '?') + ')\n' +
           '畫面 ' + (C.stage ? C.stage.S.fps : '?') + ' fps  每格 ' + (C.stage && C.stage.S.drawMs ? C.stage.S.drawMs.toFixed(1) : '?') + ' ms' + (C.rec ? '  ● 錄影中' : '') + '\n' +
@@ -541,7 +542,7 @@
       if (!def) throw Object.assign(new Error('找不到濾鏡：' + kkId), { name: 'LoadError' });
       var st = new KK.Stage(canvas, { bg: def.bg || 'camera' });
       KK.NOBG = NOBG;
-      KK.LITE = mode !== 'photo';   // v=261120b: no colour grade / paper grain while filming (performance); photos keep them
+      KK.LITE = mode !== 'photo';   // v=261120c: no colour grade / paper grain while filming (performance); photos keep them
       st.setPortraitOutput(true, mode === 'photo' ? PHOTO_SIZE : null);
       st.S.critter = true;
       st.S.stage = st;
@@ -570,7 +571,7 @@
       var seq = ++C.seq;
       main.disabled = true;
       KK.Camera.wantAudio = function () { return !C.noMic; };
-      KK.Camera.hiRes = mode === 'photo';   // v=261120b: 1080×1920 for photos (sharper pinch-zoom); filtered video stays 720p
+      KK.Camera.hiRes = mode === 'photo';   // v=261120c: 1080×1920 for photos (sharper pinch-zoom); filtered video stays 720p
       var v;
       try { v = await KK.Camera.start(C.facing); }
       catch (e) {
@@ -822,6 +823,20 @@
       }
     }
     function onHide() { try { if (window.KK && KK.Camera) KK.Camera.stop(); } catch (e) { /* ignore */ } }
+    // v=261120c (Kai): keep the screen awake while the camera is open — the auto screen-off used to cut recordings short.
+    // Screen Wake Lock API: Android Chrome 84+, iOS Safari 16.4+. The browser drops the lock whenever the page is hidden,
+    // so it is requested again when the page becomes visible. Unsupported browsers simply keep their normal timeout.
+    var wake = null;
+    function keepAwake() {
+      if (C.closed || document.hidden || wake || !(navigator.wakeLock && navigator.wakeLock.request)) return;
+      navigator.wakeLock.request('screen').then(function (l) {
+        if (C.closed) { try { l.release(); } catch (e) { /* ignore */ } return; }
+        wake = l; l.addEventListener('release', function () { if (wake === l) wake = null; });
+      }, function (e) { if (window.KK && KK.Camera && KK.Camera.log) KK.Camera.log.push('螢幕常亮失敗：' + (e && e.name)); });
+    }
+    function letSleep() { var l = wake; wake = null; if (l) { try { l.release(); } catch (e) { /* ignore */ } } }
+    keepAwake();
+    document.addEventListener('visibilitychange', keepAwake);
     function noMove(e) { if (!(e.target.closest && e.target.closest('.cam-status, .cam-preview'))) e.preventDefault(); }
     function onKey(e) { if (e.key === 'Escape') back.click(); }
     document.addEventListener('visibilitychange', onVis);
@@ -852,6 +867,7 @@
       var endCaps = function () { caps.forEach(stopStream); };
       if (pending && pending.done) pending.done.then(endCaps, endCaps); else endCaps();
       document.removeEventListener('visibilitychange', onVis);
+      document.removeEventListener('visibilitychange', keepAwake); letSleep();
       window.removeEventListener('pagehide', onHide);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('orientationchange', onResize);

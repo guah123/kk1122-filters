@@ -25,12 +25,12 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
       var ta = el('textarea', 'qz-area'); ta.placeholder = '寫在這裡…'; ta.rows = 5;
       ta.value = prev.text != null && prev.text !== '' ? prev.text : (prev.draft || '');
       wrap.appendChild(ta);
-      var gate = buttons[1] !== '蛤';   // v=261120b: step 21 (pizza, 送出／蛤) keeps its original layout
+      var gate = buttons[1] !== '蛤';   // v=261120c: step 21 (pizza, 送出／蛤) keeps its original layout
       var nudge = el('div', 'qz-nudge', gate ? '寫一點點也好～' : '寫一點點也好～或按' + buttons[1]);
       if (!gate) wrap.appendChild(nudge);
       var row = el('div', 'qz-btns'), bSend = el('button', 'qz-btn', buttons[0]), bAlt = el('button', 'qz-btn ghost', buttons[1]);
       bSend.type = bAlt.type = 'button';
-      // v=261120b (Kai): 送出 centred; the second button (跳過／蛤) only appears — right below 送出 — after 送出 was tapped 3× with an empty answer
+      // v=261120c (Kai): 送出 centred; the second button (跳過／蛤) only appears — right below 送出 — after 送出 was tapped 3× with an empty answer
       var emptyTaps = 0; if (gate) { bAlt.classList.add('qz-alt'); container.classList.add('qz-gate'); }
       row.appendChild(bSend); row.appendChild(bAlt); wrap.appendChild(row); if (gate) wrap.appendChild(nudge);
       // optional page illustration (step 21): v=261118 centred hero between the question card and the answer box (see quiz.css);
@@ -79,7 +79,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         var t = ta.value.trim();
         if (!t) {
           if (gate && ++emptyTaps >= 3 && !bAlt.classList.contains('on')) { bAlt.classList.add('on'); nudge.textContent = '寫一點點也好～或按' + buttons[1]; }
-          nudge.classList.add('on'); ta.classList.remove('qz-shake'); void ta.offsetWidth; ta.classList.add('qz-shake'); if (!gate) ta.focus(); return;   // v=261120b: no auto-focus (keyboard would get in the way of tapping 送出 3×)
+          nudge.classList.add('on'); ta.classList.remove('qz-shake'); void ta.offsetWidth; ta.classList.add('qz-shake'); if (!gate) ta.focus(); return;   // v=261120c: no auto-focus (keyboard would get in the way of tapping 送出 3×)
         }
         finish({ text: t, skipped: false }, 0);
       });

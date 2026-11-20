@@ -21,8 +21,8 @@
     this.maxPixels = opts.maxPixels || MAX_PIXELS;
     this.fixedSize = opts.size || null; // [w,h] 固定像素（渲染用）
     this.locked = false;                // 錄影中鎖住尺寸（同 261112-proto：錄影中不改畫布大小，避免編碼器出問題）
-    this.maxFps = opts.maxFps || 30;    // v=261120b: always ≤30 fps — the camera only delivers ~30, and drawing at 120 Hz (S23 Ultra) just heats the phone
-    this.zoom = 1;                       // v=261120b: digital zoom (pinch in photo mode); 1 = cover-fit
+    this.maxFps = opts.maxFps || 30;    // v=261120c: always ≤30 fps — the camera only delivers ~30, and drawing at 120 Hz (S23 Ultra) just heats the phone
+    this.zoom = 1;                       // v=261120c: digital zoom (pinch in photo mode); 1 = cover-fit
     this._last = 0;
     this.portrait = false;
     this.rotateVideo = 0;
@@ -44,7 +44,7 @@
      Call again once the video has its size (camera.js does). */
   Stage.prototype.autoPortraitSize = function () {
     const v = this.video, a = v && v.videoWidth ? Math.max(v.videoWidth, v.videoHeight) : 0, b = v && v.videoWidth ? Math.min(v.videoWidth, v.videoHeight) : 0;
-    return this.lowPerf ? Stage.REC_LOW : Stage.REC;   // v=261120b (Kai): filtered recordings still stuttered (~12 fps) at 720×1280 → record at 576×1024 (−36% pixels, both ×16)
+    return this.lowPerf ? Stage.REC_LOW : Stage.REC;   // v=261120c (Kai): filtered recordings still stuttered (~12 fps) at 720×1280 → record at 576×1024 (−36% pixels, both ×16)
   };
   Stage.prototype.setPortraitOutput = function (on, size) {
     this.portrait = !!on;
@@ -83,7 +83,7 @@
     if (!this.canvas.captureStream) throw Object.assign(new Error('此瀏覽器不支援 canvas.captureStream'), { name: 'NotSupported' });
     const cs = this.canvas.captureStream(fps || 30);
     let audio = KK.Camera.stream ? KK.Camera.stream.getAudioTracks() : [];
-    // v=261120b (Kai): mic runs with the browser's voice AGC off (keeps music dynamics). A FIXED make-up gain failed both ways:
+    // v=261120c (Kai): mic runs with the browser's voice AGC off (keeps music dynamics). A FIXED make-up gain failed both ways:
     // iPhone mics came out too quiet, Android (S23 Ultra) too loud — room noise pumped up and squashed flat (LRA 0.2 LU).
     // Now: L+R → mono bus → 80 Hz high-pass (rumble / handling noise) → slow automatic gain (target ≈ −16 dBFS RMS × 0.75 correction,
     // −6…+18 dB, never boosts near-silence) → fast limiter → both channels. Any failure → raw mic track.
@@ -170,7 +170,7 @@
   Stage.prototype.drawBg = function () {
     const g = this.ctx, S = this.S;
     const v = this.video;
-    if (KK.NOBG && this.bgMode === 'camera') { g.fillStyle = '#222'; g.fillRect(0, 0, S.w, S.h); return true; }   // v=261120b: ?diag=1&nobg=1 test only
+    if (KK.NOBG && this.bgMode === 'camera') { g.fillStyle = '#222'; g.fillRect(0, 0, S.w, S.h); return true; }   // v=261120c: ?diag=1&nobg=1 test only
     if (this.bgMode === 'camera' && v && v.readyState >= 2 && v.videoWidth) {
       // cover-fit：填滿畫面、置中裁切（橫向來源放進直式畫布 → 裁掉左右，不留黑邊）
       // rotateVideo = 90 / -90：僅供「影格真的側躺」的裝置使用（網址 ?rotate=90）。
@@ -233,7 +233,7 @@
       const now = (ts - this.t0) / 1000;
       const t0 = performance.now();
       this.renderAt(now, now);
-      this.S.drawMs = (this.S.drawMs || 0) * 0.9 + (performance.now() - t0) * 0.1;   // v=261120b: diag readout
+      this.S.drawMs = (this.S.drawMs || 0) * 0.9 + (performance.now() - t0) * 0.1;   // v=261120c: diag readout
       // fps：最近 1 秒的幀數
       this.frames.push(ts);
       while (this.frames.length && ts - this.frames[0] > 1000) this.frames.shift();
@@ -307,8 +307,8 @@
       return {
         video: {
           facingMode: { ideal: facing || 'environment' },
-          width: { ideal: KK.Camera.hiRes ? 1080 : 720 },   // v=261120b (Kai): 720×1280 for filtered recordings (1080p stuttered);
-          height: { ideal: KK.Camera.hiRes ? 1920 : 1280 }, // v=261120b: photos ask for 1080×1920 so pinch-zoom stays sharp
+          width: { ideal: KK.Camera.hiRes ? 1080 : 720 },   // v=261120c (Kai): 720×1280 for filtered recordings (1080p stuttered);
+          height: { ideal: KK.Camera.hiRes ? 1920 : 1280 }, // v=261120c: photos ask for 1080×1920 so pinch-zoom stays sharp
           aspectRatio: { ideal: 9 / 16 }, // 不支援或給回橫向時，由 drawBg 置中裁切成 9:16
           frameRate: { ideal: 30 },
         },
