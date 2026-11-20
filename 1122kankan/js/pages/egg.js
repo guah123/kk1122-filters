@@ -155,10 +155,10 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     });
     rsBox.appendChild(rsBtn); rsBox.appendChild(el('div', 'eg-bubble', '從頭開始'));   // v=261118e (Kai): bubble like 密碼
 
-    // v=261120c (Kai): one button to save every illustration of the evening (cover, lyrics pages, question pages, find-Kai scenes).
+    // v=261120d (Kai): one button to save every illustration of the evening (cover, lyrics pages, question pages, find-Kai scenes).
     // Phones: Web Share with files → the system sheet offers 「儲存 N 張影像」 (needs a fresh tap, so the files are fetched
     // first and the tap that finds them ready shares at once). No file-share support → one zip download (store-only, built here).
-    // v=261120c (Kai): a PHOTO icon (picture with sun and hills), not a download arrow
+    // v=261120d (Kai): a PHOTO icon (picture with sun and hills), not a download arrow
     var SVG_DL = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="11" width="32" height="26" rx="4"/><circle cx="17.5" cy="20" r="3"/><path d="M9 33l9-8 6 5 7-8 8 9"/></svg>';
     var DL_LIST = [['00-看看', 'assets/cover-illust.jpg']];
     [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].forEach(function (n) { DL_LIST.push([(n < 10 ? '0' : '') + n + '-歌詞', 'assets/lyrics-bg/' + (n < 10 ? '0' : '') + n + '.jpg']); });
@@ -192,14 +192,14 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
         later(function () { if (a.parentNode) a.parentNode.removeChild(a); URL.revokeObjectURL(url); }, 4000);
       });
     }
-    // v=261120c (Kai): today's set list on YouTube
+    // v=261120d (Kai): today's set list on YouTube
     var SVG_MUSIC = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 34V12l18-4v22"/><ellipse cx="14" cy="34" rx="5" ry="4"/><ellipse cx="32" cy="30" rx="5" ry="4"/></svg>';
     var plBox = el('div', 'eg-pop eg-playlist');
     var plBtn = el('button', 'eg-bigbtn'); plBtn.type = 'button'; plBtn.setAttribute('aria-label', '本日歌單（YouTube）');
     plBtn.appendChild(iconNode('music', SVG_MUSIC));
     plBtn.addEventListener('click', function () { openUrl(cfg.PLAYLIST_URL || 'https://youtube.com/playlist?list=PLSYxzFWN7gR8&si=jkl7Pm1J-VsRj6sR'); });
     plBox.appendChild(plBtn); plBox.appendChild(el('div', 'eg-bubble', '本日歌單'));
-    // v=261120c (Kai): 延伸閱聽 → podcast episode
+    // v=261120d (Kai): 延伸閱聽 → podcast episode
     var SVG_POD = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="7" width="12" height="20" rx="6"/><path d="M11 22a13 13 0 0 0 26 0"/><path d="M24 35v6"/><path d="M17 41h14"/></svg>';
     var pcBox = el('div', 'eg-pop eg-playlist eg-podcast');
     var pcBtn = el('button', 'eg-bigbtn'); pcBtn.type = 'button'; pcBtn.setAttribute('aria-label', '延伸閱聽（Podcast）');
@@ -235,7 +235,7 @@ DAYOF.registerPage = DAYOF.registerPage || function (t, m) { DAYOF._pages[t] = m
     var own = el('div', 'eg-stack');
     var fold = el('div', 'eg-fold');
     var fsHost = el('div', 'eg-filters');
-    var ex = el('div', 'eg-extra'); // v=261120c (Kai): bubbles from shortest to longest, 從頭開始 last
+    var ex = el('div', 'eg-extra'); // v=261120d (Kai): bubbles from shortest to longest, 從頭開始 last
     ex.appendChild(plBox); ex.appendChild(pcBox); ex.appendChild(lineBox); ex.appendChild(dlBox); ex.appendChild(cofBox); ex.appendChild(rsBox);
     fold.appendChild(fsHost); fold.appendChild(ex); own.appendChild(fold);
     page.appendChild(own);
