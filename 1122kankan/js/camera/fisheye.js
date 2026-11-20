@@ -19,11 +19,11 @@
   var VS = 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }';
   var FS = [
     'precision mediump float;',
-    'uniform sampler2D uTex; uniform vec2 uV; uniform vec2 uOut; uniform float uMirror; uniform float uR; uniform float uA;',
+    'uniform sampler2D uTex; uniform vec2 uV; uniform vec2 uOut; uniform float uMirror; uniform float uR; uniform float uA; uniform float uZ;',
     'void main(){',
     '  vec2 q = vec2(gl_FragCoord.x, uOut.y - gl_FragCoord.y);',
     '  vec2 c = uOut * 0.5; vec2 d = q - c; float r = length(d); float rn = r / uR;',
-    '  float k = max(uOut.x / uV.x, uOut.y / uV.y); vec2 dsz = uV * k;',
+    '  float k = max(uOut.x / uV.x, uOut.y / uV.y) * uZ; vec2 dsz = uV * k;',   // uZ: pinch zoom (v=261120a)
     '  float Rs = min(uR, min(dsz.x, dsz.y) * 0.5) * 0.98;',
     '  float s = tan(min(rn, 1.0) * uA) / tan(uA);',
     '  vec2 dir = r > 0.0001 ? d / r : vec2(0.0);',
@@ -75,12 +75,12 @@
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     var U = {};
-    ['uTex', 'uV', 'uOut', 'uMirror', 'uR', 'uA'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+    ['uTex', 'uV', 'uOut', 'uMirror', 'uR', 'uA', 'uZ'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
     gl.uniform1i(U.uTex, 0);
     var hasFrame = false;
     return {
       mode: 'webgl', canvas: cv,
-      render: function (v, W, H, mirror, Rr) {
+      render: function (v, W, H, mirror, Rr, Z) {
         if (cv.width !== W) cv.width = W;
         if (cv.height !== H) cv.height = H;
         gl.viewport(0, 0, W, H);
@@ -93,6 +93,7 @@
         gl.uniform1f(U.uMirror, mirror ? 1 : 0);
         gl.uniform1f(U.uR, Rr || W * CIRCLE);
         gl.uniform1f(U.uA, A);
+        gl.uniform1f(U.uZ, Z > 1 ? Z : 1);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         return cv;
       },
@@ -105,10 +106,10 @@
     var out = document.createElement('canvas'), og = out.getContext('2d');
     var src = document.createElement('canvas'), sg = src.getContext('2d', { willReadFrequently: true });
     var map = null, vig = null, key = '', img = null;
-    function build(w, h, vw, vh, Rf) {
+    function build(w, h, vw, vh, Rf, Z) {
       map = new Int32Array(w * h); vig = new Float32Array(w * h);
       var R = w * (Rf || CIRCLE), cx = w / 2, cy = h / 2;
-      var k = Math.max(w / vw, h / vh), dw = vw * k, dh = vh * k;
+      var k = Math.max(w / vw, h / vh) * Z, dw = vw * k, dh = vh * k;
       var Rs = Math.min(R, Math.min(dw, dh) / 2) * 0.98, tA = Math.tan(A);
       for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
         var dx = x + 0.5 - cx, dy = y + 0.5 - cy, r = Math.sqrt(dx * dx + dy * dy), rn = r / R;
@@ -124,7 +125,8 @@
     }
     return {
       mode: '2d', canvas: out,
-      render: function (v, W, H, mirror, Rr) {
+      render: function (v, W, H, mirror, Rr, Z) {
+        Z = Z > 1 ? Math.round(Z * 20) / 20 : 1;   // v=261120a: pinch zoom (map rebuilt per 0.05 step)
         var Rf = Rr ? Rr / W : CIRCLE;
         var w = Math.max(2, Math.round(W / 2)), h = Math.max(2, Math.round(H / 2));
         if (out.width !== w) out.width = w;
@@ -135,9 +137,9 @@
           if (!img) { og.fillStyle = '#3A2E28'; og.fillRect(0, 0, w, h); }
           return out;
         }
-        var k2 = w + 'x' + h + ':' + v.videoWidth + 'x' + v.videoHeight + ':' + Rf;
-        if (k2 !== key) { build(w, h, v.videoWidth, v.videoHeight, Rf); key = k2; }
-        var k = Math.max(w / v.videoWidth, h / v.videoHeight), dw = v.videoWidth * k, dh = v.videoHeight * k;
+        var k2 = w + 'x' + h + ':' + v.videoWidth + 'x' + v.videoHeight + ':' + Rf + ':' + Z;
+        if (k2 !== key) { build(w, h, v.videoWidth, v.videoHeight, Rf, Z); key = k2; }
+        var k = Math.max(w / v.videoWidth, h / v.videoHeight) * Z, dw = v.videoWidth * k, dh = v.videoHeight * k;
         sg.save();
         if (mirror) { sg.translate(w, 0); sg.scale(-1, 1); }
         sg.drawImage(v, (w - dw) / 2, (h - dh) / 2, dw, dh);
@@ -188,7 +190,7 @@
             var stage = S.stage, v = (stage && stage.video) || (KK.Camera && KK.Camera.video);
             var aFrame = KK.art ? KK.art('fisheye-frame.png') : null, aBub = KK.art ? KK.art('fisheye-bubble.png') : null;
             var R = S.w * (aFrame ? FRAME_HOLE * 1.03 : CIRCLE);   // 有舷窗外框時，變形圓縮到外框洞裡（略大一點被框蓋住接縫）
-            var cv = eng.render(v, S.w, S.h, !!(stage && stage.mirror), R);
+            var cv = eng.render(v, S.w, S.h, !!(stage && stage.mirror), R, stage && stage.zoom);
             g.imageSmoothingEnabled = true;
             g.drawImage(cv, 0, 0, S.w, S.h);
             // 繪本舷窗外框（錄影與第 29 步拍照都一起輸出）
