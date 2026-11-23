@@ -1,7 +1,7 @@
 /* wall.js — 「大家的看看」: anonymous look-back wall. Data is a static, encrypted snapshot (wall/data.bin). */
 (function () {
   'use strict';
-  var V = '261123f', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
+  var V = '261123g', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
   var SPRITE = { photoframe: 'familyphoto' };
 
   function h(tag, attrs, kids) {
@@ -114,7 +114,7 @@
     sec.appendChild(h('div', { 'class': 'wl-notes' }, list.map(function (t, i) {
       var r = ((i * 37) % 9 - 4) * 0.7;            // steady little tilt per note
       return h('button', { 'class': 'wl-note' + (t[0].length > 110 ? ' is-long' : ''), type: 'button', style: '--r:' + r + 'deg',
-        on: { click: function () { showNote(list, i); } } }, [t[0], h('span', { 'class': 'wl-by', text: '— ' + t[1] }), reply(t)]);
+        on: { click: function () { showNote(list, i); } } }, [t[0], h('span', { 'class': 'wl-by', text: '— ' + t[1] }), t[2] ? h('span', { 'class': 'wl-replied', text: 'Kai 回覆了' }) : null]);   // the reply itself only shows when the note is opened
     })));
   }
 

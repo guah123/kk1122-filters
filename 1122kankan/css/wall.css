@@ -141,3 +141,4 @@
 /* ---------- Kai's reply under a note ---------- */
 .wl-reply{display:block;margin:12px -6px -6px;padding:10px 11px 11px;background:rgba(157,191,216,.24);border-left:3px solid var(--sky-deep);border-radius:2px 8px 8px 2px;font-family:var(--font);font-size:.9em;line-height:1.7;color:var(--ink)}
 .wl-reply b{display:block;font-size:.8em;letter-spacing:.14em;color:var(--sky-deep);margin-bottom:2px}
+.wl-replied{display:inline-block;margin-top:8px;padding:1px 9px;border-radius:999px;background:rgba(157,191,216,.3);color:var(--sky-deep);font:600 11.5px/1.7 var(--font);letter-spacing:.08em}
