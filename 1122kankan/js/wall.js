@@ -1,7 +1,7 @@
 /* wall.js — 「大家的看看」: anonymous look-back wall. Data is a static, encrypted snapshot (wall/data.bin). */
 (function () {
   'use strict';
-  var V = '261123g', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
+  var V = '261123h', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
   var SPRITE = { photoframe: 'familyphoto' };
 
   function h(tag, attrs, kids) {
@@ -216,8 +216,7 @@
     music: '<path d="M19 34V12l18-4v22"/><ellipse cx="14" cy="34" rx="5" ry="4"/><ellipse cx="32" cy="30" rx="5" ry="4"/>',
     pod: '<rect x="18" y="7" width="12" height="20" rx="6"/><path d="M11 22a13 13 0 0 0 26 0"/><path d="M24 35v6"/><path d="M17 41h14"/>',
     pic: '<rect x="8" y="11" width="32" height="26" rx="4"/><circle cx="17.5" cy="20" r="3"/><path d="M9 33l9-8 6 5 7-8 8 9"/>',
-    coffee: '<path d="M9 18h24v9c0 6-4.5 10-12 10S9 33 9 27z"/><path d="M33 20h3.5a4.5 4.5 0 0 1 0 9H32"/><path d="M15 8c-1.5 2 1.5 3 0 5M22 8c-1.5 2 1.5 3 0 5M29 8c-1.5 2 1.5 3 0 5"/>',
-    restart: '<path d="M12 24a12 12 0 1 0 4-9"/><path d="M11 8v8h8"/>'
+    coffee: '<path d="M9 18h24v9c0 6-4.5 10-12 10S9 33 9 27z"/><path d="M33 20h3.5a4.5 4.5 0 0 1 0 9H32"/><path d="M15 8c-1.5 2 1.5 3 0 5M22 8c-1.5 2 1.5 3 0 5M29 8c-1.5 2 1.5 3 0 5"/>'
   };
   function openUrl(u) { if (u) window.open(u, '_blank', 'noopener'); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -247,7 +246,7 @@
   function coffee(cfg) {
     var link = cfg.COFFEE_LINK || cfg.CTBC_URL || '';
     var ov = overlay([h('div', { 'class': 'wl-coffee' }, [
-      h('h3', { text: 'Buy Kai a Coffee' }),
+      h('h3', { text: '請 Kai 喝咖啡' }),
       h('img', { src: 'assets/ctbc-qr-crop.png', alt: '中信付款碼', on: { click: function () { openUrl(link); } } }),
       h('div', { 'class': 'acct', text: String(cfg.CTBC_ACCOUNT || '').replace(/\s*中國信託.*$/, '').trim() }),
       h('p', { text: '長按圖片可以下載／點圖片直接打開中信轉帳' }),
@@ -274,7 +273,7 @@
         return;
       }
       var fl = []; try { fl = files.map(function (f) { return new File([f.blob], f.name, { type: 'image/jpeg' }); }); } catch (e) { fl = []; }
-      var done = function () { dlLabel.textContent = '下載圖片'; };
+      var done = function () { dlLabel.textContent = '帶走插畫'; };
       if (fl.length && navigator.canShare && navigator.share && navigator.canShare({ files: fl })) {
         navigator.share({ files: fl }).then(done, function (e) { done(); if (!e || e.name !== 'AbortError') zip(); });
       } else zip().then(done, done);
@@ -284,13 +283,12 @@
       var lab = h('span', { 'class': 'lab', text: label });
       return [h('button', { 'class': 'wl-link ' + cls, type: 'button', on: { click: fn } }, [ico, lab]), lab];
     }
-    var dl = item('is-dl', 'pic', '下載圖片', download); dlLabel = dl[1];
+    var dl = item('is-dl', 'pic', '帶走插畫', download); dlLabel = dl[1];
     return h('div', { 'class': 'wl-links' }, [
-      item('is-music', 'music', '本日歌單', function () { openUrl(cfg.PLAYLIST_URL || 'https://youtube.com/playlist?list=PLSYxzFWN7gR8&si=jkl7Pm1J-VsRj6sR'); })[0],
-      item('is-pod', 'pod', '延伸閱聽', function () { openUrl(cfg.PODCAST_URL || 'https://open.firstory.fm/story/cmq50b0nv002m01zlfkhc0a1j'); })[0],
+      item('is-music', 'music', '那天的歌', function () { openUrl(cfg.PLAYLIST_URL || 'https://youtube.com/playlist?list=PLSYxzFWN7gR8&si=jkl7Pm1J-VsRj6sR'); })[0],
+      item('is-pod', 'pod', '聽 Kai 聊聊', function () { openUrl(cfg.PODCAST_URL || 'https://open.firstory.fm/story/cmq50b0nv002m01zlfkhc0a1j'); })[0],
       dl[0],
-      item('is-coffee', 'coffee', 'Buy Kai a Coffee', function () { coffee(cfg); })[0],
-      item('is-restart', 'restart', '從頭開始', function () { location.href = 'index.html'; })[0]
+      item('is-coffee', 'coffee', '請 Kai 喝咖啡', function () { coffee(cfg); })[0]
     ]);
   }
 
