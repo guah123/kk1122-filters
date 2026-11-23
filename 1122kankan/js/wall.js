@@ -1,7 +1,7 @@
 /* wall.js — 「大家的看看」: anonymous look-back wall. Data is a static, encrypted snapshot (wall/data.bin). */
 (function () {
   'use strict';
-  var V = '261123c', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
+  var V = '261123f', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
   var SPRITE = { photoframe: 'familyphoto' };
 
   function h(tag, attrs, kids) {
@@ -91,7 +91,7 @@
 
   function showNote(list, i) {
     var big = h('div', { 'class': 'wl-big' });
-    function set(n) { i = n; big.replaceChildren(list[i][0], h('span', { 'class': 'wl-by', text: '— ' + list[i][1] })); big.classList.toggle('is-long', list[i][0].length > 110); big.scrollTop = 0;
+    function set(n) { i = n; big.replaceChildren(list[i][0], h('span', { 'class': 'wl-by', text: '— ' + list[i][1] }), reply(list[i])); big.classList.toggle('is-long', list[i][0].length > 110); big.scrollTop = 0;
       big.style.animation = 'none'; void big.offsetWidth; big.style.animation = ''; }
     var ov = overlay([big, h('div', { 'class': 'wl-ovbtns' }, [
       list.length > 1 ? h('button', { 'class': 'btn small', type: 'button', text: '再抽一張', on: { click: function () {
@@ -102,6 +102,10 @@
     set(i);
   }
 
+  function reply(t) {   // Kai's answer to this note, when there is one
+    return t[2] ? h('span', { 'class': 'wl-reply' }, [h('b', { text: 'Kai 的回覆' }), t[2]]) : null;
+  }
+
   function notes(sec, list) {
     if (!list.length) return;
     sec.querySelector('.wl-head').appendChild(h('button', { 'class': 'btn small wl-draw', type: 'button', text: '抽一張', on: { click: function () {
@@ -110,7 +114,7 @@
     sec.appendChild(h('div', { 'class': 'wl-notes' }, list.map(function (t, i) {
       var r = ((i * 37) % 9 - 4) * 0.7;            // steady little tilt per note
       return h('button', { 'class': 'wl-note' + (t[0].length > 110 ? ' is-long' : ''), type: 'button', style: '--r:' + r + 'deg',
-        on: { click: function () { showNote(list, i); } } }, [t[0], h('span', { 'class': 'wl-by', text: '— ' + t[1] })]);
+        on: { click: function () { showNote(list, i); } } }, [t[0], h('span', { 'class': 'wl-by', text: '— ' + t[1] }), reply(t)]);
     })));
   }
 
@@ -207,6 +211,89 @@
     })));
   }
 
+  /* ---------- the buttons of the show's last page (no filters, no LINE) ---------- */
+  var ICON = {
+    music: '<path d="M19 34V12l18-4v22"/><ellipse cx="14" cy="34" rx="5" ry="4"/><ellipse cx="32" cy="30" rx="5" ry="4"/>',
+    pod: '<rect x="18" y="7" width="12" height="20" rx="6"/><path d="M11 22a13 13 0 0 0 26 0"/><path d="M24 35v6"/><path d="M17 41h14"/>',
+    pic: '<rect x="8" y="11" width="32" height="26" rx="4"/><circle cx="17.5" cy="20" r="3"/><path d="M9 33l9-8 6 5 7-8 8 9"/>',
+    coffee: '<path d="M9 18h24v9c0 6-4.5 10-12 10S9 33 9 27z"/><path d="M33 20h3.5a4.5 4.5 0 0 1 0 9H32"/><path d="M15 8c-1.5 2 1.5 3 0 5M22 8c-1.5 2 1.5 3 0 5M29 8c-1.5 2 1.5 3 0 5"/>',
+    restart: '<path d="M12 24a12 12 0 1 0 4-9"/><path d="M11 8v8h8"/>'
+  };
+  function openUrl(u) { if (u) window.open(u, '_blank', 'noopener'); }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function dlList() {
+    var L = [['00-看看', 'assets/cover-illust.jpg']];
+    [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].forEach(function (n) { L.push([pad(n) + '-歌詞', 'assets/lyrics-bg/' + pad(n) + '.jpg']); });
+    [9, 13, 15, 21, 29, 31].forEach(function (n) { L.push([pad(n) + '-問答', 'assets/page-bg/' + pad(n) + '.jpg']); });
+    [[5, 's05-park'], [7, 's07-escalator'], [17, 's17-bridge'], [19, 's19-moumoon'], [23, 's23-office'], [25, 's25-fireworks'], [27, 's27-nyc']]
+      .forEach(function (x) { L.push([pad(x[0]) + '-凱凱在哪裡', 'assets/scenes/' + x[1] + '.jpg']); });
+    return L.sort(function (a, b) { return a[0] < b[0] ? -1 : 1; });
+  }
+  function zipStore(files) {   // [{name, bytes}] -> zip Blob, stored without compression (same as the last page of the show)
+    var T = [], c, n, k, enc = new TextEncoder(), parts = [], cen = [], off = 0;
+    for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; T[n] = c >>> 0; }
+    files.forEach(function (f) {
+      var nm = enc.encode(f.name), d = f.bytes, crc = 0xFFFFFFFF, i;
+      for (i = 0; i < d.length; i++) crc = T[(crc ^ d[i]) & 255] ^ (crc >>> 8);
+      crc = (crc ^ 0xFFFFFFFF) >>> 0;
+      var hd = new DataView(new ArrayBuffer(30)); hd.setUint32(0, 0x04034b50, true); hd.setUint16(4, 20, true); hd.setUint16(6, 0x0800, true); hd.setUint32(14, crc, true); hd.setUint32(18, d.length, true); hd.setUint32(22, d.length, true); hd.setUint16(26, nm.length, true);
+      var e = new DataView(new ArrayBuffer(46)); e.setUint32(0, 0x02014b50, true); e.setUint16(4, 20, true); e.setUint16(6, 20, true); e.setUint16(8, 0x0800, true); e.setUint32(16, crc, true); e.setUint32(20, d.length, true); e.setUint32(24, d.length, true); e.setUint16(28, nm.length, true); e.setUint32(42, off, true);
+      parts.push(hd.buffer, nm, d); cen.push(e.buffer, nm); off += 30 + nm.length + d.length;
+    });
+    var cs = 0; cen.forEach(function (x) { cs += x.byteLength; });
+    var z = new DataView(new ArrayBuffer(22)); z.setUint32(0, 0x06054b50, true); z.setUint16(8, files.length, true); z.setUint16(10, files.length, true); z.setUint32(12, cs, true); z.setUint32(16, off, true);
+    return new Blob(parts.concat(cen, [z.buffer]), { type: 'application/zip' });
+  }
+  function coffee(cfg) {
+    var link = cfg.COFFEE_LINK || cfg.CTBC_URL || '';
+    var ov = overlay([h('div', { 'class': 'wl-coffee' }, [
+      h('h3', { text: 'Buy Kai a Coffee' }),
+      h('img', { src: 'assets/ctbc-qr-crop.png', alt: '中信付款碼', on: { click: function () { openUrl(link); } } }),
+      h('div', { 'class': 'acct', text: String(cfg.CTBC_ACCOUNT || '').replace(/\s*中國信託.*$/, '').trim() }),
+      h('p', { text: '長按圖片可以下載／點圖片直接打開中信轉帳' }),
+      h('button', { 'class': 'btn small', type: 'button', text: '打開中信轉帳', on: { click: function () { openUrl(link); } } })
+    ]), h('button', { 'class': 'btn small ghost', type: 'button', text: '關閉', on: { click: function () { ov.close(); } } })]);
+  }
+  function links() {
+    var cfg = window.DAYOF_CONFIG || {}, files = null, busy = false, dlLabel;
+    function zip() {
+      return Promise.all(files.map(function (f) { return f.blob.arrayBuffer().then(function (ab) { return { name: f.name, bytes: new Uint8Array(ab) }; }); })).then(function (list) {
+        var url = URL.createObjectURL(zipStore(list)), a = h('a', { href: url, download: '看看-插畫.zip' });
+        document.body.appendChild(a); a.click();
+        setTimeout(function () { a.remove(); URL.revokeObjectURL(url); }, 4000);
+      });
+    }
+    function download() {
+      if (busy) return;
+      if (!files) {            // fetch first; sharing needs a fresh tap afterwards
+        busy = true; dlLabel.textContent = '準備中…';
+        Promise.all(dlList().map(function (it) {
+          return fetch(it[1]).then(function (r) { if (!r.ok) throw new Error(it[1]); return r.blob(); }).then(function (b) { return { name: '看看-' + it[0] + '.jpg', blob: b }; });
+        })).then(function (fs) { files = fs; busy = false; dlLabel.textContent = '好了，再點一次'; },
+          function () { busy = false; dlLabel.textContent = '載入失敗，再點一次'; });
+        return;
+      }
+      var fl = []; try { fl = files.map(function (f) { return new File([f.blob], f.name, { type: 'image/jpeg' }); }); } catch (e) { fl = []; }
+      var done = function () { dlLabel.textContent = '下載圖片'; };
+      if (fl.length && navigator.canShare && navigator.share && navigator.canShare({ files: fl })) {
+        navigator.share({ files: fl }).then(done, function (e) { done(); if (!e || e.name !== 'AbortError') zip(); });
+      } else zip().then(done, done);
+    }
+    function item(cls, icon, label, fn) {
+      var ico = h('span', { 'class': 'ico' }); ico.innerHTML = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">' + ICON[icon] + '</svg>';
+      var lab = h('span', { 'class': 'lab', text: label });
+      return [h('button', { 'class': 'wl-link ' + cls, type: 'button', on: { click: fn } }, [ico, lab]), lab];
+    }
+    var dl = item('is-dl', 'pic', '下載圖片', download); dlLabel = dl[1];
+    return h('div', { 'class': 'wl-links' }, [
+      item('is-music', 'music', '本日歌單', function () { openUrl(cfg.PLAYLIST_URL || 'https://youtube.com/playlist?list=PLSYxzFWN7gR8&si=jkl7Pm1J-VsRj6sR'); })[0],
+      item('is-pod', 'pod', '延伸閱聽', function () { openUrl(cfg.PODCAST_URL || 'https://open.firstory.fm/story/cmq50b0nv002m01zlfkhc0a1j'); })[0],
+      dl[0],
+      item('is-coffee', 'coffee', 'Buy Kai a Coffee', function () { coffee(cfg); })[0],
+      item('is-restart', 'restart', '從頭開始', function () { location.href = 'index.html'; })[0]
+    ]);
+  }
+
   /* ---------- page ---------- */
   function render(d) {
     var T = d.questionTexts, total = 0, k;
@@ -229,7 +316,7 @@
     photos(section('第 29 頁', 'assets/page-bg/29.jpg', '大家眼中的這一天', '魚眼相機拍下的 ' + nPhoto + ' 張照片、' + nVideo + ' 段影片'), d.media, d.crop);
     notes(section('第 31 頁', 'assets/page-bg/31.jpg', T.q31), d.texts.q31);
 
-    ROOT.appendChild(h('footer', { 'class': 'wl-end' }, [h('strong', { text: '謝謝你來看看' }), '《看看》Kai 的生日音樂會']));
+    ROOT.appendChild(h('footer', { 'class': 'wl-end' }, [h('strong', { text: '謝謝你來看看' }), '《看看》Kai 的生日音樂會', links()]));
 
     // charts grow when scrolled into view
     var grow = function (el) {
