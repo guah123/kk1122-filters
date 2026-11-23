@@ -1,7 +1,7 @@
 /* wall.js — 「大家的看看」: anonymous look-back wall. Data is a static, encrypted snapshot (wall/data.bin). */
 (function () {
   'use strict';
-  var V = '261123b', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
+  var V = '261123c', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
   var SPRITE = { photoframe: 'familyphoto' };
 
   function h(tag, attrs, kids) {
@@ -58,7 +58,7 @@
     } } }, [input, btn]);
     ROOT.replaceChildren(h('div', { 'class': 'wl-gate' }, [
       h('h1', { text: '大家的看看' }),
-      h('p', {}, ['11/22 那天，大家寫下的話和拍下的照片。', h('br'), '請輸入密碼。']),
+      h('p', {}, ['11/22 那天，大家寫下的話和拍下的照片。', h('br'), '請輸入密碼（提示：Kai 生日）。']),
       form, msg
     ]));
     input.focus();
@@ -218,7 +218,7 @@
       h('p', {}, ['2026.11.22　沐月書店', h('br'),
         '這一天，', h('b', { text: String(d.people) }), '個人一起看看，留下了', h('b', { text: String(total) }), '張紙條、',
         h('b', { text: String(nPhoto) }), '張照片和', h('b', { text: String(nVideo) }), '段影片。', h('br'),
-        '紙條只留下名字的第一個字，順序也打散了。點任何一張可以放大。'])
+        '紙條只留下名字的頭尾兩個字，順序也打散了。點任何一張可以放大。'])
     ]));
 
     notes(section('第 9 頁', 'assets/page-bg/09.jpg', T.q9), d.texts.q9);
