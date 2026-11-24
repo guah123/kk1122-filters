@@ -1,7 +1,7 @@
-/* wall.js — 「和你一起看看」: anonymous look-back wall. Data is a static, encrypted snapshot (wall/data.bin). */
+/* wall.js — 「一起看看」: anonymous look-back wall. Data is a static, encrypted snapshot (wall/data.bin). */
 (function () {
   'use strict';
-  var V = '261125c', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
+  var V = '261125d', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
   var SPRITE = { photoframe: 'familyphoto' };
 
   function h(tag, attrs, kids) {
@@ -57,7 +57,7 @@
       });
     } } }, [input, btn]);
     ROOT.replaceChildren(h('div', { 'class': 'wl-gate' }, [
-      h('h1', { text: '和你一起看看' }),
+      h('h1', { text: '一起看看' }),
       h('p', {}, ['11/22 那天，大家寫下的話和拍下的照片。', h('br'), '請輸入密碼（提示：Kai 生日）。']),
       form, msg
     ]));
@@ -299,7 +299,7 @@
     var nPhoto = d.media.filter(function (m) { return m.k === 'p'; }).length, nVideo = d.media.length - nPhoto;
     ROOT.replaceChildren(h('header', { 'class': 'wl-hero' }, [
       h('img', { src: 'assets/key-visual.jpg?v=' + V, alt: '《看看》主視覺' }),
-      h('h1', { text: '和你一起看看' }),
+      h('h1', { text: '一起看看' }),
       h('p', {}, ['2026.11.22　沐月書店', h('br'),
         '這一天，', h('b', { text: String(d.people) }), '個人一起看看，留下了', h('b', { text: String(total) }), '張紙條、',
         h('b', { text: String(nPhoto) }), '張照片和', h('b', { text: String(nVideo) }), '段影片。', h('br'),
