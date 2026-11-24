@@ -1,7 +1,7 @@
 /* wall.js — 「大家的看看」: anonymous look-back wall. Data is a static, encrypted snapshot (wall/data.bin). */
 (function () {
   'use strict';
-  var V = '261123h', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
+  var V = '261124a', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
   var SPRITE = { photoframe: 'familyphoto' };
 
   function h(tag, attrs, kids) {
@@ -315,6 +315,15 @@
     notes(section('第 31 頁', 'assets/page-bg/31.jpg', T.q31), d.texts.q31);
 
     ROOT.appendChild(h('footer', { 'class': 'wl-end' }, [h('strong', { text: '謝謝你來看看' }), '《看看》Kai 的生日音樂會', links()]));
+    // production credits, kept quiet at the very bottom (same data file as the show's credits page)
+    fetch('data/credits.json?v=' + V).then(function (r) { return r.json(); }).then(function (c) {
+      var items = [];
+      (c.sections || []).forEach(function (sec) { (sec.items || []).forEach(function (it) { items.push(it); }); });
+      if (!items.length) return;
+      ROOT.appendChild(h('div', { 'class': 'wl-credits' }, [h('span', { 'class': 'ttl', text: '製作名單' })].concat(items.map(function (it) {
+        return h('span', {}, [it.role + ' ', h('b', { text: it.name })]);
+      }))));
+    }).catch(function () {});
 
     // charts grow when scrolled into view
     var grow = function (el) {

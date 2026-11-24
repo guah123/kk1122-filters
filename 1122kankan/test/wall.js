@@ -37,6 +37,8 @@ const path = require('path');
   await p.screenshot({ path: out + '/draw.png' });
   await p.keyboard.press('Escape');
   console.log('last-page buttons', await p.locator('.wl-link').count());
+  console.log('credits', await p.locator('.wl-credits span').count());
+  await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await p.waitForTimeout(300);
   await p.locator('.wl-links').scrollIntoViewIfNeeded();
   await p.screenshot({ path: out + '/links.png' });
   const dl = p.waitForEvent('download', { timeout: 20000 });
