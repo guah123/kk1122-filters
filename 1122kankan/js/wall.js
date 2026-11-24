@@ -1,7 +1,7 @@
 /* wall.js — 「大家的看看」: anonymous look-back wall. Data is a static, encrypted snapshot (wall/data.bin). */
 (function () {
   'use strict';
-  var V = '261124d', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
+  var V = '261124e', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
   var SPRITE = { photoframe: 'familyphoto' };
 
   function h(tag, attrs, kids) {
@@ -322,7 +322,7 @@
       if (!items.length) return;
       ROOT.appendChild(h('div', { 'class': 'wl-credits' }, [h('span', { 'class': 'ttl', text: '製作名單' })].concat(items.map(function (it) {
         // an item with a "url" in data/credits.json links out to that person's social page
-        var who = /^https:\/\//.test(it.url || '') ? h('a', { href: it.url, target: '_blank', rel: 'noopener' }, [h('b', { text: it.name }), h('i', { 'class': 'wl-ext', text: ' 🔗', 'aria-hidden': 'true' })]) : h('b', { text: it.name });
+        var who = /^https:\/\//.test(it.url || '') ? h('a', { href: it.url, target: '_blank', rel: 'noopener' }, [h('b', { text: it.name }), h('i', { 'class': 'wl-ext', text: '↗', 'aria-hidden': 'true' })]) : h('b', { text: it.name });
         return h('span', {}, [it.role + ' ', who]);
       }))));
     }).catch(function () {});
