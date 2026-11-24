@@ -148,3 +148,4 @@
 .wl-credits .ttl{flex-basis:100%;text-align:center;letter-spacing:.3em;font-size:11px}
 .wl-credits b{font-weight:500;color:var(--ink)}
 .wl-credits a{color:inherit;text-decoration:underline;text-decoration-color:rgba(138,101,69,.45);text-underline-offset:3px}
+.wl-ext{font-style:normal;font-size:.95em;text-decoration:none;display:inline-block}
