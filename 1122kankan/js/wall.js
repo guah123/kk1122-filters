@@ -1,7 +1,7 @@
-/* wall.js — 「大家的看看」: anonymous look-back wall. Data is a static, encrypted snapshot (wall/data.bin). */
+/* wall.js — 「和你一起看看」: anonymous look-back wall. Data is a static, encrypted snapshot (wall/data.bin). */
 (function () {
   'use strict';
-  var V = '261125a', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
+  var V = '261125b', ROOT = document.getElementById('wall'), KEY = 'kk-wall-pin';
   var SPRITE = { photoframe: 'familyphoto' };
 
   function h(tag, attrs, kids) {
@@ -57,7 +57,7 @@
       });
     } } }, [input, btn]);
     ROOT.replaceChildren(h('div', { 'class': 'wl-gate' }, [
-      h('h1', { text: '大家的看看' }),
+      h('h1', { text: '和你一起看看' }),
       h('p', {}, ['11/22 那天，大家寫下的話和拍下的照片。', h('br'), '請輸入密碼（提示：Kai 生日）。']),
       form, msg
     ]));
@@ -91,7 +91,7 @@
 
   function showNote(list, i) {
     var big = h('div', { 'class': 'wl-big' });
-    function set(n) { i = n; big.replaceChildren(list[i][0], h('span', { 'class': 'wl-by', text: '— ' + list[i][1] }), reply(list[i])); big.classList.toggle('is-long', list[i][0].length > 110); big.scrollTop = 0;
+    function set(n) { i = n; big.replaceChildren(list[i][0], h('span', { 'class': 'wl-by', text: '— ' + list[i][1] })); var rp = reply(list[i]); if (rp) big.appendChild(rp);   // replaceChildren(null) would print the word "null" big.classList.toggle('is-long', list[i][0].length > 110); big.scrollTop = 0;
       big.style.animation = 'none'; void big.offsetWidth; big.style.animation = ''; }
     var ov = overlay([big, h('div', { 'class': 'wl-ovbtns' }, [
       list.length > 1 ? h('button', { 'class': 'btn small', type: 'button', text: '再抽一張', on: { click: function () {
@@ -299,7 +299,7 @@
     var nPhoto = d.media.filter(function (m) { return m.k === 'p'; }).length, nVideo = d.media.length - nPhoto;
     ROOT.replaceChildren(h('header', { 'class': 'wl-hero' }, [
       h('img', { src: 'assets/key-visual.jpg?v=' + V, alt: '《看看》主視覺' }),
-      h('h1', { text: '大家的看看' }),
+      h('h1', { text: '和你一起看看' }),
       h('p', {}, ['2026.11.22　沐月書店', h('br'),
         '這一天，', h('b', { text: String(d.people) }), '個人一起看看，留下了', h('b', { text: String(total) }), '張紙條、',
         h('b', { text: String(nPhoto) }), '張照片和', h('b', { text: String(nVideo) }), '段影片。', h('br'),
